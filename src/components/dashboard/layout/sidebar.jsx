@@ -17,7 +17,7 @@ const Sidebar = () => {
         >
 
 
-            <div className="mb-3 fw-bold fs-5 border-bottom pb-2">ADMIN</div>
+            <div className="mb-3 fw-bold fs-5 border-bottom pb-2 text-dark">ADMIN</div>
 
 
             <nav className="flex-grow-1">

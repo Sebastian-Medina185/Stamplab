@@ -42,18 +42,18 @@ const AppRoutes = () => {
             <Route path="/miscotizaciones" element={<MisCotizaciones></MisCotizaciones>}></Route>
 
             <Route path="/" element={<DashboardLayout />}>
-                <Route path="/cotizaciones" element={<Cotizaciones />} />
-                <Route path="/roles" element={<Roles />} />
-                <Route path="/telas" element={<Telas />} />
-                <Route path="/insumos" element={<Insumos />} />
-                <Route path="/pedidos" element={<Pedidos />} />
-                <Route path="/productos" element={<Productos />} />
-                <Route path="/colores" element={<Colores />} />
-                <Route path="/tallas" element={<Tallas />} />
-                <Route path="/usuarios" element={<Usuarios />} />
-                <Route path="/proveedores" element={<Proveedores />} />
-                <Route path="/tecnicas" element={<Tecnicas />} />
-                <Route path="/mediciondesempeño" element={<DashboardMedicionesempeño></DashboardMedicionesempeño>} />
+                <Route path="cotizaciones" element={<Cotizaciones />} />
+                <Route path="roles" element={<Roles />} />
+                <Route path="telas" element={<Telas />} />
+                <Route path="insumos" element={<Insumos />} />
+                <Route path="pedidos" element={<Pedidos />} />
+                <Route path="productos" element={<Productos />} />
+                <Route path="colores" element={<Colores />} />
+                <Route path="tallas" element={<Tallas />} />
+                <Route path="usuarios" element={<Usuarios />} />
+                <Route path="proveedores" element={<Proveedores />} />
+                <Route path="tecnicas" element={<Tecnicas />} />
+                <Route path="mediciondesempeño" element={<DashboardMedicionesempeño></DashboardMedicionesempeño>} />
             </Route>
 
         </Routes>
