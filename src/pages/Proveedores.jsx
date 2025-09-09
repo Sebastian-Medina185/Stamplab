@@ -20,8 +20,8 @@ const Proveedores = () => {
                         <h2 className="fs-4 fw-bold text-center mb-4">GESTIÓN DE PROVEEDORES</h2>
 
                         {/* Filtros */}
-                        <div className="d-flex flex-column align-items-center gap-2 mb-3 flex-wrap">
-                            <div className="input-group w-25">
+                        <div className="d-flex justify-content-around mb-3">
+                            <div className="input-group w-25"> 
                                 <span className="input-group-text">🔍</span>
                                 <input
                                     type="text"

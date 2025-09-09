@@ -12,7 +12,7 @@ const Servicios = () => {
             estado: "Activo",
         },
         {
-            titulo: "Sublimacion",
+            titulo: "Sublimacion", 
             img: "https://www.brildor.com/blog/wp-content/uploads/2014/04/cabecera-que-es-la-sublimacion-2-1024x581.jpg",
             descripcion:
                 "La sublimación es perfecta para diseños a todo color con excelente definición. Es ideal para camisetas blancas de poliéster y productos personalizados.",

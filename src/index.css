@@ -18,3 +18,14 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
+.tecnicas button {
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.tecnicas button:hover {
+  background-color: #126baf !important;
+  color: #fff !important;
+}
+
+  
+

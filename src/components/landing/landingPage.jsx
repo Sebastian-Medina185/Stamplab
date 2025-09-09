@@ -22,6 +22,12 @@ const Home = () => {
                             <h3 className="fst-italic">
                                 "DISEÑA TU ESTILO, ESTAMPA TU IDENTIDAD"
                             </h3>
+                            <p className="mt-3">
+                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
+                                molestie, neque non scelerisque ultricies, nisl dolor aliquet
+                                lectus, vitae aliquet elit erat eget nisi. Sed in nisl sed
+                                tortor tincidunt ultricies. Sed in nisl sed tortor tincidunt
+                                </p>
                         </Col>
                     </Row>
                 </Container>
