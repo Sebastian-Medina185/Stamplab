@@ -1,11 +1,10 @@
 import { useState } from "react";
-import producto1 from '../../assets/images/camisaHugoboss.jpg';
-import producto2 from '../../assets/images/camisasuperdry.jpg';
+import producto1 from '../../assets/images/camisablanca.png';
+import producto2 from '../../assets/images/camisaverde.png';
 import producto3 from '../../assets/images/buzo.png';
-import producto4 from '../../assets/images/camisalacoste.jpg';
-import producto5 from '../../assets/images/pantalones.jpg';
+import producto4 from '../../assets/images/camisarosa.png';
+import producto5 from '../../assets/images/camisanegra.png';
 import producto6 from '../../assets/images/jeans.jpeg';
-
 
 import {
     Container,
@@ -19,11 +18,12 @@ import {
 } from "react-bootstrap";
 import NavbarComponent from "./NavBarLanding";
 import FooterComponent from "./footer";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const ProductosLanding = () => {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("Todos");
+    const navigate = useNavigate();
 
     const productos = [
         {
@@ -78,17 +78,15 @@ const ProductosLanding = () => {
     );
 
     return (
-
         <>
-
-            <NavbarComponent></NavbarComponent>
+            <NavbarComponent />
 
             <section className="py-5 bg-light" id="productos">
                 <Container>
                     {/* Título + filtros */}
-                    <h3 className="fw-bold mb-0 text-center">Nuestros Productos</h3><br />
+                    <h3 className="fw-bold mb-0 text-center">Nuestros Productos</h3>
+                    <br />
                     <div className="d-flex align-items-center justify-content-end gap-3 flex-wrap mb-4">
-
                         <div className="d-flex gap-2">
                             {/* Filtro por estado */}
                             <Form.Select
@@ -158,11 +156,17 @@ const ProductosLanding = () => {
                                         </Card.Text>
 
                                         {/* Botón */}
-                                        <Link to='/cotizacionesLanding' className="btn btn-success"
+                                        <Button
+                                            className="btn btn-success"
                                             disabled={p.estado !== "Disponible"}
+                                            onClick={() =>
+                                                navigate("/formularioCompra", {
+                                                    state: { producto: p },
+                                                })
+                                            }
                                         >
                                             Comprar Producto
-                                        </Link>
+                                        </Button>
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -170,7 +174,8 @@ const ProductosLanding = () => {
                     </Row>
                 </Container>
             </section>
-            <FooterComponent></FooterComponent>
+
+            <FooterComponent />
         </>
     );
 };
