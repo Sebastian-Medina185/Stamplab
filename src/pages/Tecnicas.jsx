@@ -1,95 +1,123 @@
 import { useState } from "react";
-import Icon from "../components/Icon"; // 👈 importa el componente
+import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 const Tecnicas = () => {
   const [search, setSearch] = useState("");
 
+  // Datos de ejemplo
+  const tecnicas = [
+    { id: 1, nombre: "Sublimación", descripcion: "Para camisas", estado: "Activo" },
+    { id: 2, nombre: "Bordado", descripcion: "Para gorras y chaquetas", estado: "Inactivo" },
+  ];
+
+  const filtered = tecnicas.filter((t) =>
+    t.nombre.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="d-flex vh-100">
-      {/* Íconos principales */}
+    <div
+      className="d-flex flex-column"
+      style={{
+        minHeight: "100dvh",
+        background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
+        padding: "20px 30px",
+        fontSize: "0.9rem",
+      }}
+    >
+      {/* Encabezado */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h1 className="fs-5 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
+          Gestión de Técnicas
+        </h1>
+        <button className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm">
+          <FaPlusCircle size={18} />
+          Agregar Técnica
+        </button>
+      </div>
 
-      {/* Main content */}
-      <main className="flex-grow-1 p-4">
-        {/* Gestión técnicas */}
-        <section>
-          <h2 className="fs-4 fw-bold text-center mb-4">GESTIÓN DE TÉCNICAS</h2>
+      {/* Buscador */}
+      <div className="d-flex justify-content-end mb-3">
+        <div className="input-group input-group-sm" style={{ maxWidth: 260 }}>
+          <span className="input-group-text bg-white border-end-0">🔍</span>
+          <input
+            type="text"
+            className="form-control border-start-0"
+            placeholder="Buscar técnica..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
 
-          <div className="d-flex justify-content-around align-items-center">
-            {/* Filtro */}
-            <div className="input-group mb-3 w-25">
-              <span className="input-group-text">🔍</span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Digite el nombre"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-3 tecnicas">
-              <button
-                style={{
-                  backgroundColor: "#4dafff", // azul clarito
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  padding: "8px 14px",
-                  fontWeight: "500",
-                }}
-                className="btn btn-info d-flex align-items-center gap-2"
-              >
-                <i className="fas fa-plus"></i>
-                Agregar Técnica
-              </button>
-            </div>
-          </div>
-
-          {/* Tabla */}
-          <div className="table-responsive">
-            <table className="table table-bordered table-hover text-center align-middle shadow bg-white">
-              <thead className="table-light">
+      {/* Tabla */}
+      <div className="flex-grow-1" style={{ overflow: "auto", minHeight: 0 }}>
+        <div
+          className="table-responsive rounded-4 shadow-sm"
+          style={{ background: "#fff" }}
+        >
+          <table className="table table-sm align-middle mb-0">
+            <thead
+              style={{
+                background: "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
+                color: "#fff",
+                fontSize: "0.85rem",
+              }}
+            >
+              <tr>
+                <th style={{ borderTopLeftRadius: 12 }}>Nombre</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th style={{ width: 160 }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
                 <tr>
-                  <th>Nombre</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
+                  <td colSpan={4} className="text-center py-4 text-muted">
+                    No hay técnicas para mostrar.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Sublimación</td>
-                  <td>Para camisas</td>
+              )}
+              {filtered.map((t) => (
+                <tr key={t.id} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                  <td className="fw-medium">{t.nombre}</td>
+                  <td>{t.descripcion}</td>
                   <td>
-                    <button className="btn btn-success btn-sm">Activo</button>
+                    <span
+                      className={`badge px-3 py-2 shadow-sm ${t.estado === "Activo" ? "bg-success" : "bg-secondary"
+                        }`}
+                    >
+                      {t.estado}
+                    </span>
                   </td>
-                  <td className="d-flex justify-content-center gap-2 flex-wrap">
-                    <Icon name="ver" size={30} alt="Ver" className="me-1" />
-                    <Icon
-                      name="editar"
-                      size={30}
-                      alt="Editar"
-                      className="me-1"
-                    />
-                    <Icon
-                      name="eliminar"
-                      size={30}
-                      alt="Eliminar"
-                      className="me-1"
-                    />
-                    <Icon
-                      name="cambiarestado"
-                      size={30}
-                      alt="Cambiar estado"
-                      className="me-1"
-                    />
+                  <td>
+                    <div className="d-flex justify-content-center gap-1">
+                      <button
+                        className="btn btn-outline-info btn-sm rounded-circle"
+                        title="Ver"
+                      >
+                        <FaEye size={14} />
+                      </button>
+                      <button
+                        className="btn btn-outline-warning btn-sm rounded-circle"
+                        title="Editar"
+                      >
+                        <FaEdit size={14} />
+                      </button>
+                      <button
+                        className="btn btn-outline-danger btn-sm rounded-circle"
+                        title="Eliminar"
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

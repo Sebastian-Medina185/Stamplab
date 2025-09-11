@@ -8,6 +8,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+import { FaFilePdf } from "react-icons/fa";
 
 const DashboardMedicionesempeño = () => {
     // Datos simulados
@@ -57,84 +58,97 @@ const DashboardMedicionesempeño = () => {
     ];
 
     return (
-        <Container fluid className="py-4">
-            {/* Filtros */}
-            <Row className="mb-4 justify-content-center gap-3">
-                <Col md="auto">
-                    <Form.Select>
+        <div
+            className="d-flex flex-column"
+            style={{
+                minHeight: "100dvh",
+                background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
+                padding: "20px 30px",
+                fontSize: "0.85rem",
+            }}
+        >
+            {/* Filtros y botón PDF */}
+            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div className="d-flex gap-2 flex-wrap">
+                    <Form.Select size="sm">
                         <option>Mes..</option>
                         <option>Enero</option>
                         <option>Febrero</option>
                         <option>Marzo</option>
                     </Form.Select>
-                </Col>
-                <Col md="auto">
-                    <Form.Select>
-                        <option>Tecnica</option>
+                    <Form.Select size="sm">
+                        <option>Técnica</option>
                         <option>Serigrafía</option>
                         <option>Bordado</option>
                         <option>Sublimación</option>
                     </Form.Select>
-                </Col>
-                <Col md="auto">
-                    <Form.Select>
+                    <Form.Select size="sm">
                         <option>Tipo de prenda</option>
                         <option>Camiseta</option>
                         <option>Buzo</option>
                         <option>Pantalón</option>
                     </Form.Select>
-                </Col>
-            </Row>
+                </div>
+                <Button
+                    variant="danger"
+                    size="sm"
+                    className="d-flex align-items-center gap-2 shadow-sm"
+                >
+                    <FaFilePdf size={14} />
+                    Exportar PDF
+                </Button>
+            </div>
 
             {/* Gráficas */}
             <Row className="g-4">
                 <Col md={6}>
-                    <h6 className="fw-bold text-center">Ventas Por Tecnicas</h6>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={ventasPorTecnicas}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="mes" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="ventas" fill="#28a745" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="rounded-4 shadow-sm bg-white p-3">
+                        <h6 className="fw-bold text-center mb-2">Ventas por Técnicas</h6>
+                        <ResponsiveContainer width="100%" height={230}>
+                            <BarChart data={ventasPorTecnicas}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="mes" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="ventas" fill="#28a745" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Col>
 
                 <Col md={6}>
-                    <h6 className="fw-bold text-center">Productos Mas vendidos</h6>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={productosMasVendidos}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="mes" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="cantidad" fill="#6f42c1" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <div className="rounded-4 shadow-sm bg-white p-3">
+                        <h6 className="fw-bold text-center mb-2">Productos más vendidos</h6>
+                        <ResponsiveContainer width="100%" height={230}>
+                            <BarChart data={productosMasVendidos}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="mes" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="cantidad" fill="#6f42c1" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Col>
             </Row>
 
-            <Row className="mt-4">
+            <Row className="g-4 mt-2">
                 <Col md={6}>
-                    <h6 className="fw-bold text-center">Insumos mas utilizados</h6>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={insumosUtilizados}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="mes" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="cantidad" fill="#0d6efd" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </Col>
-                <Col md={6} className="d-flex align-items-center justify-content-center">
-                    <Button variant="danger" size="lg">
-                        Exportar a PDF
-                    </Button>
+                    <div className="rounded-4 shadow-sm bg-white p-3">
+                        <h6 className="fw-bold text-center mb-2">Insumos más utilizados</h6>
+                        <ResponsiveContainer width="100%" height={230}>
+                            <BarChart data={insumosUtilizados}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="mes" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="cantidad" fill="#0d6efd" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Col>
             </Row>
-        </Container>
+        </div>
     );
 };
 
