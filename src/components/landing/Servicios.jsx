@@ -35,23 +35,21 @@ const Servicios = () => {
     ];
 
     return (
-
         <>
-
-            <NavbarComponent></NavbarComponent>
+            <NavbarComponent />
             <section className="py-5 bg-light" id="servicios">
                 <Container>
-
                     {/* Título + Buscador con lupa */}
                     <h3 className="fw-bold mb-0 text-center">Nuestras Técnicas</h3>
                     <div className="d-flex align-items-center justify-content-end gap-3 flex-wrap mb-4">
-
                         <InputGroup style={{ maxWidth: 320 }}>
                             <InputGroup.Text>
                                 {/* Lupa (SVG) */}
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    width="16" height="16" viewBox="0 0 16 16" fill="currentColor"
+                                    width="16" height="16"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor"
                                 >
                                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85h-.017zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
                                 </svg>
@@ -64,7 +62,11 @@ const Servicios = () => {
                         {tecnicas.map((t, index) => (
                             <Col md={3} sm={6} xs={12} className="mb-4" key={index}>
                                 <Card className="shadow-sm h-100">
-                                    <Card.Img variant="top" src={t.img} style={{ height: "220px", objectFit: "cover" }} />
+                                    <Card.Img
+                                        variant="top"
+                                        src={t.img}
+                                        style={{ height: "220px", objectFit: "cover" }}
+                                    />
                                     <Card.Body className="d-flex flex-column">
                                         <Card.Title className="fw-bold">{t.titulo}</Card.Title>
                                         <Card.Text className="flex-grow-1">{t.descripcion}</Card.Text>
@@ -79,12 +81,17 @@ const Servicios = () => {
                                         </div>
 
                                         {/* Botón */}
-                                        <Button
-                                            variant={t.estado === "Activo" ? "success" : "secondary"}
-                                            disabled={t.estado !== "Activo"}
-                                        >
-                                            Comprar Servicio
-                                        </Button>
+                                        {t.estado === "Activo" ? (
+                                            <Button variant="success">Comprar Servicio</Button>
+                                        ) : (
+                                            <Button
+                                                variant="danger"
+                                                className="w-100 fw-bold fs-5"
+                                                disabled
+                                            >
+                                                Inactivo
+                                            </Button>
+                                        )}
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -92,9 +99,8 @@ const Servicios = () => {
                     </Row>
                 </Container>
             </section>
-            <FooterComponent></FooterComponent>
+            <FooterComponent />
         </>
-
     );
 };
 

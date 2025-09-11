@@ -22,6 +22,7 @@ import RecuperarContraseña from "../components/auth/Recuperarcontraseña";
 import DashboardMedicionesempeño from "../pages/MedicionDesempeño";
 import EditarPerfil from "../components/landing/EditarPerfil";
 import MisCotizaciones from "../components/landing/Miscotizaciones";
+import FormularioCompra from "../components/landing/FormularioCompra";
 
 
 const AppRoutes = () => {
@@ -40,6 +41,7 @@ const AppRoutes = () => {
             <Route path="/restablecercontraseña" element={<RestablecerContraseña></RestablecerContraseña>}></Route>
             <Route path="/editarperfil" element={<EditarPerfil></EditarPerfil>}></Route>
             <Route path="/miscotizaciones" element={<MisCotizaciones></MisCotizaciones>}></Route>
+            <Route path="/formularioCompra" element={<FormularioCompra />} />
 
             <Route path="/" element={<DashboardLayout />}>
                 <Route path="cotizaciones" element={<Cotizaciones />} />
