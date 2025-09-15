@@ -70,7 +70,7 @@ const Home = () => {
             </Col>
             <Col md={6}>
               <h3 className="fst-italic">
-                "DISEÑA TU ESTILO, ESTAMPA TU IDENTIDAD"
+                "DISEÑA TU ESTILO, ESTAMPA TU blablablbalba"
               </h3>
               <p className="mt-3">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
