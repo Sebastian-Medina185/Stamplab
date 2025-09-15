@@ -1,0 +1,89 @@
+/* Landing.css */
+
+
+.card-landing-title {
+  color: #000000;
+  font-size: 1.5em;
+  line-height: normal;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.card-landing-desc {
+ font-size: 1em;
+  font-weight: 400;
+  line-height: 1.5em;
+  color: #161616;
+}
+
+.card-landing-desc p {
+   font-size: 1em;
+   color: #161616;
+
+}
+
+.go-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: 2em;
+  height: 2em;
+  overflow: hidden;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, #6293c8, #384c6c);
+  border-radius: 0 4px 0 32px;
+}
+.go-arrow {
+  margin-top: -4px;
+  margin-right: -4px;
+  color: rgb(14, 13, 13);
+  font-family: courier, sans;
+}
+
+.card-landing {
+  display: block;
+  position: relative;
+  height: 200px;
+  color: #000000;
+  border-radius: 10px;
+  padding: 2em 1.2em;
+  text-decoration: none;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #c3e6ec, #a7d1d9);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.card-landing:before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -16px;
+  right: -16px;
+  background: linear-gradient(135deg, #364a60, #384c6c);
+  height: 32px;
+  width: 50px;
+  color: #fff;
+  border-radius: 32px;
+  transform: scale(1);
+  transform-origin: 50% 50%;
+  transition: transform 0.35s ease-out;
+}
+
+.card-landing:hover:before {
+  transform: scale(28);
+}
+
+.card-landing .card-landing-desc {
+  transition: all 0.5s ease-out;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.card-landing:hover .card-title {
+  transition: all 0.5s ease-out;
+  color: #000000;
+}
+
+/* Fondo oscuro animado */

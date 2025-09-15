@@ -2,7 +2,6 @@ import { Container, Row, Col, Card, Button, Carousel } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import NavbarComponent from "./NavBarLanding";
 import FooterComponent from "./footer";
-import "bootstrap/dist/css/bootstrap.min.css";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -64,7 +63,7 @@ const Home = () => {
           <Row className="align-items-center">
             <Col md={6}>
               <img
-                src="https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop"
+                src="https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 alt="Camiseta"
                 className="img-fluid rounded shadow"
               />
@@ -99,25 +98,29 @@ const Home = () => {
       {/* Misión y Visión */}
       <section className="p-5 text-center bg-secondary bg-opacity-10">
         <Container>
-          <Row>
+          <Row> 
             <Col md={6}>
-              <Card className="p-4 shadow-sm h-100 border border-2">
-                <h5 className="fw-bold">MISIÓN</h5>
-                <p className="mt-2">
+              <div className="card-landing">
+                <p className="card-landing-title">MISIÓN</p>
+                <p className="card-landing-desc">
                   Brindar soluciones creativas en personalización de prendas y
                   accesorios, utilizando técnicas de estampado de alta calidad y
                   tecnología moderna.
                 </p>
-              </Card>
+              </div>
             </Col>
+
             <Col md={6}>
-              <Card className="p-4 shadow-sm h-100 border border-2">
-                <h5 className="fw-bold">VISIÓN</h5>
-                <p className="mt-2">
+              <div className="card-landing">
+                <p className="card-landing-title">VISIÓN</p>
+                <p className="card-landing-desc">
                   Ser una empresa reconocida por la innovación, calidad y el
                   compromiso con la satisfacción de nuestros clientes.
                 </p>
-              </Card>
+                <div class="go-corner">
+                  <div class="go-arrow"></div>
+                </div>
+              </div>
             </Col>
           </Row>
         </Container>
