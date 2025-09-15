@@ -2,6 +2,7 @@ import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import NavbarComponent from "./NavBarLanding";
 import FooterComponent from "./footer";
+import "../landing/landing.css";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -15,29 +16,52 @@ const Home = () => {
       <NavbarComponent />
 
       {/* Sección principal */}
-      <section className="text-center bg-dark text-white p-5">
-        <Container>
-          <Row className="align-items-center">
-            <Col md={6}>
-              <img
-                src="https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                alt="Camiseta"
-                className="img-fluid rounded shadow"
-              />
-            </Col>
-            <Col md={6}>
-              <h3 className="fst-italic">
-                "DISEÑA TU ESTILO, ESTAMPA TU IDENTIDAD"
-              </h3>
-              <p className="mt-3">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                molestie, neque non scelerisque ultricies, nisl dolor aliquet
-                lectus, vitae aliquet elit erat eget nisi.
-              </p>
-            </Col>
-          </Row>
-        </Container>
-      </section>
+      <Container
+        fluid
+        className="position-relative text-white p-5"
+        style={{ minHeight: "80vh" }}
+      >
+        {/* Imagen de fondo */}
+        <div
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundImage:
+              "url('https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+            backgroundSize: "cover", // o prueba "contain"
+            backgroundPosition: "center",
+            zIndex: 1,
+          }}
+        ></div>
+
+        {/* Overlay oscuro */}
+        <div
+          className="position-absolute top-0 start-0 w-100 h-100"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.4)", // 🔥 sombra oscura
+            zIndex: 2,
+          }}
+        ></div>
+
+        {/* Contenido encima */}
+        <Row
+          className="position-relative d-flex align-items-center"
+          style={{ minHeight: "60vh", zIndex: 3 }}
+        >
+          <Col md={6} className="text-white">
+            <h3
+              style={{ maxWidth: "400px", lineHeight: "1.6" }}
+              className="fst-inter fw-bold"
+            >
+              "DISEÑA TU ESTILO, ESTAMPA TU IDENTIDAD"
+            </h3>
+            <p className="fs-6" style={{ maxWidth: "400px" }}>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
+              molestie, neque non scelerisque ultricies, nisl dolor aliquet
+              lectus, vitae aliquet elit erat eget nisi.
+            </p>
+          </Col>
+        </Row>
+      </Container>
 
       {/* ¿Quienes Somos? */}
       <div className="bg-light p-5 text-center d-flex justify-content-center">
@@ -55,25 +79,29 @@ const Home = () => {
       {/* Misión y Visión */}
       <section className="p-5 text-center bg-secondary bg-opacity-10">
         <Container>
-          <Row>
+          <Row> 
             <Col md={6}>
-              <Card className="p-4 shadow-sm h-100 border border-2">
-                <h5 className="fw-bold">MISIÓN</h5>
-                <p className="mt-2">
+              <div className="card-landing">
+                <p className="card-landing-title">MISIÓN</p>
+                <p className="card-landing-desc">
                   Brindar soluciones creativas en personalización de prendas y
                   accesorios, utilizando técnicas de estampado de alta calidad y
                   tecnología moderna.
                 </p>
-              </Card>
+              </div>
             </Col>
+
             <Col md={6}>
-              <Card className="p-4 shadow-sm h-100 border border-2">
-                <h5 className="fw-bold">VISIÓN</h5>
-                <p className="mt-2">
+              <div className="card-landing">
+                <p className="card-landing-title">VISIÓN</p>
+                <p className="card-landing-desc">
                   Ser una empresa reconocida por la innovación, calidad y el
                   compromiso con la satisfacción de nuestros clientes.
                 </p>
-              </Card>
+                <div class="go-corner">
+                  <div class="go-arrow"></div>
+                </div>
+              </div>
             </Col>
           </Row>
         </Container>
