@@ -98,7 +98,7 @@ const Tallas = () => {
                   <td>
                     <div className="d-flex justify-content-center gap-2">
                       <button
-                        className="btn btn-outline-info btn-sm rounded-circle"
+                        className="btn btn-outline-primary btn-sm rounded-circle"
                         title="Ver"
                       >
                         <FaEye size={16} />

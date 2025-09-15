@@ -79,14 +79,14 @@ const Pedidos = () => {
                                 <td>3</td>
                                 <td>28/08/2025</td>
                                 <td>
-                                    <span className="badge bg-success px-3 py-2 shadow-sm">
+                                    <span className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm">
                                         Activo
                                     </span>
                                 </td>
                                 <td>
                                     <div className="d-flex justify-content-center gap-1">
                                         <button
-                                            className="btn btn-outline-info btn-sm rounded-circle"
+                                            className="btn btn-outline-primary btn-sm rounded-circle"
                                             title="Ver"
                                         >
                                             <FaEye size={14} />
@@ -117,14 +117,14 @@ const Pedidos = () => {
                                 <td>2</td>
                                 <td>29/08/2025</td>
                                 <td>
-                                    <span className="badge bg-success px-3 py-2 shadow-sm">
+                                    <span className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm">
                                         Activo
                                     </span>
                                 </td>
                                 <td>
                                     <div className="d-flex justify-content-center gap-1">
                                         <button
-                                            className="btn btn-outline-info btn-sm rounded-circle"
+                                            className="btn btn-outline-primary btn-sm rounded-circle"
                                             title="Ver"
                                         >
                                             <FaEye size={14} />

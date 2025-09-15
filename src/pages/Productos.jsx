@@ -78,13 +78,13 @@ const Productos = () => {
                                     <td>{p.descripcion}</td>
                                     <td>${p.precio.toLocaleString()}</td>
                                     <td>
-                                        <span className={`badge px-3 py-2 shadow-sm ${p.estado === "Activo" ? "bg-success" : "bg-secondary"}`}>
+                                        <span className={`badge px-3 py-2 shadow-sm ${p.estado === "Activo" ? "text-success fw-bold fs-6" : "text-secondary fw-bold fs-6"}`}>
                                             {p.estado}
                                         </span>
                                     </td>
                                     <td>
                                         <div className="d-flex justify-content-center gap-2">
-                                            <button className="btn btn-outline-info btn-sm rounded-circle" title="Ver">
+                                            <button className="btn btn-outline-primary btn-sm rounded-circle" title="Ver">
                                                 <FaEye size={16} />
                                             </button>
                                             <button className="btn btn-outline-warning btn-sm rounded-circle" title="Editar">

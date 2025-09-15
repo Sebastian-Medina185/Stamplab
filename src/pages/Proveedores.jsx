@@ -94,7 +94,7 @@ const Proveedores = () => {
                 <td>CLL #42</td>
                 <td>
                   <span
-                    className="badge bg-success px-3 py-2 shadow-sm"
+                    className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm"
                     style={{ fontSize: 14 }}
                   >
                     Activo
@@ -103,7 +103,7 @@ const Proveedores = () => {
                 <td>
                   <div className="d-flex justify-content-center gap-2">
                     <button
-                      className="btn btn-outline-info btn-sm rounded-circle"
+                      className="btn btn-outline-primary btn-sm rounded-circle"
                       title="Ver"
                     >
                       <FaEye size={16} />

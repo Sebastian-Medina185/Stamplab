@@ -58,7 +58,7 @@ const Cotizaciones = () => {
             >
               <tr>
                 <th style={{ borderTopLeftRadius: 16 }}>ID</th>
-                <th>Documento/ID</th>
+                <th>Documento</th>
                 <th>Correo</th>
                 <th>Total</th>
                 <th>Teléfono</th>
@@ -84,7 +84,7 @@ const Cotizaciones = () => {
                 <td>19-05-2025</td>
                 <td>
                   <span
-                    className="badge bg-success px-3 py-2 shadow-sm"
+                    className="badge text-success fw-bold px-2 py-3 shadow-sm"
                     style={{ fontSize: 14 }}
                   >
                     Aprobada

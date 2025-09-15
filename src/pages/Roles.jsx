@@ -96,7 +96,7 @@ const Roles = () => {
                                     </td>
                                     <td>
                                         <div className="d-flex justify-content-center gap-2 flex-wrap">
-                                            <button className="btn btn-outline-info btn-sm rounded-circle" title="Ver">
+                                            <button className="btn btn-outline-primary btn-sm rounded-circle" title="Ver">
                                                 <FaEye size={16} />
                                             </button>
                                             <button className="btn btn-outline-warning btn-sm rounded-circle" title="Editar">

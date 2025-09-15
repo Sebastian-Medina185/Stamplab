@@ -102,7 +102,7 @@ const Colores = () => {
                                     </td>
                                     <td>
                                         <div className="d-flex justify-content-center gap-1">
-                                            <button className="btn btn-outline-info btn-sm rounded-circle" title="Ver">
+                                            <button className="btn btn-outline-primary btn-sm rounded-circle" title="Ver">
                                                 <FaEye size={14} />
                                             </button>
                                             <button className="btn btn-outline-warning btn-sm rounded-circle" title="Editar">

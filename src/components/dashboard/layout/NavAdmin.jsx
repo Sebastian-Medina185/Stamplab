@@ -30,7 +30,7 @@ const NavAdmin = () => {
                 }}
             >
                 {/* Nombre aplicativo */}
-                <h1 className="fw-bold fs-3 ms-3 mt-1">Stamlab</h1>
+                <h1 className="fw-bold fs-3 ms-3 mt-1">StampLab</h1>
 
                 {/* Administrador + Perfil */}
                 <div className="d-flex align-items-center gap-3">
@@ -74,39 +74,39 @@ const NavAdmin = () => {
                 </Modal.Header>
 
                 
-                <Modal.Body style={{ backgroundColor: "#1d1a2b", color: "#fff" }}>
+                <Modal.Body style={{}}>
                     <Form>
                         <div className="row">
                             <Form.Group className="mb-3 col-6">
-                                <Form.Label>Nombre</Form.Label>
-                                <Form.Control type="text" defaultValue="pepito perez" />
+                                <Form.Label className="fw-bold">Nombre</Form.Label>
+                                <Form.Control type="text" className="border border-1 border-dark" defaultValue="pepito perez" />
                             </Form.Group>
 
                             <Form.Group className="mb-3 col-6">
-                                <Form.Label>Número documento</Form.Label>
-                                <Form.Control type="text" defaultValue="129292929202020" />
+                                <Form.Label className="fw-bold">Número documento</Form.Label>
+                                <Form.Control type="text" className="border border-1 border-dark" defaultValue="129292929202020" />
                             </Form.Group>
                         </div>
 
                         <div className="row">
                             <Form.Group className="mb-3 col-6">
-                                <Form.Label>Correo electrónico</Form.Label>
-                                <Form.Control type="email" defaultValue="pepito@gmail.com" />
+                                <Form.Label className="fw-bold">Correo electrónico</Form.Label>
+                                <Form.Control type="email" className="border border-1 border-dark" defaultValue="pepito@gmail.com" />
                             </Form.Group>
 
                             <Form.Group className="mb-3 col-6">
-                                <Form.Label>Teléfono</Form.Label>
-                                <Form.Control type="text" defaultValue="31077532414" />
+                                <Form.Label className="fw-bold">Teléfono</Form.Label>
+                                <Form.Control type="text" className="border border-1 border-dark" defaultValue="31077532414" />
                             </Form.Group>
                         </div>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>Contraseña</Form.Label>
-                            <Form.Control type="password" defaultValue="12345678" />
+                            <Form.Label className="fw-bold">Contraseña</Form.Label>
+                            <Form.Control type="password" className="border border-1 border-dark" defaultValue="12345678" />
                         </Form.Group>
 
                         <div className="d-flex justify-content-center">
-                            <Button variant="info" className="text-white fw-bold w-50">
+                            <Button variant="primary" className="text-white fw-bold w-50">
                                 Guardar Cambios
                             </Button>
                         </div>

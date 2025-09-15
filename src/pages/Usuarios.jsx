@@ -113,14 +113,14 @@ const Usuarios = () => {
                                     <td>{u.direccion}</td>
                                     <td>{u.telefono}</td>
                                     <td>
-                                        <span className="badge bg-secondary px-2 py-1 shadow-sm">
+                                        <span className="badge bg-secondary px-2 py-2 shadow-sm">
                                             {u.rol}
                                         </span>
                                     </td>
                                     <td>
                                         <div className="d-flex justify-content-center gap-1">
                                             <button
-                                                className="btn btn-outline-info btn-sm rounded-circle"
+                                                className="btn btn-outline-primary btn-sm rounded-circle"
                                                 title="Ver"
                                             >
                                                 <FaEye size={14} />
