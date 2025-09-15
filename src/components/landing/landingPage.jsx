@@ -60,25 +60,19 @@ const Home = () => {
       {/* Sección principal */}
       <section className="text-center bg-dark text-white p-5">
         <Container>
-          <Row className="align-items-center">
-            <Col md={6}>
-              <img
-                src="https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                alt="Camiseta"
-                className="img-fluid rounded shadow"
-              />
-            </Col>
-            <Col md={6}>
-              <h3 className="fst-italic">
-                "DISEÑA TU ESTILO, ESTAMPA TU IDENTIDAD"
-              </h3>
-              <p className="mt-3">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                molestie, neque non scelerisque ultricies, nisl dolor aliquet
-                lectus, vitae aliquet elit erat eget nisi.
-              </p>
-            </Col>
-          </Row>
+          <Col md={6} className="text-white">
+  <h3 className="fst-inter fw-bold">
+    "DISEÑA TU ESTILO, ESTAMPA TU IDENTIDAD"
+  </h3>
+  <p
+    className="mt-5"
+    style={{ maxWidth: "400px", lineHeight: "1.6" }} // 🔥 más estrecho y legible
+  >
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
+    molestie, neque non scelerisque ultricies, nisl dolor aliquet
+    lectus, vitae aliquet elit erat eget nisi.
+  </p>
+</Col>
         </Container>
       </section>
 

@@ -15,7 +15,7 @@ const CotizacionesForm = ({ onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-warning btn-sm shadow-sm position-absolute top-0 end-0"
+            className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
             title="Cerrar"
           >
             <FaTimes />
