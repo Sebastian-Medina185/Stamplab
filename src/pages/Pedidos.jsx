@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import Icon from "../components/Icon";
+import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
 
 const Pedidos = () => {
     const [search, setSearch] = useState("");

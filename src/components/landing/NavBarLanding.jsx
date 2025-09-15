@@ -21,10 +21,59 @@ const NavbarComponent = () => {
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="ms-auto align-items-center gap-3">
-                            <Nav.Link as={Link} to="/landing">Inicio</Nav.Link>
-                            <Nav.Link as={Link} to="/cotizacionesLanding">Cotización</Nav.Link>
-                            <Nav.Link as={Link} to="/productosLanding">Productos</Nav.Link>
-                            <Nav.Link as={Link} to="/servicios">Servicios</Nav.Link>
+                            <Nav.Link style={{
+                                color: "#1976d2",
+                                fontWeight: 500,
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.color = "#64b5f6";
+                                    e.target.style.fontWeight = "600";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.color = "#1976d2";
+                                    e.target.style.fontWeight = "500";
+                                }} as={Link} to="/landing">Inicio</Nav.Link>
+                            <Nav.Link style={{
+                                color: "#1976d2",
+                                fontWeight: 500,
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.color = "#64b5f6";
+                                    e.target.style.fontWeight = "600";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.color = "#1976d2";
+                                    e.target.style.fontWeight = "500";
+                                }} as={Link} to="/cotizacionesLanding">Cotización</Nav.Link>
+                            <Nav.Link style={{
+                                color: "#1976d2",
+                                fontWeight: 500,
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.color = "#64b5f6";
+                                    e.target.style.fontWeight = "600";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.color = "#1976d2";
+                                    e.target.style.fontWeight = "500";
+                                }} as={Link} to="/productosLanding">Productos</Nav.Link>
+                            <Nav.Link style={{
+                                color: "#1976d2",
+                                fontWeight: 500,
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.color = "#64b5f6";
+                                    e.target.style.fontWeight = "600";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.color = "#1976d2";
+                                    e.target.style.fontWeight = "500";
+                                }} as={Link} to="/servicios">Servicios</Nav.Link>
+
 
                             {/* Icono Perfil */}
                             <FaUserCircle

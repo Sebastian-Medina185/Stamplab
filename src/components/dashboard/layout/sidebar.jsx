@@ -88,12 +88,12 @@ const Sidebar = () => {
 
     return (
         <aside
-            className="d-flex flex-column p-3"
+            className="d-flex flex-column p-3 bg-primary"
             style={{
                 width: collapsed ? "80px" : "250px",
                 transition: "width 0.3s ease",
-                height: "100vh",
-                background: "linear-gradient(180deg, #1976d2 0%, #64b5f6 100%)",
+                height: "160vh",
+                // background: "linear-gradient(180deg, #1976d2 0%, #64b5f6 100%)",
                 boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
                 color: "#fff",
                 overflow: "hidden"
@@ -133,7 +133,7 @@ const Sidebar = () => {
                             padding: collapsed ? "6px 10px" : "0"
                         }}
                     >
-                        <FaBars className="me-4"/>
+                        <FaBars className="me-4" />
                     </button>
                 </div>
             </div>
@@ -184,15 +184,21 @@ const Sidebar = () => {
                                     <li className="nav-item mb-1" key={item.to}>
                                         <Link
                                             to={item.to}
-                                            className={`nav-link d-flex align-items-center ${location.pathname === item.to ? "active" : "text-white"
+                                            className={`nav-link d-flex align-items-center ${location.pathname === item.to ? "text-white" : "active"
                                                 }`}
                                             style={{
-                                                background:
-                                                    location.pathname === item.to
-                                                        ? "rgba(255,255,255,0.18)"
-                                                        : "rgba(255,255,255,0.05)",
+                                                background: location.pathname === item.to
+                                                    ? "rgba(255,255,255,0.2)"   // Fondo semitransparente en el activo
+                                                    : "transparent",            // Sin fondo en el inactivo
+                                                color: location.pathname === item.to
+                                                    ? "#fff"                    // Texto blanco para activo
+                                                    : "rgba(255,255,255,0.85)", // Blanco suave para inactivo
                                                 borderRadius: 8,
-                                                fontWeight: 500
+                                                fontWeight: location.pathname === item.to ? 700 : 500,
+                                                boxShadow: location.pathname === item.to
+                                                    ? "0 2px 6px rgba(0,0,0,0.3)"
+                                                    : "none",
+                                                transition: "all 0.2s ease"
                                             }}
                                         >
                                             {item.icon}

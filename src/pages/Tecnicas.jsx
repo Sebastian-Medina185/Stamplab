@@ -84,7 +84,7 @@ const Tecnicas = () => {
                   <td>{t.descripcion}</td>
                   <td>
                     <span
-                      className={`badge px-3 py-2 shadow-sm ${t.estado === "Activo" ? "bg-success" : "bg-secondary"
+                      className={`badge px-3 py-2 shadow-sm ${t.estado === "Activo" ? "text-success fw-bold fs-6" : "text-secondary fw-bold fs-6"
                         }`}
                     >
                       {t.estado}

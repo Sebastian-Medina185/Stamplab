@@ -1,82 +1,118 @@
+// Roles.jsx
 import { useState } from "react";
-import Icon from "../components/Icon";
+import { FaPlusCircle, FaEye, FaEdit, FaSyncAlt } from "react-icons/fa";
 
 const Roles = () => {
     const [searchName, setSearchName] = useState("");
 
+    // Datos de ejemplo (puedes conectarlos a tu API después)
+    const roles = [
+        { id: 1, nombre: "Administrador", descripcion: "Acceso completo al sistema", estado: "Activo" },
+        { id: 2, nombre: "Empleado", descripcion: "Acceso limitado a funciones específicas", estado: "Activo" }
+    ];
+
+    const filtered = roles.filter(r =>
+        r.nombre.toLowerCase().includes(searchName.toLowerCase())
+    );
+
     return (
-        <div className="d-flex vh-100">
-            {/* Main content */}
-            <main className="flex-grow-1 p-4">
-                {/* Íconos principales */}
-                <div style={{ display: "flex", gap: "20px", fontSize: "40px" }}>
-                    <Icon name="agregar" size={44} alt="Agregar" />
+        <div
+            className="d-flex flex-column"
+            style={{
+                minHeight: "100dvh",
+                background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)"
+            }}
+        >
+            {/* Encabezado y botón agregar */}
+            <div className="d-flex justify-content-between align-items-center mb-4 mt-3 px-4">
+                <h1 className="fs-4 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
+                    Gestión de Roles
+                </h1>
+                <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm">
+                    <FaPlusCircle size={22} />
+                    Agregar Rol
+                </button>
+            </div>
+
+            {/* Buscador */}
+            <div className="d-flex justify-content-end mb-3 px-4">
+                <div className="input-group" style={{ maxWidth: 300 }}>
+                    <span className="input-group-text bg-white border-end-0">🔍</span>
+                    <input
+                        type="text"
+                        className="form-control border-start-0"
+                        placeholder="Filtrar por nombre..."
+                        value={searchName}
+                        onChange={(e) => setSearchName(e.target.value)}
+                    />
                 </div>
+            </div>
 
-                {/* Gestión roles */}
-                <section>
-                    <div className="d-flex flex-column justify-content-center">
-                        <h2 className="fs-4 text-center mb-4 fw-bold">GESTION DE ROLES</h2>
-
-                        <div className="d-flex flex-column align-items-center gap-2 mb-3 flex-wrap">
-                            <div className="input-group w-25">
-                                <span className="input-group-text">🔍</span>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Filtrar por nombre"
-                                    value={searchName}
-                                    onChange={(e) => setSearchName(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-
-                    {/* Tabla */}
-                    <div className="table-responsive mt-4">
-                        <table className="table table-bordered text-center align-middle">
-                            <thead className="table-light">
+            {/* Tabla con scroll interno */}
+            <div
+                className="flex-grow-1 px-4 pb-4"
+                style={{
+                    overflow: "auto",
+                    minHeight: 0
+                }}
+            >
+                <div className="table-responsive rounded-4 shadow" style={{ background: "#fff" }}>
+                    <table className="table align-middle mb-0 text-center">
+                        <thead
+                            style={{
+                                background: "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
+                                color: "#fff"
+                            }}
+                        >
+                            <tr>
+                                <th style={{ width: 80, borderTopLeftRadius: 16 }}>ID</th>
+                                <th>Nombre del Rol</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th style={{ width: 200 }}>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.length === 0 && (
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Nombre del Rol</th>
-                                    <th>Descripción</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
+                                    <td colSpan={5} className="text-center py-4 text-muted">
+                                        No hay roles para mostrar.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td>Administrador</td>
-                                    <td>Acceso completo al sistema</td>
+                            )}
+                            {filtered.map((r) => (
+                                <tr key={r.id} style={{ borderBottom: "1px solid #e3e8ee" }}>
                                     <td>
-                                        <button className="btn btn-success btn-sm shadow">Activo</button>
+                                        <span className="badge bg-light text-dark px-3 py-2 shadow-sm" style={{ fontSize: 15 }}>
+                                            {r.id}
+                                        </span>
                                     </td>
-                                    <td className="d-flex justify-content-center gap-2">
-                                        <Icon name="ver" size={30} alt="Ver" className="me-1" />
-                                        <Icon name="editar" size={30} alt="Editar" className="me-1" />
-                                        <Icon name="cambiarestado" size={30} alt="Cambiar estado" className="me-1" />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>Empleado</td>
-                                    <td>Acceso limitado a funciones específicas</td>
+                                    <td style={{ fontWeight: 500, fontSize: 16 }}>{r.nombre}</td>
+                                    <td style={{ fontSize: 15 }}>{r.descripcion}</td>
                                     <td>
-                                        <button className="btn btn-success btn-sm shadow">Activo</button>
+                                        <span className={`shadow-sm ${r.estado === "Activo" ? "text-success fw-bold fs-6" : "btn-secondary"}`}> 
+                                            {r.estado}
+                                        </span>
                                     </td>
-                                    <td className="d-flex justify-content-center gap-2">
-                                        <Icon name="ver" size={30} alt="Ver" className="me-1" />
-                                        <Icon name="editar" size={30} alt="Editar" className="me-1" />
-                                        <Icon name="cambiarestado" size={30} alt="Cambiar estado" className="me-1" />
+                                    <td>
+                                        <div className="d-flex justify-content-center gap-2 flex-wrap">
+                                            <button className="btn btn-outline-info btn-sm rounded-circle" title="Ver">
+                                                <FaEye size={16} />
+                                            </button>
+                                            <button className="btn btn-outline-warning btn-sm rounded-circle" title="Editar">
+                                                <FaEdit size={16} />
+                                            </button>
+                                            <button className="btn btn-outline-secondary btn-sm rounded-circle" title="Cambiar estado">
+                                                <FaSyncAlt size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </main>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 };
