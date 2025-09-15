@@ -1,7 +1,8 @@
-import { Container, Row, Col, Card, Button } from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Carousel } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import NavbarComponent from "./NavBarLanding";
 import FooterComponent from "./footer";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -9,6 +10,49 @@ const Home = () => {
   const handleComprar = (producto) => {
     navigate("/formularioCompra", { state: { producto } });
   };
+
+  const productos = [
+    {
+      titulo: "Camiseta Blanca Dry Fit",
+      img: "https://mundopromocional.co/wp-content/uploads/2021/07/camiseta-blanca-para-sublimacion-dry-fit.jpg",
+      precio: 25000,
+    },
+    {
+      titulo: "Camiseta Estampada Negra",
+      img: "https://media.falabella.com/falabellaCO/126470450_01/w=800,h=800,fit=pad",
+      precio: 35000,
+    },
+    {
+      titulo: "Camiseta Blanca Dry Fit",
+      img: "https://mundopromocional.co/wp-content/uploads/2021/07/camiseta-blanca-para-sublimacion-dry-fit.jpg",
+      precio: 25000,
+    },
+    {
+      titulo: "Camiseta Estampada Negra",
+      img: "https://media.falabella.com/falabellaCO/126470450_01/w=800,h=800,fit=pad",
+      precio: 35000,
+    },
+    {
+      titulo: "Camiseta Blanca Dry Fit",
+      img: "https://mundopromocional.co/wp-content/uploads/2021/07/camiseta-blanca-para-sublimacion-dry-fit.jpg",
+      precio: 25000,
+    },
+    {
+      titulo: "Camiseta Estampada Negra",
+      img: "https://media.falabella.com/falabellaCO/126470450_01/w=800,h=800,fit=pad",
+      precio: 35000,
+    },
+    {
+      titulo: "Camiseta Blanca Dry Fit",
+      img: "https://mundopromocional.co/wp-content/uploads/2021/07/camiseta-blanca-para-sublimacion-dry-fit.jpg",
+      precio: 25000,
+    },
+    {
+      titulo: "Camiseta Estampada Negra",
+      img: "https://media.falabella.com/falabellaCO/126470450_01/w=800,h=800,fit=pad",
+      precio: 35000,
+    },
+  ];
 
   return (
     <div>
@@ -20,7 +64,7 @@ const Home = () => {
           <Row className="align-items-center">
             <Col md={6}>
               <img
-                src="https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                src="https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop"
                 alt="Camiseta"
                 className="img-fluid rounded shadow"
               />
@@ -39,10 +83,10 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* ¿Quienes Somos? */}
+      {/* ¿Quiénes Somos? */}
       <div className="bg-light p-5 text-center d-flex justify-content-center">
         <div className="col-md-8">
-          <h4 className="fw-bold">¿QUIENES SOMOS?</h4>
+          <h4 className="fw-bold">¿QUIÉNES SOMOS?</h4>
           <p className="mt-3">
             En Estampados Lies transformamos tus ideas en prendas únicas. Desde
             2022 personalizamos ropa y accesorios con serigrafía, sublimación,
@@ -79,65 +123,66 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* Productos */}
-      <section className="p-5 text-center bg-light">
-        <Container className="bg-dark p-4">
-          <h4 className="fw-bold text-white">Productos</h4>
-          <p className="text-white">¡Personaliza tu estilo, crea algo único!</p>
+      {/* Productos con carrusel */}
+      <section
+        className="p-5 text-center"
+        style={{ backgroundColor: "#e9ecef" }}
+      >
+        <Container>
+          <h4 className="fw-bold text-dark">Productos</h4>
+          <p className="text-secondary">
+            ¡Personaliza tu estilo, crea algo único!
+          </p>
           <br />
-          <Row className="justify-content-center">
-            {/* Producto 1 */}
-            <Col md={4} className="mb-4">
-              <Card className="shadow-sm h-100">
-                <Card.Img
-                  variant="top"
-                  src="https://mundopromocional.co/wp-content/uploads/2021/07/camiseta-blanca-para-sublimacion-dry-fit.jpg"
-                />
-                <Card.Body>
-                  <Button
-                    variant="success"
-                    className="w-100 mt-5"
-                    onClick={() =>
-                      handleComprar({
-                        titulo: "Camiseta Blanca Dry Fit",
-                        img: "https://mundopromocional.co/wp-content/uploads/2021/07/camiseta-blanca-para-sublimacion-dry-fit.jpg",
-                        precio: 25000,
-                        estado: "Disponible",
-                      })
-                    }
-                  >
-                    Comprar
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
 
-            {/* Producto 2 */}
-            <Col md={4} className="mb-4">
-              <Card className="shadow-sm h-100">
-                <Card.Img
-                  variant="top"
-                  src="https://media.falabella.com/falabellaCO/126470450_01/w=800,h=800,fit=pad"
-                />
-                <Card.Body>
-                  <Button
-                    variant="success"
-                    className="w-100 mt-5"
-                    onClick={() =>
-                      handleComprar({
-                        titulo: "Camiseta Estampada Negra",
-                        img: "https://media.falabella.com/falabellaCO/126470450_01/w=800,h=800,fit=pad",
-                        precio: 35000,
-                        estado: "Disponible",
-                      })
-                    }
-                  >
-                    Comprar
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          <Carousel interval={3000} controls indicators pause={false} wrap>
+            {Array.from({ length: Math.ceil(productos.length / 4) }).map(
+              (_, slideIndex) => (
+                <Carousel.Item key={slideIndex}>
+                  <Row className="justify-content-center">
+                    {productos
+                      .slice(slideIndex * 4, slideIndex * 4 + 4)
+                      .map((producto, i) => (
+                        <Col md={3} key={i}>
+                          <Card className="shadow-sm h-100">
+                            <Card.Img
+                              variant="top"
+                              src={producto.img}
+                              style={{
+                                width: "70%",
+                                height: "200px",
+                                objectFit: "contain",
+                                margin: "0 auto",
+                              }}
+                            />
+                            <Card.Body>
+                              <h6>{producto.titulo}</h6>
+                              <p className="text-success fw-bold">
+                                ${producto.precio}
+                              </p>
+                              <Button
+                                variant="success"
+                                className="w-100 mt-2"
+                                onClick={() =>
+                                  handleComprar({
+                                    titulo: producto.titulo,
+                                    img: producto.img,
+                                    precio: producto.precio,
+                                    estado: "Disponible",
+                                  })
+                                }
+                              >
+                                Comprar
+                              </Button>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      ))}
+                  </Row>
+                </Carousel.Item>
+              )
+            )}
+          </Carousel>
         </Container>
       </section>
 

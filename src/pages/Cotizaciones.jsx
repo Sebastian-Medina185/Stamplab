@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
+import { FaEdit, FaEye, FaPlusCircle, FaTrash, FaSync } from "react-icons/fa";
 
 const Cotizaciones = () => {
   const [search, setSearch] = useState("");
@@ -9,7 +9,7 @@ const Cotizaciones = () => {
       className="d-flex flex-column"
       style={{
         minHeight: "100dvh",
-        background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
+        background: "linear-gradient(135deg, #ffffff 0%, #fafcff 100%)",
       }}
     >
       {/* Encabezado y botón agregar */}
@@ -40,11 +40,8 @@ const Cotizaciones = () => {
         </div>
       </div>
 
-      {/* Tabla con estilo */}
-      <div
-        className="flex-grow-1 px-4 pb-4"
-        style={{ overflow: "auto", minHeight: 0 }}
-      >
+      {/* Tabla de cotizaciones */}
+      <div className="flex-grow-1 px-4 pb-4" style={{ overflow: "auto" }}>
         <div
           className="table-responsive rounded-4 shadow"
           style={{ background: "#fff" }}
@@ -92,19 +89,34 @@ const Cotizaciones = () => {
                 </td>
                 <td>
                   <div className="d-flex justify-content-center gap-2">
-                    <button className="btn btn-outline-primary btn-sm rounded-circle" title="Ver">
+                    <button
+                      className="btn btn-outline-primary btn-sm rounded-circle"
+                      title="Ver"
+                    >
                       <FaEye size={16} />
                     </button>
-                    <button className="btn btn-outline-warning btn-sm rounded-circle" title="Editar">
+                    <button
+                      className="btn btn-outline-warning btn-sm rounded-circle"
+                      title="Editar"
+                    >
                       <FaEdit size={16} />
                     </button>
-                    <button className="btn btn-outline-danger btn-sm rounded-circle" title="Eliminar">
+                    <button
+                      className="btn btn-outline-danger btn-sm rounded-circle"
+                      title="Eliminar"
+                    >
                       <FaTrash size={16} />
+                    </button>
+                    <button
+                      className="btn btn-outline-secondary btn-sm rounded-circle"
+                      title="Cambiar estado"
+                    >
+                      <FaSync size={16} />
                     </button>
                   </div>
                 </td>
               </tr>
-              {/* Aquí luego vamos a mapear las cotizaciones reales */}
+              {/* Aquí luego se mapearán las cotizaciones reales */}
             </tbody>
           </table>
         </div>
