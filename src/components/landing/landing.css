@@ -10,15 +10,15 @@
 }
 
 .card-landing-desc {
- font-size: 1em;
+  font-size: 1em;
   font-weight: 400;
   line-height: 1.5em;
   color: #161616;
 }
 
 .card-landing-desc p {
-   font-size: 1em;
-   color: #161616;
+  font-size: 1em;
+  color: #161616;
 
 }
 
@@ -35,6 +35,7 @@
   background: linear-gradient(135deg, #6293c8, #384c6c);
   border-radius: 0 4px 0 32px;
 }
+
 .go-arrow {
   margin-top: -4px;
   margin-right: -4px;
@@ -87,3 +88,100 @@
 }
 
 /* Fondo oscuro animado */
+
+/* Cuando se pasa el hover en la card, cambiar color del título y descripción */
+.card-landing:hover .card-landing-title,
+.card-landing:hover .card-landing-desc {
+  color: #ffffff;
+  /* texto blanco */
+}
+
+
+
+
+
+/**************************************************/
+
+
+
+
+
+/* ESTILOS DEL BANNER A CONTINUACION */
+/* Banner principal */
+.banner-landing {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  /* ocupa todo el alto de la pantalla */
+  background-image: url("https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=1472&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+  background-size: cover;
+  /* se ajusta al ancho */
+  background-position: center;
+  /* centrado */
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+
+
+
+/* Capa oscura encima de la imagen */
+/* .banner-landing::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);    /     oscurece un poco el fondo
+  z-index: 1;
+} */
+
+
+
+/* Contenido por encima del overlay */
+.banner-landing .container {
+  position: relative;
+  z-index: 2;
+}
+
+.banner-landing h3,
+.banner-landing p {
+  color: #ffffff !important;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+
+
+
+/*******     ESTILOS CARRUSEL PRODUCTOS       **********/
+/* Aumenta el área de clic de las flechas */
+/* Controles del carrusel */
+.carousel-control-prev, 
+.carousel-control-next {
+  top: 50%;
+  transform: translateY(-10%);
+  opacity: 1; /* Cambiado de -1 a 1 */
+  z-index: 10; /* Cambiado de -10 a 10 */
+}
+
+.carousel-control-prev {
+  left: -5%;
+}
+
+.carousel-control-next {
+  right: -5%;
+}
+
+.carousel-control-prev-icon, 
+.carousel-control-next-icon {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 20%;
+  padding: 20px;
+}
+
+/* NUEVO: Mover indicadores más abajo */
+.carousel-indicators {
+  bottom: -55px !important; /* Ajusta este valor según necesites */
+}
