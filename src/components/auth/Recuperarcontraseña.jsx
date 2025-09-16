@@ -12,8 +12,8 @@ const RecuperarContraseña = () => {
                 <Card
                     style={{
                         width: "22rem",
-                        backgroundColor: "#1d1a2b",
-                        color: "#fff",
+                        backgroundColor: "#fff", // Fondo blanco
+                        color: "#000", // Texto negro
                     }}
                     className="p-4 shadow-lg rounded-4"
                 >
@@ -21,19 +21,23 @@ const RecuperarContraseña = () => {
 
                     <Form>
                         <Form.Group className="mb-3">
-                            <Form.Label>Introduce tu correo electronico  asociado a tu cuenta para restablecer </Form.Label>
-                            <Form.Control type="text" placeholder="Ingresa tu correo electronico" />
+                            <Form.Label>
+                                Introduce tu correo electrónico asociado a tu cuenta para restablecer
+                            </Form.Label>
+                            <Form.Control
+                                type="email"
+                                placeholder="Ingresa tu correo electrónico"
+                            />
                         </Form.Group>
 
                         {/* Botón que redirige */}
                         <div className="d-grid mb-3">
                             <Link to="/restablecercontraseña">
-                                <Button variant="info" className="text-white fw-bold w-100">
+                                <Button variant="primary" className="fw-bold w-100">
                                     Enviar
                                 </Button>
                             </Link>
                         </div>
-
                     </Form>
                 </Card>
             </div>
