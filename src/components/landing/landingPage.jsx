@@ -170,7 +170,7 @@ const Home = () => {
 
                               {/* Overlay al pasar el mouse */}
                               <div className="overlay-info">
-                                <h6 className="mb-3">Variantes disponibles</h6>
+                                {/* <h6 className="mb-3">Variantes disponibles</h6> */}
 
                                 {producto.tallas && (
                                   <p>
