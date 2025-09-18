@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import UsuariosForm from "./formularios_dash/usuarios"; // 👈 Importar formulario
 
 const Usuarios = () => {
     const [search, setSearch] = useState("");
+    const [showForm, setShowForm] = useState(false);
 
     const usuarios = [
         {
@@ -36,8 +38,8 @@ const Usuarios = () => {
             style={{
                 minHeight: "100dvh",
                 background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
-                padding: "20px 30px", // 👈 más aire
-                fontSize: "0.9rem", // 👈 contenido más pequeño
+                padding: "20px 30px",
+                fontSize: "0.9rem",
             }}
         >
             {/* Encabezado y botón agregar */}
@@ -48,7 +50,10 @@ const Usuarios = () => {
                 >
                     Gestión de Usuarios
                 </h1>
-                <button className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm">
+                <button
+                    className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
+                    onClick={() => setShowForm(true)} // 👈 abre el formulario
+                >
                     <FaPlusCircle size={18} />
                     Agregar Usuario
                 </button>
@@ -80,7 +85,7 @@ const Usuarios = () => {
                                 background:
                                     "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
                                 color: "#fff",
-                                fontSize: "0.85rem", // 👈 más pequeño
+                                fontSize: "0.85rem",
                             }}
                         >
                             <tr>
@@ -145,6 +150,9 @@ const Usuarios = () => {
                     </table>
                 </div>
             </div>
+
+            {/* 👇 Aquí aparece el formulario cuando se da clic en Agregar Usuario */}
+            {showForm && <UsuariosForm onClose={() => setShowForm(false)} />}
         </div>
     );
 };
