@@ -242,7 +242,7 @@ const Home = () => {
 
       <FooterComponent />
 
-      <ScrollToTopButton></ScrollToTopButton>
+      <ScrollToTopButton />
     </div>
   );
 };
