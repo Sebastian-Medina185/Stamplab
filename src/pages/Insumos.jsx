@@ -4,7 +4,6 @@ import InsumoForm from "./formularios_dash/insumosForm";
 import { getInsumos } from "../Services/api-insumos/insumos";
 
 const Insumos = () => {
-  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [insumos, setInsumos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,11 +14,15 @@ const Insumos = () => {
       try {
         setLoading(true);
         const data = await getInsumos();
+        
         // Verificar que data.datos existe y es un array
         if (data && Array.isArray(data.datos)) {
           setInsumos(data.datos);
         } else {
-          console.warn("Los datos recibidos no tienen la estructura esperada:", data);
+          console.warn(
+            "Los datos recibidos no tienen la estructura esperada:",
+            data
+          );
           setInsumos([]);
         }
         setError(null);
@@ -34,18 +37,12 @@ const Insumos = () => {
     fetchData();
   }, []);
 
-  // Función para filtrar con verificación de seguridad
-  const filteredInsumos = insumos.filter((insumo) => {
-    // Verificar que el insumo y su propiedad nombre existen
-    if (!insumo || typeof insumo.nombre !== 'string') {
-      return false;
-    }
-    return insumo.nombre.toLowerCase().includes(search.toLowerCase());
-  });
-
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100dvh" }}>
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "100dvh" }}
+      >
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Cargando...</span>
         </div>
@@ -82,20 +79,6 @@ const Insumos = () => {
             </button>
           </div>
 
-          {/* Buscador */}
-          <div className="d-flex justify-content-end mb-3 px-4">
-            <div className="input-group" style={{ maxWidth: 300 }}>
-              <span className="input-group-text bg-white border-end-0">🔍</span>
-              <input
-                type="text"
-                className="form-control border-start-0"
-                placeholder="Filtrar por nombre..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
           {/* Mostrar error si existe */}
           {error && (
             <div className="alert alert-danger mx-4" role="alert">
@@ -128,24 +111,26 @@ const Insumos = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInsumos.length > 0 ? (
-                    filteredInsumos.map((insumo) => (
+                  {insumos.length > 0 ? (
+                    insumos.map((insumo, index) => (
                       <tr
-                        key={insumo.id || Math.random()} // Fallback para key si no hay id
+                        key={insumo.InsumoID || index}
                         style={{ borderBottom: "1px solid #e3e8ee" }}
                       >
-                        <td className="fw-medium">{insumo.nombre || 'Sin nombre'}</td>
-                        <td>{insumo.stock || 0}</td>
+                        <td className="fw-medium">
+                          {insumo.Nombre || "Sin nombre"}
+                        </td>
+                        <td>{insumo.Stock || 0}</td>
                         <td>
                           <span
                             className={`badge fw-bold fs-6 px-1 py-2 shadow-sm ${
-                              insumo.estado === "Activo"
+                              insumo.Estado === true
                                 ? "text-success"
                                 : "text-danger"
                             }`}
                             style={{ fontSize: 14 }}
                           >
-                            {insumo.estado || 'Sin estado'}
+                            {insumo.Estado === true ? "Activo" : "Inactivo"}
                           </span>
                         </td>
                         <td>
@@ -181,7 +166,7 @@ const Insumos = () => {
                   ) : (
                     <tr>
                       <td colSpan="4" className="text-center py-4 text-muted">
-                        {search ? 'No se encontraron insumos que coincidan con la búsqueda' : 'No hay insumos disponibles'}
+                        No hay insumos disponibles
                       </td>
                     </tr>
                   )}
