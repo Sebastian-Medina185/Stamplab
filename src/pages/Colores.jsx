@@ -1,20 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import ColoresForm from "./formularios_dash/colores";
+import { getColores, deleteColor } from "../Services/api-colores/colores"; 
 
 const Colores = () => {
     const [search, setSearch] = useState("");
+    const [colores, setColores] = useState([]); // 👉 estado con datos desde la API
+    const [showForm, setShowForm] = useState(false);
+    const [selectedColor, setSelectedColor] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const colores = [
-        { id: "01", nombre: "Rojo", color: "#e53935" },
-        { id: "02", nombre: "Azul", color: "#1976d2" },
-        { id: "03", nombre: "Verde", color: "#43a047" },
-        { id: "04", nombre: "Amarillo", color: "#fbc02d" },
-        { id: "05", nombre: "Negro", color: "#222" },
-        { id: "06", nombre: "Blanco", color: "#fff", texto: "#222" },
-    ];
+    // Cargar colores al iniciar
+    useEffect(() => {
+        fetchColores();
+    }, []);
 
+    const fetchColores = async () => {
+        setLoading(true);
+        try {
+            const result = await getColores();
+            if (result.estado) {
+                setColores(result.datos); // 👉 asumimos que el backend responde {estado, datos}
+            } else {
+                setColores([]);
+                console.warn("No se encontraron colores");
+            }
+        } catch (error) {
+            console.error("Error cargando colores:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Guardar (crear o actualizar)
+    const handleSave = (nuevoColor) => {
+        fetchColores(); // recarga la lista
+        setShowForm(false);
+        setSelectedColor(null);
+    };
+
+    // Eliminar
+    const handleDelete = async (id) => {
+        if (!window.confirm("¿Seguro que deseas eliminar este color?")) return;
+        try {
+            const result = await deleteColor(id);
+            if (result.estado) {
+                alert("Color eliminado correctamente");
+                fetchColores();
+            } else {
+                alert("Error: " + result.mensaje);
+            }
+        } catch (error) {
+            console.error("Error eliminando color:", error);
+            alert("Error de conexión al eliminar");
+        }
+    };
+
+    // Filtro por búsqueda
     const filtered = colores.filter((c) =>
-        c.nombre.toLowerCase().includes(search.toLowerCase())
+        c.Nombre.toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -32,7 +76,13 @@ const Colores = () => {
                 <h1 className="fs-5 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
                     Gestión de Colores
                 </h1>
-                <button className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm">
+                <button
+                    className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
+                    onClick={() => {
+                        setSelectedColor(null);
+                        setShowForm(true);
+                    }}
+                >
                     <FaPlusCircle size={18} />
                     Agregar Color
                 </button>
@@ -52,7 +102,7 @@ const Colores = () => {
                 </div>
             </div>
 
-            {/* Tabla con scroll interno */}
+            {/* Tabla */}
             <div className="flex-grow-1" style={{ overflow: "auto", minHeight: 0 }}>
                 <div className="table-responsive rounded-4 shadow-sm" style={{ background: "#fff" }}>
                     <table className="table table-sm align-middle mb-0">
@@ -70,55 +120,73 @@ const Colores = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 && (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={3} className="text-center py-4">
+                                        <div className="spinner-border text-primary" role="status"></div>
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={3} className="text-center py-4 text-muted">
                                         No hay colores para mostrar.
                                     </td>
                                 </tr>
+                            ) : (
+                                filtered.map((c) => (
+                                    <tr key={c.ColorID} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                                        <td>
+                                            <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
+                                                {c.ColorID}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className="fw-medium">{c.Nombre}</span>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex justify-content-center gap-1">
+                                                <button
+                                                    className="btn btn-outline-warning btn-sm rounded-circle"
+                                                    title="Editar"
+                                                    onClick={() => {
+                                                        setSelectedColor(c);
+                                                        setShowForm(true);
+                                                    }}
+                                                >
+                                                    <FaEdit size={14} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-danger btn-sm rounded-circle"
+                                                    title="Eliminar"
+                                                    onClick={() => handleDelete(c.ColorID)}
+                                                >
+                                                    <FaTrash size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
-                            {filtered.map((c) => (
-                                <tr key={c.id} style={{ borderBottom: "1px solid #e3e8ee" }}>
-                                    <td>
-                                        <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
-                                            {c.id}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className="d-inline-flex align-items-center gap-2 fw-medium">
-                                            <span
-                                                style={{
-                                                    display: "inline-block",
-                                                    width: 20,
-                                                    height: 20,
-                                                    borderRadius: "50%",
-                                                    background: c.color,
-                                                    border: "1px solid #ccc",
-                                                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                                                }}
-                                            ></span>
-                                            <span style={{ color: c.texto || "#222" }}>{c.nombre}</span>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="d-flex justify-content-center gap-1">
-                                            <button className="btn btn-outline-primary btn-sm rounded-circle" title="Ver">
-                                                <FaEye size={14} />
-                                            </button>
-                                            <button className="btn btn-outline-warning btn-sm rounded-circle" title="Editar">
-                                                <FaEdit size={14} />
-                                            </button>
-                                            <button className="btn btn-outline-danger btn-sm rounded-circle" title="Eliminar">
-                                                <FaTrash size={14} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Formulario */}
+            {showForm && (
+                <div
+                    className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+                    style={{ background: "rgba(0,0,0,0.4)" }}
+                >
+                    <div className="bg-white rounded-4 shadow-lg p-3" style={{ width: "500px" }}>
+                        <ColoresForm
+                            onClose={() => setShowForm(false)}
+                            onSave={handleSave}
+                            color={selectedColor}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

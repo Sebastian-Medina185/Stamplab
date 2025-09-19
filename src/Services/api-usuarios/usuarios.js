@@ -15,6 +15,17 @@ export const getUsuarios = async () => {
     }
 };
 
+// Obtener un usuario por ID
+export const getUsuarioById = async (documentoID) => {
+    try {
+        const response = await axios.get(`${API_URL}/${documentoID}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error en getUsuarioById:", error);
+        throw error;
+    }
+};
+
 // Crear un usuario
 export const createUsuario = async (nuevoUsuario) => {
     try {
@@ -27,15 +38,20 @@ export const createUsuario = async (nuevoUsuario) => {
 };
 
 // Editar un usuario
-export const updateUsuario = async (documentoID, usuarioActualizado) => {
-    try {
-        const response = await axios.put(`${API_URL}/${documentoID}`, usuarioActualizado);
-        return response.data;
-    } catch (error) {
-        console.error("Error en updateUsuario:", error);
-        throw error;
-    }
+// export const updateUsuario = async (documentoID, usuarioActualizado) => {
+//     try {
+//         const response = await axios.put(`${API_URL}/${documentoID}`, usuarioActualizado);
+//         return response.data;
+//     } catch (error) {
+//         console.error("Error en updateUsuario:", error);
+//         throw error;
+//     }
+// };
+export const updateUsuario = async (usuarioActualizado) => {
+    const response = await axios.put(`${API_URL}/${usuarioActualizado.DocumentoID}`, usuarioActualizado);
+    return response.data;
 };
+
 
 // Eliminar un usuario
 export const deleteUsuario = async (documentoID) => {
@@ -44,6 +60,17 @@ export const deleteUsuario = async (documentoID) => {
         return response.data;
     } catch (error) {
         console.error("Error en deleteUsuario:", error);
+        throw error;
+    }
+};
+
+// Obtener roles disponibles
+export const getRoles = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/util/roles`);
+        return response.data;
+    } catch (error) {
+        console.error("Error en getRoles:", error);
         throw error;
     }
 };
