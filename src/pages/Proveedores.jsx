@@ -1,9 +1,68 @@
 import { useState } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import ProveedoresForm from './formularios_dash/proveedores';
 
 const Proveedores = () => {
   const [searchName, setSearchName] = useState("");
   const [searchStatus, setSearchStatus] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [selectedProveedor, setSelectedProveedor] = useState(null);
+
+  // Datos de ejemplo (luego los reemplazas con datos reales)
+  const proveedores = [
+    {
+      nit: "43-63-87",
+      nombre: "Mario",
+      correo: "mario12@gmail.com",
+      telefono: "3456543",
+      direccion: "CLL #42",
+      estado: "Activo"
+    }
+    // Aquí agregarías más proveedores
+  ];
+
+  // Función para abrir formulario de agregar
+  const handleAgregar = () => {
+    setSelectedProveedor(null);
+    setShowForm(true);
+  };
+
+  // Función para abrir formulario de editar
+  const handleEditar = (proveedor) => {
+    setSelectedProveedor(proveedor);
+    setShowForm(true);
+  };
+
+  // Función para cerrar formulario
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setSelectedProveedor(null);
+  };
+
+  // Función para eliminar (aquí puedes agregar confirmación)
+  const handleEliminar = (nit) => {
+    if (window.confirm("¿Está seguro de eliminar este proveedor?")) {
+      // Aquí iría la lógica para eliminar
+      console.log("Eliminar proveedor con NIT:", nit);
+    }
+  };
+
+  // Filtrado de proveedores
+  const filtered = proveedores.filter(
+    (proveedor) =>
+      proveedor.nombre.toLowerCase().includes(searchName.toLowerCase()) &&
+      proveedor.estado.toLowerCase().includes(searchStatus.toLowerCase())
+  );
+
+  // Si el formulario está abierto, mostrar solo el formulario
+  if (showForm) {
+    return (
+      <ProveedoresForm
+        onClose={handleCloseForm}
+        proveedor={selectedProveedor}
+      />
+    );
+  }
 
   return (
     <div
@@ -21,7 +80,10 @@ const Proveedores = () => {
         >
           Gestión de Proveedores
         </h1>
-        <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm">
+        <button
+          className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+          onClick={handleAgregar}
+        >
           <FaPlusCircle size={22} />
           Agregar Proveedor
         </button>
@@ -79,51 +141,69 @@ const Proveedores = () => {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: "1px solid #e3e8ee" }}>
-                <td>
-                  <span
-                    className="badge bg-light text-dark px-3 py-2 shadow-sm"
-                    style={{ fontSize: 15 }}
-                  >
-                    43-63-87
-                  </span>
-                </td>
-                <td className="fw-medium">Mario</td>
-                <td>mario12@gmail.com</td>
-                <td>3456543</td>
-                <td>CLL #42</td>
-                <td>
-                  <span
-                    className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm"
-                    style={{ fontSize: 14 }}
-                  >
-                    Activo
-                  </span>
-                </td>
-                <td>
-                  <div className="d-flex justify-content-center gap-2">
-                    <button
-                      className="btn btn-outline-primary btn-sm rounded-circle"
-                      title="Ver"
-                    >
-                      <FaEye size={16} />
-                    </button>
-                    <button
-                      className="btn btn-outline-warning btn-sm rounded-circle"
-                      title="Editar"
-                    >
-                      <FaEdit size={16} />
-                    </button>
-                    <button
-                      className="btn btn-outline-danger btn-sm rounded-circle"
-                      title="Eliminar"
-                    >
-                      <FaTrash size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              {/* Aquí luego vas a mapear los proveedores reales */}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-4 text-muted">
+                    No se encontraron proveedores.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((proveedor) => (
+                  <tr key={proveedor.nit} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                    <td>
+                      <span
+                        className="badge bg-light text-dark px-3 py-2 shadow-sm"
+                        style={{ fontSize: 15 }}
+                      >
+                        {proveedor.nit}
+                      </span>
+                    </td>
+                    <td className="fw-medium">{proveedor.nombre}</td>
+                    <td>{proveedor.correo}</td>
+                    <td>{proveedor.telefono}</td>
+                    <td>{proveedor.direccion}</td>
+                    <td>
+                      <span
+                        className={`badge fw-bold fs-6 px-1 py-2 shadow-sm ${proveedor.estado === "Activo"
+                            ? "text-success"
+                            : "text-danger"
+                          }`}
+                        style={{ fontSize: 14 }}
+                      >
+                        {proveedor.estado}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="d-flex justify-content-center gap-2">
+                        <button
+                          className="btn btn-outline-primary btn-sm rounded-circle"
+                          title="Ver"
+                          onClick={() => {
+                            // Aquí puedes agregar lógica para ver detalles
+                            console.log("Ver proveedor:", proveedor);
+                          }}
+                        >
+                          <FaEye size={16} />
+                        </button>
+                        <button
+                          className="btn btn-outline-warning btn-sm rounded-circle"
+                          title="Editar"
+                          onClick={() => handleEditar(proveedor)}
+                        >
+                          <FaEdit size={16} />
+                        </button>
+                        <button
+                          className="btn btn-outline-danger btn-sm rounded-circle"
+                          title="Eliminar"
+                          onClick={() => handleEliminar(proveedor.nit)}
+                        >
+                          <FaTrash size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
