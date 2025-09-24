@@ -213,7 +213,7 @@ const Roles = () => {
                     <td className="fw-medium">{r.Nombre}</td>
                     <td>{r.Descripcion}</td>
                     <td>
-                      <span className={`badge px-2 py-2 shadow-sm ${r.Estado ? 'bg-success' : 'bg-danger'}`}>
+                      <span className={`badge px-2 py-2 shadow-sm ${r.Estado ? 'text-success fw-bold fs-6' : 'text-danger fw-bold fs-6'}`}>
                         {r.Estado ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>

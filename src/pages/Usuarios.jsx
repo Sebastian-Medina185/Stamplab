@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import UsuariosForm from "./formularios_dash/usuarios";
-import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from "../Services/api-usuarios/usuarios";
+import { getUsuarios, deleteUsuario } from "../Services/api-usuarios/usuarios";
 
 const Usuarios = () => {
     const [showForm, setShowForm] = useState(false);
@@ -19,15 +19,16 @@ const Usuarios = () => {
     const loadUsuarios = async () => {
         try {
             setLoading(true);
+            setError(null);
             const response = await getUsuarios();
             if (response.estado) {
                 setUsuarios(response.datos);
             } else {
-                setError("Error al cargar usuarios");
+                setError(response.mensaje || "Error al cargar usuarios");
             }
         } catch (error) {
             console.error("Error al cargar usuarios:", error);
-            setError("Error de conexión");
+            setError("Error de conexión al servidor");
         } finally {
             setLoading(false);
         }
@@ -51,30 +52,11 @@ const Usuarios = () => {
         setSelectedUsuario(null);
     };
 
-    // Función para guardar usuario (crear o actualizar)
-    const handleSaveUsuario = async (usuarioData) => {
-        try {
-            let response;
-            if (selectedUsuario) {
-                // Actualizar usuario existente
-                response = await updateUsuario(selectedUsuario.documentoID, usuarioData);
-            } else {
-                // Crear nuevo usuario
-                response = await createUsuario(usuarioData);
-            }
-
-            if (response.estado) {
-                // Recargar la lista de usuarios
-                await loadUsuarios();
-                handleCloseForm();
-                alert(selectedUsuario ? "Usuario actualizado correctamente" : "Usuario creado correctamente");
-            } else {
-                alert("Error al guardar usuario: " + response.mensaje);
-            }
-        } catch (error) {
-            console.error("Error al guardar usuario:", error);
-            alert("Error de conexión al guardar usuario");
-        }
+    // Función para manejar guardado exitoso
+    const handleSaveSuccess = async () => {
+        // Recargar la lista de usuarios
+        await loadUsuarios();
+        handleCloseForm();
     };
 
     // Función para eliminar usuario
@@ -96,14 +78,43 @@ const Usuarios = () => {
         }
     };
 
+    // Función para ver detalles del usuario
+    const handleVer = (usuario) => {
+        alert(`Detalles del Usuario:
+        
+Documento: ${usuario.DocumentoID}
+Nombre: ${usuario.Nombre}
+Correo: ${usuario.Correo}
+Dirección: ${usuario.Direccion}
+Teléfono: ${usuario.Telefono}
+Rol: ${usuario.RolNombre || usuario.RolID}`);
+    };
 
+    // Función para obtener el nombre del rol
+    const getRoleName = (usuario) => {
+        if (usuario.RolNombre) {
+            return usuario.RolNombre;
+        }
+
+        // Mapeo de roles por ID si no viene el nombre
+        const rolesMap = {
+            'AD': 'Administrador',
+            'CL': 'Cliente',
+            'EM': 'Empleado',
+            '1': 'Administrador',
+            '2': 'Cliente',
+            '3': 'Empleado'
+        };
+
+        return rolesMap[usuario.RolID] || usuario.RolID;
+    };
 
     // Si el formulario está abierto, mostrar solo el formulario
     if (showForm) {
         return (
-            <UsuariosForm 
+            <UsuariosForm
                 onClose={handleCloseForm}
-                onSave={handleSaveUsuario}
+                onSave={handleSaveSuccess}
                 usuario={selectedUsuario}
             />
         );
@@ -130,24 +141,35 @@ const Usuarios = () => {
                 <button
                     className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
                     onClick={handleAgregar}
+                    disabled={loading}
                 >
                     <FaPlusCircle size={18} />
                     Agregar Usuario
                 </button>
             </div>
 
-
+            {/* Estadísticas rápidas */}
+            {!loading && usuarios.length > 0 && (
+                <div className="mb-3">
+                    <small className="text-muted">
+                        Total de usuarios: <span className="fw-bold text-primary">{usuarios.length}</span>
+                    </small>
+                </div>
+            )}
 
             {/* Mensaje de error */}
             {error && (
-                <div className="alert alert-danger" role="alert">
-                    {error}
-                    <button 
-                        className="btn btn-sm btn-outline-danger ms-2"
-                        onClick={loadUsuarios}
-                    >
-                        Reintentar
-                    </button>
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                    <span className="me-2">⚠️</span>
+                    <div>
+                        {error}
+                        <button
+                            className="btn btn-sm btn-outline-danger ms-2"
+                            onClick={loadUsuarios}
+                        >
+                            Reintentar
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -157,78 +179,110 @@ const Usuarios = () => {
                     className="table-responsive rounded-4 shadow-sm"
                     style={{ background: "#fff" }}
                 >
-                    <table className="table table-sm align-middle mb-0">
+                    <table className="table table-sm table-hover align-middle mb-0">
                         <thead
                             style={{
-                                background:
-                                    "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
+                                background: "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
                                 color: "#fff",
                                 fontSize: "0.85rem",
                             }}
                         >
                             <tr>
-                                <th style={{ borderTopLeftRadius: 12 }}>Documento</th>
-                                <th>Nombre</th>
-                                <th>Correo</th>
-                                <th>Dirección</th>
-                                <th>Teléfono</th>
-                                <th>Rol</th>
-                                <th style={{ width: 160 }}>Acciones</th>
+                                <th style={{ borderTopLeftRadius: 12, minWidth: 120 }}>Documento</th>
+                                <th style={{ minWidth: 150 }}>Nombre</th>
+                                <th style={{ minWidth: 180 }}>Correo</th>
+                                <th style={{ minWidth: 200 }}>Dirección</th>
+                                <th style={{ minWidth: 120 }}>Teléfono</th>
+                                <th style={{ minWidth: 100 }}>Rol</th>
+                                <th style={{ width: 160, borderTopRightRadius: 12 }}>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4">
-                                        <div className="spinner-border spinner-border-sm text-primary" role="status">
-                                            <span className="visually-hidden">Cargando...</span>
+                                    <td colSpan={7} className="text-center py-5">
+                                        <div className="d-flex flex-column align-items-center">
+                                            <div className="spinner-border spinner-border-sm text-primary mb-2" role="status">
+                                                <span className="visually-hidden">Cargando...</span>
+                                            </div>
+                                            <span className="text-muted">Cargando usuarios...</span>
                                         </div>
-                                        <span className="ms-2 text-muted">Cargando usuarios...</span>
+                                    </td>
+                                </tr>
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-5 text-danger">
+                                        <div className="d-flex flex-column align-items-center">
+                                            <span className="mb-2">❌ Error al cargar datos</span>
+                                            <button
+                                                className="btn btn-sm btn-outline-primary"
+                                                onClick={loadUsuarios}
+                                            >
+                                                Reintentar
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : usuarios.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-muted">
-                                        No hay usuarios para mostrar.
+                                    <td colSpan={7} className="text-center py-5">
+                                        <div className="d-flex flex-column align-items-center text-muted">
+                                            <span className="mb-2">📝 No hay usuarios registrados</span>
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={handleAgregar}
+                                            >
+                                                Crear primer usuario
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
-                                usuarios.map((u) => (
-                                    <tr key={u.DocumentoID} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                                usuarios.map((usuario) => (
+                                    <tr key={usuario.DocumentoID} style={{ borderBottom: "1px solid #e3e8ee" }}>
                                         <td>
                                             <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
-                                                {u.DocumentoID}
+                                                {usuario.DocumentoID}
                                             </span>
                                         </td>
-                                        <td className="fw-medium">{u.Nombre}</td>
-                                        <td>{u.Correo}</td>
-                                        <td>{u.Direccion}</td>
-                                        <td>{u.Telefono}</td>
+                                        <td className="fw-medium">{usuario.Nombre}</td>
                                         <td>
-                                            <span className="badge bg-secondary px-2 py-2 shadow-sm">
-                                                {u.RolID === 1 ? 'Administrador' : 'Cliente'}
+                                            <small className="text-muted">{usuario.Correo}</small>
+                                        </td>
+                                        <td>
+                                            <small className="text-muted">
+                                                {usuario.Direccion.length > 40
+                                                    ? usuario.Direccion.substring(0, 40) + '...'
+                                                    : usuario.Direccion
+                                                }
+                                            </small>
+                                        </td>
+                                        <td>{usuario.Telefono}</td>
+                                        <td>
+                                            <span className="badge bg-secondary px-2 py-1 shadow-sm">
+                                                {getRoleName(usuario)}
                                             </span>
                                         </td>
                                         <td>
                                             <div className="d-flex justify-content-center gap-1">
                                                 <button
                                                     className="btn btn-outline-primary btn-sm rounded-circle"
-                                                    title="Ver"
-                                                    onClick={() => console.log("Ver usuario:", u)}
+                                                    title="Ver detalles"
+                                                    onClick={() => handleVer(usuario)}
                                                 >
                                                     <FaEye size={14} />
                                                 </button>
                                                 <button
                                                     className="btn btn-outline-warning btn-sm rounded-circle"
-                                                    title="Editar"
-                                                    onClick={() => handleEditar(u)}
+                                                    title="Editar usuario"
+                                                    onClick={() => handleEditar(usuario)}
                                                 >
                                                     <FaEdit size={14} />
                                                 </button>
                                                 <button
                                                     className="btn btn-outline-danger btn-sm rounded-circle"
-                                                    title="Eliminar"
-                                                    onClick={() => handleEliminar(u.documentoID)}
+                                                    title="Eliminar usuario"
+                                                    onClick={() => handleEliminar(usuario.DocumentoID)}
                                                 >
                                                     <FaTrash size={14} />
                                                 </button>
