@@ -63,6 +63,7 @@ const Usuarios = () => {
     const handleEliminar = async (documentoID) => {
         if (window.confirm("¿Está seguro de eliminar este usuario?")) {
             try {
+                setLoading(true);
                 const response = await deleteUsuario(documentoID);
                 if (response.estado) {
                     // Recargar la lista de usuarios
@@ -73,7 +74,13 @@ const Usuarios = () => {
                 }
             } catch (error) {
                 console.error("Error al eliminar usuario:", error);
-                alert("Error de conexión al eliminar usuario");
+                if (error.response && error.response.data) {
+                    alert("Error: " + error.response.data.mensaje);
+                } else {
+                    alert("Error de conexión al eliminar usuario");
+                }
+            } finally {
+                setLoading(false);
             }
         }
     };

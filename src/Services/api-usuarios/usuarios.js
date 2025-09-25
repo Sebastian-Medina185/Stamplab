@@ -38,18 +38,25 @@ export const createUsuario = async (nuevoUsuario) => {
 };
 
 // Editar un usuario
-// export const updateUsuario = async (documentoID, usuarioActualizado) => {
-//     try {
-//         const response = await axios.put(`${API_URL}/${documentoID}`, usuarioActualizado);
-//         return response.data;
-//     } catch (error) {
-//         console.error("Error en updateUsuario:", error);
-//         throw error;
-//     }
-// };
-export const updateUsuario = async (usuarioActualizado) => {
-    const response = await axios.put(`${API_URL}/${usuarioActualizado.DocumentoID}`, usuarioActualizado);
-    return response.data;
+export const updateUsuario = async (documentoID, usuarioActualizado) => {
+    try {
+        // Asegurar que RolID sea string y tenga máximo 2 caracteres
+        if (usuarioActualizado.RolID) {
+            usuarioActualizado.RolID = usuarioActualizado.RolID.toString().substring(0, 2);
+        }
+        
+        console.log("Enviando actualización:", { documentoID, usuarioActualizado });
+        const response = await axios.put(`${API_URL}/${documentoID}`, usuarioActualizado);
+        console.log("Respuesta del servidor:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Error en updateUsuario:", error);
+        console.error("Detalles del error:", {
+            mensaje: error.message,
+            respuesta: error.response?.data
+        });
+        throw error;
+    }
 };
 
 

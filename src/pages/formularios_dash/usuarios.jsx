@@ -1,8 +1,7 @@
 // src/pages/formularios_dash/usuariosForm.jsx
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
-import { createUsuario, updateUsuario } from "../../Services/api-usuarios/usuarios";
-import { getRoles } from "../../Services/api-roles/roles";
+import { createUsuario, updateUsuario, getRoles } from "../../Services/api-usuarios/usuarios";
 
 const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
     const [formData, setFormData] = useState({
@@ -35,8 +34,9 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                 Direccion: usuario.Direccion || "",
                 Telefono: usuario.Telefono || "",
                 Contraseña: "", // No cargar contraseña por seguridad
-                RolID: usuario.RolID || "",
+                RolID: usuario.RolID ? usuario.RolID.toString() : "", // Asegurar que RolID sea string
             });
+            console.log("Cargando usuario para editar:", usuario); // Para debugging
         }
     }, [usuario]);
 
@@ -48,7 +48,13 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
             const result = await getRoles();
 
             if (result.estado && Array.isArray(result.datos)) {
-                setRoles(result.datos);
+                // Asegurarnos de que cada rol tenga RolID como string
+                const rolesFormateados = result.datos.map(rol => ({
+                    ...rol,
+                    RolID: rol.RolID.toString()
+                }));
+                setRoles(rolesFormateados);
+                console.log("Roles cargados:", rolesFormateados); // Para debugging
             } else {
                 console.error("Respuesta inválida de roles:", result);
                 setRoles([]);
@@ -154,7 +160,10 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
 
         try {
             // Preparar datos para enviar
-            const dataToSend = { ...formData };
+            const dataToSend = {
+                ...formData,
+                RolID: formData.RolID.toString().substring(0, 2) // Aseguramos que RolID sea string y máximo 2 caracteres
+            };
 
             // Si estamos editando y no se cambió la contraseña, no enviarla
             if (usuario && !dataToSend.Contraseña.trim()) {
@@ -165,7 +174,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
 
             if (usuario) {
                 // Actualizar usuario existente
-                result = await updateUsuario(dataToSend);
+                result = await updateUsuario(usuario.DocumentoID, dataToSend);
             } else {
                 // Crear nuevo usuario
                 result = await createUsuario(dataToSend);
@@ -175,9 +184,10 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                 // Éxito
                 alert(usuario ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
                 onSave(result.datos); // Llamar callback con los datos del usuario
+                handleCloseForm(); // Cerrar el formulario después de guardar exitosamente
             } else {
                 // Error del servidor
-                alert('Error: ' + result.mensaje);
+                alert('Error: ' + (result.mensaje || 'Error al guardar usuario'));
             }
 
         } catch (error) {
@@ -227,8 +237,9 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                             name="DocumentoID"
                             value={formData.DocumentoID}
                             onChange={handleChange}
-                            disabled={loading}
+                            disabled={loading || !!usuario}
                             maxLength={15}
+                            readOnly={!!usuario}
                             required
                         />
                         {errors.DocumentoID && (

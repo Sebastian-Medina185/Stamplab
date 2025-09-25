@@ -35,6 +35,8 @@ const Roles = () => {
 
   // Función para guardar rol (crear o actualizar)
   const handleSave = async (rolData) => {
+    console.log("Datos enviados al backend:", rolData); // Verifica los datos antes de enviarlos
+
     try {
       let response;
       if (rolEdit) {
@@ -86,7 +88,7 @@ const Roles = () => {
   const handleCambiarEstado = async (rol) => {
     const nuevoEstado = !rol.Estado; // Cambiar true/false
     const estadoTexto = nuevoEstado ? "Activo" : "Inactivo";
-    
+
     if (window.confirm(`¿Cambiar estado del rol a ${estadoTexto}?`)) {
       try {
         const rolActualizado = { ...rol, Estado: nuevoEstado };
@@ -154,7 +156,7 @@ const Roles = () => {
       {error && (
         <div className="alert alert-danger" role="alert">
           {error}
-          <button 
+          <button
             className="btn btn-sm btn-outline-danger ms-2"
             onClick={loadRoles}
           >
@@ -241,8 +243,8 @@ const Roles = () => {
                           <FaTrash size={14} />
                         </button>
                         <button className="btn btn-outline-secondary btn-sm rounded-circle" title="Cambiar estado">
-                        <FaSyncAlt size={16} />
-                      </button>
+                          <FaSyncAlt size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>

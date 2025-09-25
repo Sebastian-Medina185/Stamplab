@@ -1,36 +1,39 @@
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 
-const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
+const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
-    estado: true, // Cambiar a booleano
+    imagenTecnica: "",
+    estado: true,
   });
 
-  // Cargar datos del rol si estamos editando
+  // Cargar datos de la técnica si estamos editando
   useEffect(() => {
-    if (rolEdit) {
+    if (tecnicaEdit) {
       setFormData({
-        nombre: rolEdit.Nombre || "",
-        descripcion: rolEdit.Descripcion || "",
-        estado: rolEdit.Estado !== undefined ? rolEdit.Estado : true, // Manejar booleano
+        nombre: tecnicaEdit.Nombre || "",
+        descripcion: tecnicaEdit.Descripcion || "",
+        imagenTecnica: tecnicaEdit.ImagenTecnica || "",
+        estado: tecnicaEdit.Estado !== undefined ? tecnicaEdit.Estado : true,
       });
     } else {
       // Limpiar formulario si es crear nuevo
       setFormData({
         nombre: "",
         descripcion: "",
-        estado: true, // Booleano
+        imagenTecnica: "",
+        estado: true,
       });
     }
-  }, [rolEdit]);
+  }, [tecnicaEdit]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'estado' ? value === 'true' : value, // Convertir string a booleano para estado
+      [name]: name === 'estado' ? value === 'true' : value,
     }));
   };
 
@@ -39,33 +42,33 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
 
     // Validaciones básicas
     if (!formData.nombre.trim()) {
-      alert("El nombre del rol es obligatorio");
+      alert("El nombre de la técnica es obligatorio");
       return;
     }
 
     if (!formData.descripcion.trim()) {
-      alert("La descripción del rol es obligatoria");
+      alert("La descripción de la técnica es obligatoria");
       return;
     }
 
     // Preparar datos para enviar
-    // Después (ajustando nombres):
-    const rolData = {
+    const tecnicaData = {
       Nombre: formData.nombre,
       Descripcion: formData.descripcion,
+      ImagenTecnica: formData.imagenTecnica,
       Estado: formData.estado,
-      ...(rolEdit && { RolID: rolEdit.RolID })
+      ...(tecnicaEdit && { TecnicaID: tecnicaEdit.TecnicaID })
     };
 
     // Llamar a la función onSave del componente padre
-    onSave(rolData);
+    onSave(tecnicaData);
   };
 
   return (
     <div className="container py-4">
       <div className="position-relative mb-4 text-center">
         <p className="fw-bold fs-3 mb-0">
-          {rolEdit ? "Editar Rol" : "Crear Rol"}
+          {tecnicaEdit ? "Editar Técnica" : "Crear Técnica"}
         </p>
         <button
           type="button"
@@ -83,10 +86,10 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
         onSubmit={handleSubmit}
       >
         <div className="row g-3">
-          {/* Nombre del rol */}
+          {/* Nombre de la técnica */}
           <div className="col-md-12">
             <label className="form-label fw-bold">
-              Nombre del Rol <span className="text-danger">*</span>
+              Nombre de la Técnica <span className="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -94,8 +97,8 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
-              placeholder="Ingrese el nombre del rol"
-              maxLength="50"
+              placeholder="Ingrese el nombre de la técnica"
+              maxLength="20"
               required
             />
           </div>
@@ -110,10 +113,26 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
               name="descripcion"
               value={formData.descripcion}
               onChange={handleChange}
-              placeholder="Describa las funciones y permisos del rol"
+              placeholder="Describa la técnica de estampado"
               rows="4"
               maxLength="255"
               required
+            />
+          </div>
+
+          {/* Imagen de la técnica */}
+          <div className="col-md-12">
+            <label className="form-label fw-bold">
+              URL de la Imagen
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              name="imagenTecnica"
+              value={formData.imagenTecnica}
+              onChange={handleChange}
+              placeholder="Ingrese la URL de la imagen"
+              maxLength="255"
             />
           </div>
 
@@ -123,7 +142,7 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
             <select
               className="form-select"
               name="estado"
-              value={formData.estado.toString()} // Convertir booleano a string para el select
+              value={formData.estado.toString()}
               onChange={handleChange}
             >
               <option value="true">Activo</option>
@@ -137,16 +156,16 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
           <h6 className="text-dark mb-3">ℹ️ Información importante:</h6>
           <ul className="mb-0 text-muted small">
             <li>Todos los campos marcados con (*) son obligatorios</li>
-            <li>El nombre del rol debe ser único en el sistema</li>
-            <li>Los roles inactivos no estarán disponibles para asignar a usuarios</li>
-            <li>Una vez creado, podrás modificar el rol en cualquier momento</li>
+            <li>El nombre de la técnica debe ser único en el sistema</li>
+            <li>Las técnicas inactivas no estarán disponibles para las cotizaciones</li>
+            <li>La URL de la imagen es opcional</li>
           </ul>
         </div>
 
         {/* Botones */}
         <div className="d-flex justify-content-center gap-3 mt-4">
           <button type="submit" className="btn btn-success px-4">
-            {rolEdit ? "Actualizar Rol" : "Crear Rol"}
+            {tecnicaEdit ? "Actualizar Técnica" : "Crear Técnica"}
           </button>
           <button type="button" className="btn btn-secondary px-4" onClick={onClose}>
             Cancelar
@@ -157,4 +176,4 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
   );
 };
 
-export default RolesForm;
+export default TecnicasForm;
