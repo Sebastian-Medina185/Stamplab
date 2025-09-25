@@ -14,9 +14,9 @@ const Tallas = () => {
   const [loading, setLoading] = useState(true);
 
   // Estados para crear/editar
-  const [nuevaTalla, setNuevaTalla] = useState({ TallaID: "", Nombre: "" });
+  const [nuevaTalla, setNuevaTalla] = useState({ Nombre: "" });
   const [editando, setEditando] = useState(null);
-  const [mostrarFormCrear, setMostrarFormCrear] = useState(false); // 👈 NUEVO
+  const [mostrarFormCrear, setMostrarFormCrear] = useState(false);
 
   // =================== LISTAR ===================
   const cargarTallas = async () => {
@@ -38,12 +38,12 @@ const Tallas = () => {
   // =================== CREAR ===================
   const handleCrear = async () => {
     try {
-      await createTalla(nuevaTalla);
-      setNuevaTalla({ TallaID: "", Nombre: "" });
-      setMostrarFormCrear(false); // 👈 Ocultar después de guardar
+      await createTalla({ Nombre: nuevaTalla.Nombre }); // 👈 solo mandamos Nombre
+      setNuevaTalla({ Nombre: "" });
+      setMostrarFormCrear(false);
       cargarTallas();
     } catch (err) {
-      console.error("❌ Error creando talla:", err);
+      console.error("❌ Error guardando talla:", err);
     }
   };
 
@@ -103,7 +103,7 @@ const Tallas = () => {
         </h1>
         <button
           className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
-          onClick={() => setMostrarFormCrear(!mostrarFormCrear)} // 👈 Toggle
+          onClick={() => setMostrarFormCrear(!mostrarFormCrear)}
         >
           <FaPlusCircle size={22} />
           {mostrarFormCrear ? "Cancelar" : "Agregar Talla"}
@@ -221,13 +221,6 @@ const Tallas = () => {
         ) : mostrarFormCrear ? (
           <div className="card card-body shadow-sm">
             <h5>Agregar Nueva Talla</h5>
-            <input
-              type="text"
-              className="form-control mb-2"
-              placeholder="ID (máx 2 caracteres)"
-              value={nuevaTalla.TallaID}
-              onChange={(e) => setNuevaTalla({ ...nuevaTalla, TallaID: e.target.value })}
-            />
             <input
               type="text"
               className="form-control mb-2"

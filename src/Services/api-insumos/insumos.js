@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/insumos"; // 👈 cámbialo si tu backend está en otro puerto o deployado
+const API_URL = "http://localhost:3001/insumos"; 
 
 // Obtener todos los insumos
 export const getInsumos = async () => {
@@ -10,7 +10,7 @@ export const getInsumos = async () => {
     const response = await axios.get(API_URL);
     return response.data; // { estado: true/false, datos: [...] }
   } catch (error) {
-    console.error("❌ Error en getInsumos:", error);
+    console.error(" Error en getInsumos:", error);
     throw error;
   }
 };
@@ -21,7 +21,7 @@ export const createInsumo = async (nuevoInsumo) => {
     const response = await axios.post(API_URL, nuevoInsumo);
     return response.data;
   } catch (error) {
-    console.error("❌ Error en createInsumo:", error);
+    console.error(" Error en createInsumo:", error);
     throw error;
   }
 };
@@ -32,7 +32,7 @@ export const updateInsumo = async (id, insumoActualizado) => {
     const response = await axios.put(`${API_URL}/${id}`, insumoActualizado);
     return response.data;
   } catch (error) {
-    console.error("❌ Error en updateInsumo:", error);
+    console.error(" Error en updateInsumo:", error);
     throw error;
   }
 };

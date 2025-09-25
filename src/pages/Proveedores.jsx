@@ -1,25 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import ProveedoresForm from './formularios_dash/proveedores';
+import { getProveedores, deleteProveedor } from '../Services/api-proveedores/proveedores';
 
 const Proveedores = () => {
   const [searchName, setSearchName] = useState("");
   const [searchStatus, setSearchStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedProveedor, setSelectedProveedor] = useState(null);
+  const [proveedores, setProveedores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Datos de ejemplo (luego los reemplazas con datos reales)
-  const proveedores = [
-    {
-      nit: "43-63-87",
-      nombre: "Mario",
-      correo: "mario12@gmail.com",
-      telefono: "3456543",
-      direccion: "CLL #42",
-      estado: "Activo"
+  // Cargar proveedores al montar el componente
+  useEffect(() => {
+    cargarProveedores();
+  }, []);
+
+  const cargarProveedores = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getProveedores();
+      
+      if (response.estado) {
+        setProveedores(response.datos);
+      } else {
+        setError('Error al cargar los proveedores');
+      }
+    } catch (err) {
+      console.error("Error cargando proveedores:", err);
+      setError('Error de conexión al cargar proveedores');
+    } finally {
+      setLoading(false);
     }
-    // Aquí agregarías más proveedores
-  ];
+  };
 
   // Función para abrir formulario de agregar
   const handleAgregar = () => {
@@ -33,25 +48,44 @@ const Proveedores = () => {
     setShowForm(true);
   };
 
-  // Función para cerrar formulario
-  const handleCloseForm = () => {
+  // Función para cerrar formulario y recargar datos
+  const handleCloseForm = (proveedorActualizado = false) => {
     setShowForm(false);
     setSelectedProveedor(null);
+    
+    // Si se agregó o editó un proveedor, recargar la lista
+    if (proveedorActualizado) {
+      cargarProveedores();
+    }
   };
 
-  // Función para eliminar (aquí puedes agregar confirmación)
-  const handleEliminar = (nit) => {
+  // Función para eliminar
+  const handleEliminar = async (nit) => {
     if (window.confirm("¿Está seguro de eliminar este proveedor?")) {
-      // Aquí iría la lógica para eliminar
-      console.log("Eliminar proveedor con NIT:", nit);
+      try {
+        const response = await deleteProveedor(nit);
+        
+        if (response.estado) {
+          // Actualizar la lista eliminando el proveedor localmente
+          setProveedores(prevProveedores => 
+            prevProveedores.filter(proveedor => proveedor.Nit !== nit)
+          );
+          console.log("Proveedor eliminado exitosamente");
+        } else {
+          alert('Error al eliminar el proveedor: ' + response.mensaje);
+        }
+      } catch (error) {
+        console.error("Error eliminando proveedor:", error);
+        alert('Error al eliminar el proveedor');
+      }
     }
   };
 
   // Filtrado de proveedores
   const filtered = proveedores.filter(
     (proveedor) =>
-      proveedor.nombre.toLowerCase().includes(searchName.toLowerCase()) &&
-      proveedor.estado.toLowerCase().includes(searchStatus.toLowerCase())
+      proveedor.Nombre.toLowerCase().includes(searchName.toLowerCase()) &&
+      proveedor.Estado.toString().toLowerCase().includes(searchStatus.toLowerCase())
   );
 
   // Si el formulario está abierto, mostrar solo el formulario
@@ -141,36 +175,60 @@ const Proveedores = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-4">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Cargando...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-4 text-danger">
+                    {error}
+                    <br />
+                    <button 
+                      className="btn btn-outline-primary btn-sm mt-2"
+                      onClick={cargarProveedores}
+                    >
+                      Reintentar
+                    </button>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-4 text-muted">
-                    No se encontraron proveedores.
+                    {proveedores.length === 0 
+                      ? "No hay proveedores registrados." 
+                      : "No se encontraron proveedores con los filtros aplicados."
+                    }
                   </td>
                 </tr>
               ) : (
                 filtered.map((proveedor) => (
-                  <tr key={proveedor.nit} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                  <tr key={proveedor.Nit} style={{ borderBottom: "1px solid #e3e8ee" }}>
                     <td>
                       <span
                         className="badge bg-light text-dark px-3 py-2 shadow-sm"
                         style={{ fontSize: 15 }}
                       >
-                        {proveedor.nit}
+                        {proveedor.Nit}
                       </span>
                     </td>
-                    <td className="fw-medium">{proveedor.nombre}</td>
-                    <td>{proveedor.correo}</td>
-                    <td>{proveedor.telefono}</td>
-                    <td>{proveedor.direccion}</td>
+                    <td className="fw-medium">{proveedor.Nombre}</td>
+                    <td>{proveedor.Correo}</td>
+                    <td>{proveedor.Telefono}</td>
+                    <td>{proveedor.Direccion}</td>
                     <td>
                       <span
-                        className={`badge fw-bold fs-6 px-1 py-2 shadow-sm ${proveedor.estado === "Activo"
+                        className={`badge fw-bold fs-6 px-1 py-2 shadow-sm ${proveedor.Estado === true || proveedor.Estado === "Activo"
                             ? "text-success"
                             : "text-danger"
                           }`}
                         style={{ fontSize: 14 }}
                       >
-                        {proveedor.estado}
+                        {proveedor.Estado === true || proveedor.Estado === "Activo" ? "Activo" : "Inactivo"}
                       </span>
                     </td>
                     <td>
@@ -179,7 +237,6 @@ const Proveedores = () => {
                           className="btn btn-outline-primary btn-sm rounded-circle"
                           title="Ver"
                           onClick={() => {
-                            // Aquí puedes agregar lógica para ver detalles
                             console.log("Ver proveedor:", proveedor);
                           }}
                         >
@@ -195,7 +252,7 @@ const Proveedores = () => {
                         <button
                           className="btn btn-outline-danger btn-sm rounded-circle"
                           title="Eliminar"
-                          onClick={() => handleEliminar(proveedor.nit)}
+                          onClick={() => handleEliminar(proveedor.Nit)}
                         >
                           <FaTrash size={16} />
                         </button>
