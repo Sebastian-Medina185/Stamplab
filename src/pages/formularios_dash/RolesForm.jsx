@@ -134,7 +134,7 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
 
         {/* Información adicional */}
         <div className="mt-4 p-3 rounded" style={{ backgroundColor: "#e9e6f3" }}>
-          <h6 className="text-dark mb-3">ℹ️ Información importante:</h6>
+          <h6 className="text-dark mb-3">Información importante:</h6>
           <ul className="mb-0 text-muted small">
             <li>Todos los campos marcados con (*) son obligatorios</li>
             <li>El nombre del rol debe ser único en el sistema</li>

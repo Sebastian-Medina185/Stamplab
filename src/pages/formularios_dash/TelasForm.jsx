@@ -1,67 +1,71 @@
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
-import { createColor, updateColor } from "../../Services/api-colores/colores";
+import { createTela, updateTela } from "../../Services/api-telas/telas";
 
-const ColoresForm = ({ onClose, onSave, colorEdit }) => {
+const TelasForm = ({ onClose, onSave, telaEdit }) => {
     const [formData, setFormData] = useState({
         Nombre: ""
     });
 
-    // Si estamos editando, llenar el formulario
+    // Si estamos editando, cargamos los datos de la tela seleccionada
     useEffect(() => {
-        if (colorEdit) {
+        if (telaEdit) {
             setFormData({
-                Nombre: colorEdit.Nombre || ""
+                Nombre: telaEdit.Nombre || ""
             });
         }
-    }, [colorEdit]);
+    }, [telaEdit]);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (colorEdit) {
-                // Editar
-                const result = await updateColor({
-                    ColorID: colorEdit.ColorID,
-                    ...formData
-                });
+            if (telaEdit) {
+                // Editar tela existente
+                const result = await updateTela(telaEdit.TelaID, formData);
                 if (result.estado) {
-                    alert("Color actualizado con éxito");
-                    onSave();
+                    alert("✅ Tela actualizada con éxito");
+                    onSave && onSave(); // refrescar lista en el padre
+                    onClose();
                 } else {
-                    alert("Error: " + result.mensaje);
+                    alert("⚠ Error: " + result.mensaje);
                 }
             } else {
-                // Crear
-                const result = await createColor(formData);
+                // Crear nueva tela
+                const result = await createTela(formData);
                 if (result.estado) {
-                    alert("Color creado con éxito");
-                    onSave();
+                    alert("✅ Tela creada con éxito");
+                    onSave && onSave();
+                    onClose();
                 } else {
-                    alert("Error: " + result.mensaje);
+                    alert("⚠ Error: " + result.mensaje);
                 }
             }
         } catch (error) {
-            console.error("Error guardando color:", error);
-            alert("Ocurrió un error al guardar");
+            console.error("Error guardando tela:", error);
+            alert("❌ Ocurrió un error al guardar la tela");
         }
     };
 
     return (
         <div className="card shadow-sm border-0 p-4 mx-4">
-            {/* Encabezado */}
+            {/* Encabezado con título centrado y botón cerrar */}
             <div className="position-relative mb-4 text-center">
                 <p className="fw-bold fs-3 mb-0">
-                    {colorEdit ? "Editar Color" : "Crear Color"}
+                    {telaEdit ? "Editar Tela" : "Crear Tela"}
                 </p>
                 <button
                     type="button"
                     onClick={onClose}
                     className="btn btn-warning btn-sm shadow-sm position-absolute top-0 end-0"
+                    title="Cerrar"
                 >
                     <FaTimes />
                 </button>
@@ -69,16 +73,20 @@ const ColoresForm = ({ onClose, onSave, colorEdit }) => {
 
             {/* Formulario */}
             <form className="row g-3" onSubmit={handleSubmit}>
+                {/* Nombre de la Tela */}
                 <div className="col-12">
-                    <label className="form-label fw-bold">Nombre del Color</label>
+                    <label className="form-label fw-bold">Nombre de la Tela</label>
                     <input
                         type="text"
                         name="Nombre"
                         value={formData.Nombre}
-                        onChange={handleChange}
+                        onChange={handleInputChange}
                         className="form-control"
+                        placeholder="Ej: Algodón"
+                        maxLength="40"
                         required
                     />
+                    <div className="form-text">Máximo 40 caracteres</div>
                 </div>
 
                 {/* Botones */}
@@ -91,7 +99,7 @@ const ColoresForm = ({ onClose, onSave, colorEdit }) => {
                         Cancelar
                     </button>
                     <button type="submit" className="btn btn-primary shadow-sm">
-                        {colorEdit ? "Actualizar" : "Guardar"}
+                        {telaEdit ? "Actualizar" : "Guardar"}
                     </button>
                 </div>
             </form>
@@ -99,4 +107,4 @@ const ColoresForm = ({ onClose, onSave, colorEdit }) => {
     );
 };
 
-export default ColoresForm;
+export default TelasForm;

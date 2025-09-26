@@ -63,7 +63,7 @@ const FormularioCompra = () => {
     setParte("");
     setSubparte("");
     setArchivo(null);
-    // reset file input value (handled in markup via key change if needed)
+    
     setObservacion("");
     setEditingIndex(null);
   };
@@ -101,7 +101,7 @@ const FormularioCompra = () => {
     setArchivo(d.archivo ?? null);
     setObservacion(d.observacion ?? "");
     setEditingIndex(index);
-    window.scrollTo({ top: 0, behavior: "smooth" }); // opcional: scroll al top del formulario
+    window.scrollTo({ top: 0, behavior: "smooth" }); 
   };
 
   const handleEliminarDiseno = (index) => {
@@ -140,7 +140,7 @@ const FormularioCompra = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Aquí puedes armar el objeto final y enviarlo al backend o guardar en localStorage
+    
     const compra = {
       producto: producto?.titulo,
       precio: producto?.precio,
@@ -435,7 +435,7 @@ const FormularioCompra = () => {
       <Modal show={showDesignPreview} onHide={closeDesignPreview} centered size="lg">
         <Modal.Body className="text-center">
           {previewSrc ? (
-            // si es blob url o ruta, lo mostramos; si no, mostramos nombre
+            
             <img src={previewSrc} alt="Preview diseño" style={{ maxWidth: "100%" }} />
           ) : (
             <p>No hay preview disponible</p>

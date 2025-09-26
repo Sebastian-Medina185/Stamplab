@@ -167,7 +167,7 @@ Rol: ${usuario.RolNombre || usuario.RolID}`);
             {/* Mensaje de error */}
             {error && (
                 <div className="alert alert-danger d-flex align-items-center" role="alert">
-                    <span className="me-2">⚠️</span>
+                    <span className="me-2"></span>
                     <div>
                         {error}
                         <button
@@ -220,7 +220,7 @@ Rol: ${usuario.RolNombre || usuario.RolID}`);
                                 <tr>
                                     <td colSpan={7} className="text-center py-5 text-danger">
                                         <div className="d-flex flex-column align-items-center">
-                                            <span className="mb-2">❌ Error al cargar datos</span>
+                                            <span className="mb-2">Error al cargar datos</span>
                                             <button
                                                 className="btn btn-sm btn-outline-primary"
                                                 onClick={loadUsuarios}
