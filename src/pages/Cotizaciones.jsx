@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
+import { FaEdit, FaEye, FaPlusCircle, FaSync, FaTrash } from "react-icons/fa";
+import CotizacionesForm from "./formularios_dash/cotizacion";
 
 const Cotizaciones = () => {
   const [search, setSearch] = useState("");
@@ -93,7 +94,7 @@ const Cotizaciones = () => {
                     <td>19-05-2025</td>
                     <td>
                       <span
-                        className="badge bg-success px-3 py-2 shadow-sm"
+                        className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm"
                         style={{ fontSize: 14 }}
                       >
                         Aprobada
@@ -102,7 +103,7 @@ const Cotizaciones = () => {
                     <td>
                       <div className="d-flex justify-content-center gap-2">
                         <button
-                          className="btn btn-outline-info btn-sm rounded-circle"
+                          className="btn btn-outline-primary btn-sm rounded-circle"
                           title="Ver"
                         >
                           <FaEye size={16} />
@@ -118,6 +119,12 @@ const Cotizaciones = () => {
                           title="Eliminar"
                         >
                           <FaTrash size={16} />
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary btn-sm rounded-circle"
+                          title="Cambiar estado"
+                        >
+                          <FaSync size={16} />
                         </button>
                       </div>
                     </td>

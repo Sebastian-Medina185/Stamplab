@@ -31,12 +31,12 @@ const FooterComponent = () => {
 
                     {/* Navegación */}
                     <Col md={4} className="mb-3 text-center text-md-end">
-                        <ul className="list-unstyled">
-                            <li><Link to='/landing' className="text-white text-decoration-none">Inicio</Link></li>
-                            <li><Link to='/productosLanding' className="text-white text-decoration-none">Productos</Link></li>
-                            <li><Link to='/servicios' className="text-white text-decoration-none">Servicios</Link></li>
-                            <li><Link to='/cotizacionesLanding' className="text-white text-decoration-none">Cotización</Link></li>
-                        </ul>
+                        <img
+                            src="src/assets/logostamplab.png"
+                            alt="StampLab Logo"
+                            style={{ height: "90px" }}
+                            className="me-2"
+                        />
                     </Col>
                 </Row>
             </Container>

@@ -82,11 +82,11 @@ const Servicios = () => {
 
                                         {/* Botón */}
                                         {t.estado === "Activo" ? (
-                                            <Button variant="success">Comprar Servicio</Button>
+                                            <Button variant="primary">Comprar Servicio</Button>
                                         ) : (
                                             <Button
-                                                variant="danger"
-                                                className="w-100 fw-bold fs-5"
+                                                variant="info"
+                                                className="w-100 fw-bold"
                                                 disabled
                                             >
                                                 Inactivo

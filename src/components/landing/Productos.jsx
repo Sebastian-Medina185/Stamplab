@@ -32,6 +32,9 @@ const ProductosLanding = () => {
             precio: 15000,
             estado: "Disponible",
             img: producto1,
+            tallas: ["S", "M", "L"],
+            colores: ["#FF0000", "#FF5555"],
+            tela: "Algodón"
         },
         {
             titulo: "Camisa",
@@ -39,6 +42,9 @@ const ProductosLanding = () => {
             precio: 16000,
             estado: "Disponible",
             img: producto2,
+            tallas: ["M", "L", "XL"],
+            colores: ["#FFFFFF", "#F0F0F0"],
+            tela: "Lino"
         },
         {
             titulo: "Buzo",
@@ -46,13 +52,9 @@ const ProductosLanding = () => {
             precio: 13000,
             estado: "Disponible",
             img: producto3,
-        },
-        {
-            titulo: "Camisa",
-            descripcion: "Camisa verde",
-            precio: 20000,
-            estado: "No disponible",
-            img: producto4,
+            tallas: ["S", "M", "L", "XL"],
+            colores: ["#000000", "#222222"],
+            tela: "Mezcla algodón/poliéster"
         },
         {
             titulo: "Pantalón",
@@ -60,17 +62,12 @@ const ProductosLanding = () => {
             precio: 20000,
             estado: "Disponible",
             img: producto5,
-        },
-        {
-            titulo: "Jeans",
-            descripcion: "Jeans clásicos",
-            precio: 20000,
-            estado: "No disponible",
-            img: producto6,
+            tallas: ["M", "L", "XL"],
+            colores: ["#000000"],
+            tela: "Algodón"
         },
     ];
 
-    // Filtrar productos
     const filtered = productos.filter(
         (p) =>
             (filter === "Todos" || p.estado === filter) &&
@@ -83,12 +80,10 @@ const ProductosLanding = () => {
 
             <section className="py-5 bg-light" id="productos">
                 <Container>
-                    {/* Título + filtros */}
                     <h3 className="fw-bold mb-0 text-center">Nuestros Productos</h3>
                     <br />
                     <div className="d-flex align-items-center justify-content-end gap-3 flex-wrap mb-4">
                         <div className="d-flex gap-2">
-                            {/* Filtro por estado */}
                             <Form.Select
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
@@ -99,7 +94,6 @@ const ProductosLanding = () => {
                                 <option value="No disponible">No disponible</option>
                             </Form.Select>
 
-                            {/* Buscador */}
                             <InputGroup style={{ maxWidth: 250 }}>
                                 <Form.Control
                                     placeholder="Buscar por nombre"
@@ -121,43 +115,66 @@ const ProductosLanding = () => {
                         </div>
                     </div>
 
-                    {/* Grid de productos */}
                     <Row className="g-4">
                         {filtered.map((p, i) => (
                             <Col md={3} sm={6} xs={12} className="d-flex" key={i}>
-                                <Card className="shadow-sm flex-fill h-100 text-center">
-                                    {/* Imagen */}
-                                    <div style={{ height: 280, overflow: "hidden" }}>
+                                <Card className="shadow-lg flex-fill h-75 product-card">
+                                    <div className="card-img-container" style={{ position: "relative", height: 370, overflow: "hidden" }}>
                                         <Card.Img
                                             src={p.img}
                                             alt={p.titulo}
-                                            className="w-100 h-100"
-                                            style={{ objectFit: "cover" }}
+                                            className="w-100"
+                                            style={{
+                                                height: 182,        // altura fija
+                                                objectFit: "contain", // mantiene toda la imagen sin recortar
+                                                display: "block",
+                                                margin: "0 auto",    // centra horizontalmente
+                                            }}
                                         />
+
+
+                                        {/* Overlay */}
+                                        <div className="overlay-info">
+                                            <h6 className="mb-3">Variantes disponibles</h6>
+                                            {p.tallas && <p><strong>Tallas:</strong> {p.tallas.join(", ")}</p>}
+                                            {p.colores && (
+                                                <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                                    <strong>Colores:</strong>
+                                                    <div className="d-flex gap-2">
+                                                        {p.colores.map((color, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="color-circle"
+                                                                style={{ backgroundColor: color }}
+                                                            ></span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {p.tela && <p><strong>Tela:</strong> {p.tela}</p>}
+                                        </div>
                                     </div>
 
-                                    <Card.Body className="d-flex flex-column">
-                                        {/* Estado */}
-                                        <div className="mb-2">
-                                            {p.estado === "Disponible" ? (
-                                                <Badge bg="success">Disponible</Badge>
-                                            ) : (
-                                                <Badge bg="danger">No disponible</Badge>
-                                            )}
+                                    <Card.Body className="d-flex flex-column justify-content-between align-items-center text-center">
+                                        <div>
+                                            <div className="mb-2">
+                                                {p.estado === "Disponible" ? (
+                                                    <Badge bg="success">Disponible</Badge>
+                                                ) : (
+                                                    <Badge bg="danger">No disponible</Badge>
+                                                )}
+                                            </div>
+
+                                            <Card.Title className="fw-bold">{p.titulo}</Card.Title>
+                                            <Card.Text className="text-muted">{p.descripcion}</Card.Text>
+
+                                            <Card.Text className="fw-bold mb-3">
+                                                Precio: ${p.precio.toLocaleString()}
+                                            </Card.Text>
                                         </div>
 
-                                        {/* Nombre */}
-                                        <Card.Title className="fw-bold">{p.titulo}</Card.Title>
-                                        <Card.Text className="text-muted">{p.descripcion}</Card.Text>
-
-                                        {/* Precio */}
-                                        <Card.Text className="fw-bold mb-3">
-                                            Precio: ${p.precio.toLocaleString()}
-                                        </Card.Text>
-
-                                        {/* Botón */}
                                         <Button
-                                            className="btn btn-success"
+                                            className="btn btn-primary mt-2"
                                             disabled={p.estado !== "Disponible"}
                                             onClick={() =>
                                                 navigate("/formularioCompra", {

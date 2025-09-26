@@ -1,5 +1,6 @@
-import { Form, Button, Card } from "react-bootstrap";
+import { Form, Button, Card, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import fondo from "../../assets/images/imagenfondo.png"; 
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
 
@@ -11,63 +12,139 @@ const RegistroLanding = () => {
             <div className="d-flex justify-content-center align-items-center py-5 bg-light">
                 <Card
                     style={{
-                        width: "22rem",
-                        backgroundColor: "#1d1a2b",
-                        color: "#fff",
+                        width: "65rem",
+                        backgroundColor: "#ffffff",
+                        color: "#212529",
+                        border: "1px solid #dee2e6",
                     }}
-                    className="p-4 shadow-lg rounded-4"
+                    className="shadow-lg rounded-4 overflow-hidden"
                 >
-                    <h5 className="text-center mb-4">Formulario de registro</h5>
+                    <Row className="g-0">
+                        {/* Columna Izquierda - Imagen */}
+                        <Col md={6} className="d-none d-md-block">
+                            <div
+                                style={{
+                                    backgroundImage: `url(${fondo})`,
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                    height: "100%",
+                                    width: "100%",
+                                }}
+                            ></div>
+                        </Col>
 
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Nombre</Form.Label>
-                            <Form.Control type="text" placeholder="Ingresa tu nombre" />
-                        </Form.Group>
+                        {/* Columna Derecha - Formulario */}
+                        <Col md={6} className="p-5 d-flex flex-column justify-content-center">
+                            <h4 className="text-center mb-4 fw-bold text-dark">
+                                Formulario de Registro
+                            </h4>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Número documento</Form.Label>
-                            <Form.Control type="text" placeholder="Número de documento" />
-                        </Form.Group>
+                            <Form>
+                                <Row>
+                                    <Col md={6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">Nombre</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Ingresa tu nombre"
+                                                className="rounded-3 shadow-sm"
+                                            />
+                                        </Form.Group>
+                                    </Col>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Correo electrónico</Form.Label>
-                            <Form.Control type="email" placeholder="Correo" />
-                        </Form.Group>
+                                    <Col md={6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">Número documento</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Número de documento"
+                                                className="rounded-3 shadow-sm"
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Teléfono</Form.Label>
-                            <Form.Control type="text" placeholder="Teléfono" />
-                        </Form.Group>
+                                <Row>
+                                    <Col md={6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">Correo electrónico</Form.Label>
+                                            <Form.Control
+                                                type="email"
+                                                placeholder="Correo"
+                                                className="rounded-3 shadow-sm"
+                                            />
+                                        </Form.Group>
+                                    </Col>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Dirección</Form.Label>
-                            <Form.Control type="text" placeholder="Dirección" />
-                        </Form.Group>
+                                    <Col md={6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">Teléfono</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Teléfono"
+                                                className="rounded-3 shadow-sm"
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Contraseña</Form.Label>
-                            <Form.Control type="password" placeholder="Contraseña" />
-                        </Form.Group>
+                                <Row>
+                                    <Col md={6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">Dirección</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Dirección"
+                                                className="rounded-3 shadow-sm"
+                                            />
+                                        </Form.Group>
+                                    </Col>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Confirmar contraseña</Form.Label>
-                            <Form.Control type="password" placeholder="Confirmar contraseña" />
-                        </Form.Group>
+                                    <Col md={6}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="fw-semibold">Contraseña</Form.Label>
+                                            <Form.Control
+                                                type="password"
+                                                placeholder="Contraseña"
+                                                className="rounded-3 shadow-sm"
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                        {/* Botón que redirige */}
-                        <div className="d-grid mb-3">
-                            <Link to="/login">
-                                <Button variant="info" className="text-white fw-bold w-100">
-                                    Registrar
-                                </Button>
-                            </Link>
-                        </div>
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="fw-semibold">Confirmar contraseña</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        placeholder="Confirmar contraseña"
+                                        className="rounded-3 shadow-sm"
+                                    />
+                                </Form.Group>
 
-                        <p className="text-center mb-0">
-                            ¿Ya tienes cuenta? <Link to='/login' className="text-decoration-none">Inicia sesión</Link>
-                        </p>
-                    </Form>
+                                {/* Botón que redirige */}
+                                <div className="d-grid mb-3">
+                                    <Link to="/login">
+                                        <Button
+                                            variant="primary"
+                                            className="fw-bold w-100 rounded-pill shadow-sm"
+                                        >
+                                            Registrar
+                                        </Button>
+                                    </Link>
+                                </div>
+
+                                <p className="text-center mb-0 text-secondary">
+                                    ¿Ya tienes cuenta?{" "}
+                                    <Link
+                                        to="/login"
+                                        className="fw-semibold text-primary text-decoration-none"
+                                    >
+                                        Inicia sesión
+                                    </Link>
+                                </p>
+                            </Form>
+                        </Col>
+                    </Row>
                 </Card>
             </div>
 
