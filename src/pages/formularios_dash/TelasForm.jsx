@@ -31,26 +31,26 @@ const TelasForm = ({ onClose, onSave, telaEdit }) => {
                 // Editar tela existente
                 const result = await updateTela(telaEdit.TelaID, formData);
                 if (result.estado) {
-                    alert("✅ Tela actualizada con éxito");
+                    alert("Tela actualizada con éxito");
                     onSave && onSave(); // refrescar lista en el padre
                     onClose();
                 } else {
-                    alert("⚠ Error: " + result.mensaje);
+                    alert("Error: " + result.mensaje);
                 }
             } else {
                 // Crear nueva tela
                 const result = await createTela(formData);
                 if (result.estado) {
-                    alert("✅ Tela creada con éxito");
+                    alert("Tela creada con éxito");
                     onSave && onSave();
                     onClose();
                 } else {
-                    alert("⚠ Error: " + result.mensaje);
+                    alert("Error: " + result.mensaje);
                 }
             }
         } catch (error) {
             console.error("Error guardando tela:", error);
-            alert("❌ Ocurrió un error al guardar la tela");
+            alert("Ocurrió un error al guardar la tela");
         }
     };
 

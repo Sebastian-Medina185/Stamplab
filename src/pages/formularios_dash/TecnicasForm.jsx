@@ -151,7 +151,7 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
           </div>
         </div>
 
-        {/* Información adicional */}
+        {/* Información adicional
         <div className="mt-4 p-3 rounded" style={{ backgroundColor: "#e9e6f3" }}>
           <h6 className="text-dark mb-3">Información importante:</h6>
           <ul className="mb-0 text-muted small">
@@ -160,7 +160,7 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
             <li>Las técnicas inactivas no estarán disponibles para las cotizaciones</li>
             <li>La URL de la imagen es opcional</li>
           </ul>
-        </div>
+        </div> */}
 
         {/* Botones */}
         <div className="d-flex justify-content-center gap-3 mt-4">

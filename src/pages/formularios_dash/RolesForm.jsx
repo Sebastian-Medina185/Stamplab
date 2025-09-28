@@ -132,16 +132,6 @@ const RolesForm = ({ onClose, onSave, rolEdit = null }) => {
           </div>
         </div>
 
-        {/* Información adicional */}
-        <div className="mt-4 p-3 rounded" style={{ backgroundColor: "#e9e6f3" }}>
-          <h6 className="text-dark mb-3">Información importante:</h6>
-          <ul className="mb-0 text-muted small">
-            <li>Todos los campos marcados con (*) son obligatorios</li>
-            <li>El nombre del rol debe ser único en el sistema</li>
-            <li>Los roles inactivos no estarán disponibles para asignar a usuarios</li>
-            <li>Una vez creado, podrás modificar el rol en cualquier momento</li>
-          </ul>
-        </div>
 
         {/* Botones */}
         <div className="d-flex justify-content-center gap-3 mt-4">
