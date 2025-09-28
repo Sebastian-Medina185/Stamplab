@@ -23,6 +23,7 @@ import DashboardMedicionesempeño from "../pages/MedicionDesempeño";
 import EditarPerfil from "../components/landing/EditarPerfil";
 import MisCotizaciones from "../components/landing/Miscotizaciones";
 import FormularioCompra from "../components/landing/FormularioCompra";
+import RegistrarProducto from "../pages/formularios_dash/RegistrarProducto";
 
 
 const AppRoutes = () => {
@@ -45,6 +46,7 @@ const AppRoutes = () => {
 
             <Route path="/" element={<DashboardLayout />}>
                 <Route path="cotizaciones" element={<Cotizaciones />} />
+                <Route path="/productos/registrar" element={<RegistrarProducto />} />
                 <Route path="roles" element={<Roles />} />
                 <Route path="telas" element={<Telas />} />
                 <Route path="insumos" element={<Insumos />} />
