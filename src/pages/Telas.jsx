@@ -1,36 +1,121 @@
-import { useState } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
+import TelasForm from "./formularios_dash/TelasForm";
+import { getTelas, deleteTela } from "../Services/api-telas/telas.js";
 
 const Telas = () => {
   const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [telas, setTelas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [telaEdit, setTelaEdit] = useState(null);
 
-  const telas = [
-    { id: "01", nombre: "Algodón", descripcion: "Tela fresca y suave" },
-    { id: "02", nombre: "Lino", descripcion: "Ligera y transpirable" },
-    { id: "03", nombre: "Seda", descripcion: "Suave y brillante" },
-  ];
+  // ========== Cargar telas ==========
+  const fetchTelas = async () => {
+    try {
+      setLoading(true);
+      const data = await getTelas();
+      if (data && Array.isArray(data.datos)) {
+        setTelas(data.datos);
+      } else {
+        console.warn("Los datos recibidos no tienen la estructura esperada:", data);
+        setTelas([]);
+      }
+      setError(null);
+    } catch (err) {
+      console.error("Error al cargar telas:", err);
+      setError("Error al cargar las telas");
+      setTelas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filtradas = telas.filter((t) =>
-    t.nombre.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    fetchTelas();
+  }, []);
+
+  // ========== Guardar (crear/editar) ==========
+  const handleSave = async () => {
+    await fetchTelas();
+    setShowForm(false);
+    setTelaEdit(null);
+  };
+
+  // ========== Editar ==========
+  const handleEdit = (tela) => {
+    setTelaEdit(tela);
+    setShowForm(true);
+  };
+
+  // ========== Eliminar ==========
+  const handleDelete = async (id) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta tela?")) return;
+    try {
+      const result = await deleteTela(id);
+      if (result.estado) {
+        alert("Tela eliminada correctamente");
+        fetchTelas();
+      } else {
+        alert("Error: " + result.mensaje);
+      }
+    } catch (error) {
+      console.error("Error eliminando tela:", error);
+      alert("Error de conexión al eliminar");
+    }
+  };
+
+  // ========== Filtrar ==========
+  const filteredTelas = telas.filter((tela) =>
+    tela?.Nombre?.toLowerCase().includes(search.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100dvh" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ========== Mostrar formulario ==========
+  if (showForm) {
+    return (
+      <TelasForm
+        onClose={() => {
+          setShowForm(false);
+          setTelaEdit(null);
+        }}
+        onSave={handleSave}
+        telaEdit={telaEdit}
+      />
+    );
+  }
+
+  // ========== Listado ==========
   return (
     <div
       className="d-flex flex-column"
       style={{
         minHeight: "100dvh",
-        background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
+        background: "linear-gradient(135deg, #ffffff 0%, #fafcff 100%)",
       }}
     >
-      {/* Encabezado y botón agregar */}
+      {/* Encabezado */}
       <div className="d-flex justify-content-between align-items-center mb-4 mt-3 px-4">
-        <h1
-          className="fs-4 fw-bold mb-0 text-primary"
-          style={{ letterSpacing: 1 }}
-        >
+        <h1 className="fs-4 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
           Gestión de Telas
         </h1>
-        <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm">
+        <button
+          className="btn btn-primary d-flex align-items-center gap-2 shadow-sm"
+          onClick={() => {
+            setTelaEdit(null);
+            setShowForm(true);
+          }}
+        >
           <FaPlusCircle size={22} />
           Agregar Tela
         </button>
@@ -43,25 +128,23 @@ const Telas = () => {
           <input
             type="text"
             className="form-control border-start-0"
-            placeholder="Filtrar por telas..."
+            placeholder="Filtrar telas..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="alert alert-danger mx-4" role="alert">
+          {error}
+        </div>
+      )}
+
       {/* Tabla */}
-      <div
-        className="flex-grow-1 px-4 pb-4"
-        style={{
-          overflow: "auto",
-          minHeight: 0,
-        }}
-      >
-        <div
-          className="table-responsive rounded-4 shadow"
-          style={{ background: "#fff" }}
-        >
+      <div className="flex-grow-1 px-4 pb-4" style={{ overflow: "auto", minHeight: 0 }}>
+        <div className="table-responsive rounded-4 shadow" style={{ background: "#fff" }}>
           <table className="table align-middle mb-0">
             <thead
               style={{
@@ -70,59 +153,53 @@ const Telas = () => {
               }}
             >
               <tr>
-                <th style={{ width: 120, borderTopLeftRadius: 16 }}>ID Tela</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th style={{ width: 180 }}>Acciones</th>
+                <th style={{ borderTopLeftRadius: 16 }}>ID</th>
+                <th>Nombre de la Tela</th>
+                <th style={{ borderTopRightRadius: 16 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filtradas.length === 0 && (
+              {filteredTelas.length > 0 ? (
+                filteredTelas.map((tela, index) => (
+                  <tr key={tela.TelaID || index} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                    <td>
+                      <span
+                        className="badge bg-light text-dark px-3 py-2 shadow-sm"
+                        style={{ fontSize: 15 }}
+                      >
+                        {tela.TelaID || index + 1}
+                      </span>
+                    </td>
+                    <td className="fw-medium">{tela.Nombre || "Sin nombre"}</td>
+                    <td>
+                      <div className="d-flex justify-content-center gap-2">
+                        <button
+                          className="btn btn-outline-warning btn-sm rounded-circle"
+                          title="Editar"
+                          onClick={() => handleEdit(tela)}
+                        >
+                          <FaEdit size={16} />
+                        </button>
+                        <button
+                          className="btn btn-outline-danger btn-sm rounded-circle"
+                          title="Eliminar"
+                          onClick={() => handleDelete(tela.TelaID)}
+                        >
+                          <FaTrash size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td
-                    colSpan={4}
-                    className="text-center py-4 text-muted"
-                  >
-                    No hay telas para mostrar.
+                  <td colSpan="3" className="text-center py-4 text-muted">
+                    {search
+                      ? "No se encontraron telas que coincidan con la búsqueda"
+                      : "No hay telas disponibles"}
                   </td>
                 </tr>
               )}
-              {filtradas.map((t) => (
-                <tr key={t.id} style={{ borderBottom: "1px solid #e3e8ee" }}>
-                  <td>
-                    <span
-                      className="badge bg-light text-dark px-3 py-2 shadow-sm"
-                      style={{ fontSize: 15 }}
-                    >
-                      {t.id}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 500, fontSize: 16 }}>{t.nombre}</td>
-                  <td className="text-muted">{t.descripcion}</td>
-                  <td>
-                    <div className="d-flex justify-content-center gap-2">
-                      <button
-                        className="btn btn-outline-primary btn-sm rounded-circle"
-                        title="Ver"
-                      >
-                        <FaEye size={16} />
-                      </button>
-                      <button
-                        className="btn btn-outline-warning btn-sm rounded-circle"
-                        title="Editar"
-                      >
-                        <FaEdit size={16} />
-                      </button>
-                      <button
-                        className="btn btn-outline-danger btn-sm rounded-circle"
-                        title="Eliminar"
-                      >
-                        <FaTrash size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>

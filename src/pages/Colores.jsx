@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
-import ColoresForm from "./formularios_dash/colores";
-import { getColores, deleteColor } from "../Services/api-colores/colores"; 
+
+import ColoresForm from "./formularios_dash/colores.jsx";
+import { getColores, deleteColor } from "../Services/api-colores/colores.js";
 
 const Colores = () => {
     const [search, setSearch] = useState("");
-    const [colores, setColores] = useState([]); // 👉 estado con datos desde la API
+    const [colores, setColores] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const [selectedColor, setSelectedColor] = useState(null);
+    const [colorEdit, setColorEdit] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // Cargar colores al iniciar
@@ -20,7 +21,7 @@ const Colores = () => {
         try {
             const result = await getColores();
             if (result.estado) {
-                setColores(result.datos); // 👉 asumimos que el backend responde {estado, datos}
+                setColores(result.datos);
             } else {
                 setColores([]);
                 console.warn("No se encontraron colores");
@@ -33,10 +34,16 @@ const Colores = () => {
     };
 
     // Guardar (crear o actualizar)
-    const handleSave = (nuevoColor) => {
-        fetchColores(); // recarga la lista
+    const handleSave = async () => {
+        await fetchColores();
         setShowForm(false);
-        setSelectedColor(null);
+        setColorEdit(null);
+    };
+
+    // Editar
+    const handleEdit = (c) => {
+        setColorEdit(c);
+        setShowForm(true);
     };
 
     // Eliminar
@@ -56,7 +63,24 @@ const Colores = () => {
         }
     };
 
-    // Filtro por búsqueda
+    // Cerrar formulario
+    const handleCloseForm = () => {
+        setShowForm(false);
+        setColorEdit(null);
+    };
+
+    // Si el formulario está abierto → mostramos solo el form
+    if (showForm) {
+        return (
+            <ColoresForm
+                onClose={handleCloseForm}
+                onSave={handleSave}
+                colorEdit={colorEdit}
+            />
+        );
+    }
+
+    // Tabla/listado
     const filtered = colores.filter((c) =>
         c.Nombre.toLowerCase().includes(search.toLowerCase())
     );
@@ -79,7 +103,7 @@ const Colores = () => {
                 <button
                     className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
                     onClick={() => {
-                        setSelectedColor(null);
+                        setColorEdit(null);
                         setShowForm(true);
                     }}
                 >
@@ -148,10 +172,7 @@ const Colores = () => {
                                                 <button
                                                     className="btn btn-outline-warning btn-sm rounded-circle"
                                                     title="Editar"
-                                                    onClick={() => {
-                                                        setSelectedColor(c);
-                                                        setShowForm(true);
-                                                    }}
+                                                    onClick={() => handleEdit(c)}
                                                 >
                                                     <FaEdit size={14} />
                                                 </button>
@@ -171,22 +192,6 @@ const Colores = () => {
                     </table>
                 </div>
             </div>
-
-            {/* Formulario */}
-            {showForm && (
-                <div
-                    className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-                    style={{ background: "rgba(0,0,0,0.4)" }}
-                >
-                    <div className="bg-white rounded-4 shadow-lg p-3" style={{ width: "500px" }}>
-                        <ColoresForm
-                            onClose={() => setShowForm(false)}
-                            onSave={handleSave}
-                            color={selectedColor}
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

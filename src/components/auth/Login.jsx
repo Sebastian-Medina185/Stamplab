@@ -1,6 +1,6 @@
 import { Form, Button, Card, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import fondo from '../../assets/images/imagenfondo.png'; // ✅ imagen importada
+import fondo from '../../assets/images/imagenfondo.png'; 
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
 
@@ -24,7 +24,7 @@ const LoginLanding = () => {
                         <Col md={6} className="d-none d-md-block">
                             <div
                                 style={{
-                                    backgroundImage: `url(${fondo})`, // ✅ ahora sí carga la imagen
+                                    backgroundImage: `url(${fondo})`, 
                                     backgroundSize: "cover",
                                     backgroundPosition: "center",
                                     height: "100%",

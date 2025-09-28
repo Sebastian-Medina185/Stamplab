@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/roles"; // Cambia el puerto si es necesario
+const API_URL = "http://localhost:3001/roles"; 
 
 // Obtener todos los roles
 export const getRoles = async () => {
