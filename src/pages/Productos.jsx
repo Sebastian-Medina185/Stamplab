@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
+import { FaPlusCircle, FaSearch, FaTimes, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+
 
 import {
   getProductos,
@@ -52,6 +54,10 @@ const Productos = () => {
   // editar estado de variante (si se está editando una existente)
   const [editandoVariante, setEditandoVariante] = useState(null);
 
+  // buscar producto
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
   // Cargar datos iniciales
   useEffect(() => {
     cargarListas();
@@ -92,61 +98,102 @@ const Productos = () => {
 
   const guardarProducto = async (e) => {
     e.preventDefault();
-    // validación básica
+
     if (!producto.Nombre || !producto.Descripcion || !producto.TelaID) {
       Swal.fire("Completa los campos", "Nombre, descripción y tela son obligatorios", "warning");
       return;
     }
 
     try {
-      const res = await createProducto({
+      const productoData = {
         Nombre: producto.Nombre,
         Descripcion: producto.Descripcion,
         TelaID: parseInt(producto.TelaID, 10),
-      });
+      };
 
-      // adaptar según lo que devuelva tu backend
-      // puede devolver { estado:true, datos: { ProductoID: x, ... } }
-      let nuevoProducto = null;
-      if (res?.datos) nuevoProducto = res.datos;
-      else if (res?.data?.datos) nuevoProducto = res.data.datos;
-      else nuevoProducto = res;
+      if (productoCreado?.ProductoID) {
+        // Actualizar producto existente
+        await updateProducto(productoCreado.ProductoID, productoData);
+        setProductoCreado({
+          ...productoCreado,
+          ...productoData,
+          Tela: telas.find(t => t.TelaID == productoData.TelaID)?.Nombre
+        });
+        Swal.fire("Actualizado", "Producto actualizado correctamente", "success");
+      } else {
+        // Crear nuevo producto
+        const response = await createProducto(productoData);
+        const nuevoProducto = response?.datos || response;
+        
+        // Establecer el producto creado manteniendo el nombre
+        setProductoCreado({
+          ...nuevoProducto,
+          Nombre: productoData.Nombre,
+          isNew: true
+        });
+        
+        // Limpiar el formulario y el estado de edición
+        setProducto({
+          Nombre: "",
+          Descripcion: "",
+          TelaID: "",
+        });
+        setEditandoVariante(null); // Asegurar que no estamos en modo edición
+        
+        Swal.fire("Creado", "Producto creado correctamente. Ahora puedes agregar variantes.", "success");
+      }
 
-      // si el backend devolvió SCOPE_IDENTITY() como { ProductoID: x }:
-      // a veces devolvemos { ProductoID: 5 } o { id: 5 } según tu modelo.
-      setProductoCreado(nuevoProducto);
-      Swal.fire("Producto creado", "Ahora puedes agregar variantes", "success");
+      // Recargar la lista de productos
       cargarProductos();
     } catch (err) {
-      console.error("Error crear producto:", err);
-      Swal.fire("Error", err?.response?.data?.mensaje || err.message || "Error al crear producto", "error");
+      console.error("Error al guardar producto:", err);
+      Swal.fire("Error", err?.response?.data?.mensaje || "Error al guardar producto", "error");
     }
   };
 
-  // seleccionar un producto para editar (cargar en formulario)
+  // // seleccionar un producto para editar (cargar en formulario)
+  // const editarProducto = (p) => {
+  //   // p proviene de la lista de productos que trae el backend (tiene ProductoID, Nombre, Descripcion, Tela)
+  //   setProducto({
+  //     Nombre: p.Nombre || "",
+  //     Descripcion: p.Descripcion || "",
+  //     TelaID: p.TelaID || p.TelaID || "",
+  //   });
+  //   // marcar como creado para abrir sección variantes y permitir actualizar si se quiere
+  //   setProductoCreado(p);
+  //   // cargar variantes actuales de ese producto
+  //   cargarVariantes(p.ProductoID || p.ProductoID || p.id);
+  // };
+
   const editarProducto = (p) => {
-    // p proviene de la lista de productos que trae el backend (tiene ProductoID, Nombre, Descripcion, Tela)
+    // Configurar el producto en el formulario
     setProducto({
-      Nombre: p.Nombre || "",
-      Descripcion: p.Descripcion || "",
-      TelaID: p.TelaID || p.TelaID || "",
+      Nombre: p.Nombre,
+      Descripcion: p.Descripcion,
+      TelaID: p.TelaID?.toString() || "",
     });
-    // marcar como creado para abrir sección variantes y permitir actualizar si se quiere
+
+    // Marcar el producto como seleccionado/creado
     setProductoCreado(p);
-    // cargar variantes actuales de ese producto
-    cargarVariantes(p.ProductoID || p.ProductoID || p.id);
+
+    // Mostrar el formulario
+    setShowForm(true);
+
+    // Cargar las variantes del producto
+    cargarVariantes(p.ProductoID || p.id);
   };
 
   const eliminarProducto = async (p) => {
     const id = p.ProductoID || p.id;
     const confirm = await Swal.fire({
       title: "Eliminar producto",
-      text: `¿Eliminar ${p.Nombre}? Esto también eliminará sus variantes.`,
+      text: `¿Eliminar ${p.Nombre}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Sí, eliminar",
     });
     if (!confirm.isConfirmed) return;
+    // Esto también eliminará sus variantes.
 
     try {
       await deleteProducto(id);
@@ -159,7 +206,7 @@ const Productos = () => {
       }
     } catch (err) {
       console.error("Error eliminar producto:", err);
-      Swal.fire("Error", "No se pudo eliminar producto", "error");
+      Swal.fire("Error", "No se pudo eliminar producto porque tiene variantes asociadas.", "error");
     }
   };
 
@@ -189,58 +236,66 @@ const Productos = () => {
   // agregar o actualizar variante
   const guardarVariante = async (e) => {
     e.preventDefault();
-    if (!productoCreado) {
-      Swal.fire("Registra producto", "Primero registra o selecciona un producto", "warning");
+
+    if (!productoCreado?.ProductoID && !productoCreado?.id) {
+      Swal.fire("Error", "No hay producto seleccionado", "error");
       return;
     }
 
-    // validar campos requeridos
-    if (!variante.ColorID && !variante.ColorID !== 0 && !variante.colorId) {
-      Swal.fire("Falta color", "Elige un color", "warning");
+    // Validamos todos los campos requeridos
+    if (!variante.ColorID || !variante.TallaID || !variante.Stock || !variante.Precio) {
+      Swal.fire("Error", "Todos los campos son obligatorios", "warning");
       return;
     }
 
     try {
-      // construir payload adaptado al backend SQL Server (según tus rutas)
-      const productoId = productoCreado.ProductoID || productoCreado.id;
-      const payload = editandoVariante
-        ? {
-            VarianteID: editandoVariante.VarianteID || editandoVariante.id,
-            ColorID: parseInt(variante.ColorID || variante.colorId, 10),
-            TallaID: parseInt(variante.TallaID || variante.tallaId, 10),
-            Stock: parseInt(variante.Stock || variante.stock, 10),
-            Imagen: variante.Imagen || variante.imagen || "",
-            Precio: parseFloat(variante.Precio || variante.precio || 0),
-            Estado: variante.Estado !== undefined ? variante.Estado : variante.estado ? 1 : 0,
-          }
-        : {
-            ProductoID: parseInt(productoId, 10),
-            ColorID: parseInt(variante.ColorID || variante.colorId, 10),
-            TallaID: parseInt(variante.TallaID || variante.tallaId, 10),
-            Stock: parseInt(variante.Stock || variante.stock, 10),
-            Imagen: variante.Imagen || variante.imagen || "",
-            Precio: parseFloat(variante.Precio || variante.precio || 0),
-            Estado: variante.Estado !== undefined ? variante.Estado : variante.estado ? 1 : 0,
-          };
+      const payload = {
+        ProductoID: parseInt(productoCreado.ProductoID || productoCreado.id),
+        ColorID: parseInt(variante.ColorID),
+        TallaID: parseInt(variante.TallaID),
+        Stock: parseInt(variante.Stock),
+        Precio: parseFloat(variante.Precio),
+        Imagen: variante.Imagen || "",
+        Estado: variante.Estado ? 1 : 0  // Convertir booleano a 1/0
+      };
 
       if (editandoVariante) {
-        // updateVariante espera (id, data) en tus servicios — intenta usar updateVariante
-        await updateVariante(payload.VarianteID || payload.id, payload);
-        Swal.fire("Actualizado", "Variante actualizada correctamente", "success");
+        // Incluir el ID de la variante en el payload para actualización
+        const varianteId = editandoVariante.VarianteID || editandoVariante.id;
+
+        // Log para debugging
+        console.log('Actualizando variante:', varianteId, payload);
+
+        await updateVariante(varianteId, {
+          ...payload,
+          VarianteID: varianteId  // Incluir el ID en el payload
+        });
+
+        Swal.fire("Éxito", "Variante actualizada correctamente", "success");
         setEditandoVariante(null);
       } else {
         await createVariante(payload);
-        Swal.fire("Creado", "Variante agregada correctamente", "success");
+        Swal.fire("Éxito", "Variante creada correctamente", "success");
       }
 
-      // recargar variantes
-      cargarVariantes(productoId);
-      // limpiar formulario variante
-      setVariante({ ColorID: "", TallaID: "", Stock: "", Imagen: "", Precio: "", Estado: true });
+      // Limpiar formulario
+      setVariante({
+        ColorID: "",
+        TallaID: "",
+        Stock: "",
+        Imagen: "",
+        Precio: "",
+        Estado: true
+      });
+
+      // Recargar variantes
+      await cargarVariantes(productoCreado.ProductoID || productoCreado.id);
     } catch (err) {
-      console.error("Error guardar variante:", err);
-      const msg = err?.response?.data?.message || err?.response?.data || err.message || "Error al guardar variante";
-      Swal.fire("Error", msg, "error");
+      console.error("Error al guardar variante:", err);
+      const errorMsg = err.response?.data?.mensaje ||
+        err.response?.data?.error ||
+        "Error al guardar la variante";
+      Swal.fire("Error", errorMsg, "error");
     }
   };
 
@@ -268,13 +323,20 @@ const Productos = () => {
       showCancelButton: true,
       confirmButtonText: "Sí, eliminar",
     });
+    
     if (!confirm.isConfirmed) return;
+    
     try {
       await deleteVariante(id);
       Swal.fire("Eliminada", "Variante eliminada", "success");
-      // recargar
-      const prodId = modalProducto ? (modalProducto.ProductoID || modalProducto.id) : productoCreado?.ProductoID || productoCreado?.id;
-      if (prodId) cargarVariantes(prodId);
+      
+      // Recargar variantes tanto en el modal como en el formulario
+      const prodId = modalProducto?.ProductoID || modalProducto?.id || 
+                    productoCreado?.ProductoID || productoCreado?.id;
+                    
+      if (prodId) {
+        await cargarVariantes(prodId);
+      }
     } catch (err) {
       console.error("Error eliminar variante:", err);
       Swal.fire("Error", "No se pudo eliminar variante", "error");
@@ -283,75 +345,232 @@ const Productos = () => {
 
   // editar variante: cargar en formulario y marcar editando
   const handleEditarVariante = (v) => {
-    // adaptar propiedades del objeto variante que llega del backend
     setEditandoVariante(v);
+    // Asegurarse de que el producto está seleccionado
+    setProductoCreado(modalProducto || productoCreado);
     setVariante({
-      colorId: v.ColorID || v.ColorID || v.ColorID || v.colorId || v.Color || "",
-      tallaId: v.TallaID || v.TallaID || v.tallaId || v.Talla || "",
-      stock: v.Stock || v.stock || "",
-      imagen: v.Imagen || v.imagen || v.Imagen || "",
-      precio: v.Precio || v.precio || "",
-      estado: v.Estado === 1 || v.Estado === true || v.estado === true,
-      // also populate ColorID/TallaID keys for payload consistency
-      ColorID: v.ColorID || v.ColorID || v.colorId || undefined,
-      TallaID: v.TallaID || v.TallaID || v.tallaId || undefined,
+      ColorID: (v.ColorID || v.Color_ID)?.toString() || "",
+      TallaID: (v.TallaID || v.Talla_ID)?.toString() || "",
+      Stock: v.Stock?.toString() || "",
+      Precio: v.Precio?.toString() || "",
+      Imagen: v.Imagen || "",
+      Estado: v.Estado === 1 || v.Estado === true
     });
 
     // scroll up to variant form (optional)
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Agregar esta función después de los estados
+  const productosFiltrados = useMemo(() => {
+    if (!search) return productos;
+
+    return productos.filter(p =>
+      p.Nombre.toLowerCase().includes(search.toLowerCase()) ||
+      p.Descripcion.toLowerCase().includes(search.toLowerCase()) ||
+      p.Tela.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [productos, search]);
+
   return (
-    <div className="container mt-4">
-      <div className="card p-4 shadow-sm">
-        <h3 className="mb-3">Registrar Producto</h3>
+    <div className="d-flex flex-column" style={{
+      minHeight: "100dvh",
+      background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
+      padding: "20px 30px",
+      fontSize: "0.9rem",
+    }}>
+      {/* Header con título y botón */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h1 className="fs-5 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
+          Gestión de Productos
+        </h1>
+        <button
+          className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
+          onClick={() => {
+            setProducto({ Nombre: "", Descripcion: "", TelaID: "" });
+            setProductoCreado(null);
+            setShowForm(true);
+          }}
+        >
+          <FaPlusCircle size={18} />
+          Agregar Producto
+        </button>
+      </div>
 
-        {/* Form producto */}
-        {!productoCreado && (
-          <form onSubmit={guardarProducto}>
-            <div className="mb-2">
-              <label className="form-label">Nombre</label>
-              <input name="Nombre" className="form-control" value={producto.Nombre} onChange={handleProductoChange} required />
-            </div>
+      {/* Buscador */}
+      <div className="d-flex justify-content-end mb-3">
+        <div className="input-group input-group-sm" style={{ maxWidth: 260 }}>
+          <span className="input-group-text bg-white border-end-0">
+            <FaSearch />
+          </span>
+          <input
+            type="text"
+            className="form-control border-start-0"
+            placeholder="Buscar producto..."
+            value={search || ""}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
 
-            <div className="mb-2">
-              <label className="form-label">Descripción</label>
-              <textarea name="Descripcion" className="form-control" value={producto.Descripcion} onChange={handleProductoChange} required />
-            </div>
+      {/* TABLA DE PRODUCTOS */}
+      <div className="card shadow-sm mb-4">
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead style={{
+              background: "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
+              color: "#fff"
+            }}>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Tela</th>
+                <th className="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productosFiltrados.map((p) => (
+                <tr key={p.ProductoID || p.id}>
+                  <td>{p.ProductoID || p.id}</td>
+                  <td>{p.Nombre}</td>
+                  <td>{p.Descripcion}</td>
+                  <td>{p.Tela}</td>
+                  <td>
+                    <div className="d-flex justify-content-center gap-1">
+                      <button
+                        className="btn btn-outline-primary btn-sm rounded-circle"
+                        title="Ver"
+                        onClick={() => handleVer(p)}
+                      >
+                        <FaEye size={14} />
+                      </button>
+                      <button
+                        className="btn btn-outline-warning btn-sm rounded-circle"
+                        title="Editar"
+                        onClick={() => editarProducto(p)}
+                      >
+                        <FaEdit size={14} />
+                      </button>
+                      <button
+                        className="btn btn-outline-danger btn-sm rounded-circle"
+                        title="Eliminar"
+                        onClick={() => eliminarProducto(p)}
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {productosFiltrados.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-3">
+                    No se encontraron productos que coincidan con la búsqueda
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            <div className="mb-3">
-              <label className="form-label">Tela</label>
-              <select name="TelaID" className="form-select" value={producto.TelaID} onChange={handleProductoChange} required>
-                <option value="">Seleccione tela</option>
-                {telas.map((t) => (
-                  <option key={t.TelaID || t.id} value={t.TelaID || t.id}>
-                    {t.Nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* FORMULARIO */}
+      {showForm && (
+        <div className="card p-4 shadow-sm position-relative">
+          {/* Botón X para cerrar */}
+          <button
+            className="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
+            onClick={() => {
+              setShowForm(false);
+              setProductoCreado(null);
+              setProducto({ Nombre: "", Descripcion: "", TelaID: "" });
+            }}
+            style={{ width: '32px', height: '32px', padding: '0' }}
+          >
+            <FaTimes />
+          </button>
 
-            <div className="d-flex gap-2">
-              <button className="btn btn-success" type="submit">
-                Guardar producto
-              </button>
-            </div>
-          </form>
-        )}
+          {/* Mostrar formulario de producto SOLO cuando NO hay producto creado O cuando se está editando */}
+          {(!productoCreado || (productoCreado?.ProductoID && !productoCreado?.isNew)) && (
+            <>
+              <h3 className="mb-3">
+                {productoCreado?.ProductoID ? `Editar Producto: ${productoCreado.Nombre}` : 'Nuevo Producto'}
+              </h3>
+              <form onSubmit={guardarProducto}>
+                <div className="mb-3">
+                  <label className="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    name="Nombre"
+                    className="form-control"
+                    value={producto.Nombre}
+                    onChange={handleProductoChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Descripción</label>
+                  <textarea
+                    name="Descripcion"
+                    className="form-control"
+                    value={producto.Descripcion}
+                    onChange={handleProductoChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Tela</label>
+                  <select
+                    name="TelaID"
+                    className="form-select"
+                    value={producto.TelaID}
+                    onChange={handleProductoChange}
+                    required
+                  >
+                    <option value="">Seleccione tela</option>
+                    {telas.map((t) => (
+                      <option key={t.TelaID || t.id} value={t.TelaID || t.id}>
+                        {t.Nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="d-flex gap-2 mb-4">
+                  <button type="submit" className="btn btn-success">
+                    Guardar Cambios
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowForm(false);
+                      setProductoCreado(null);
+                      setProducto({ Nombre: "", Descripcion: "", TelaID: "" });
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
 
-        {/* Si ya hay producto creado/seleccionado: sección variantes */}
-        {productoCreado && (
-          <>
-            <div className="mt-3">
-              <h5>
-                Agregar Variante para: <small className="text-muted">{productoCreado.Nombre || productoCreado.nombre}</small>
-              </h5>
-
+          {/* Mostrar sección de variantes solo cuando hay un producto creado */}
+          {productoCreado && (
+            <div className={productoCreado.ProductoID && !productoCreado.isNew ? "mt-4" : ""}>
+              <h4>
+                {productoCreado.isNew ?
+                  `Agregar variantes para: ${productoCreado.Nombre}` :
+                  "Variantes del producto"
+                }
+              </h4>
+              {/* Formulario de variantes */}
               <form onSubmit={guardarVariante}>
                 <div className="row">
                   <div className="col-md-4 mb-2">
                     <label>Color</label>
-                    <select name="ColorID" className="form-select" value={variante.ColorID || variante.colorId || ""} onChange={handleVarianteChange} required>
+                    <select name="ColorID" className="form-select" value={variante.ColorID || ""} onChange={handleVarianteChange} required>
                       <option value="">Seleccione</option>
                       {colores.map((c) => (
                         <option key={c.ColorID || c.colorID || c.id} value={c.ColorID || c.colorID || c.id}>
@@ -363,7 +582,7 @@ const Productos = () => {
 
                   <div className="col-md-4 mb-2">
                     <label>Talla</label>
-                    <select name="TallaID" className="form-select" value={variante.TallaID || variante.tallaId || ""} onChange={handleVarianteChange} required>
+                    <select name="TallaID" className="form-select" value={variante.TallaID || ""} onChange={handleVarianteChange} required>
                       <option value="">Seleccione</option>
                       {tallas.map((t) => (
                         <option key={t.TallaID || t.tallaID || t.id} value={t.TallaID || t.tallaID || t.id}>
@@ -396,170 +615,255 @@ const Productos = () => {
                   </div>
                 </div>
 
-                <div className="mt-3 d-flex gap-2">
-                  <button type="submit" className="btn btn-primary">
-                    {editandoVariante ? "Actualizar Variante" : "Agregar Variante"}
+                <div className="d-flex gap-2 mt-3">
+                  <button
+                    type="submit"
+                    className={`btn ${editandoVariante ? 'btn-warning' : 'btn-primary'}`}
+                  >
+                    {editandoVariante ? 'Editar Variante' : 'Agregar Variante'}
                   </button>
                   <button
                     type="button"
                     className="btn btn-secondary"
                     onClick={() => {
-                      // cancelar edición o volver a crear nuevo
-                      setEditandoVariante(null);
-                      setVariante({ ColorID: "", TallaID: "", Stock: "", Imagen: "", Precio: "", Estado: true });
+                      setProductoCreado(null);  // Volver al formulario de producto
+                      setVariante({             // Limpiar form de variante
+                        ColorID: "",
+                        TallaID: "",
+                        Stock: "",
+                        Imagen: "",
+                        Precio: "",
+                        Estado: true,
+                      });
                     }}
                   >
                     Cancelar
                   </button>
                 </div>
               </form>
-            </div>
 
-            {/* Lista de variantes locales (cargadas desde backend) */}
-            <div className="mt-4">
-              <h6>Variantes del producto</h6>
-              <table className="table table-sm table-bordered">
-                <thead>
-                  <tr>
-                    <th>VarianteID</th>
-                    <th>Color</th>
-                    <th>Talla</th>
-                    <th>Stock</th>
-                    <th>Precio</th>
-                    <th>Imagen</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {variantesList.length === 0 ? (
+              {/* Lista de variantes sin acciones */}
+              <div className="mt-4">
+                <h6>Variantes agregadas</h6>
+                <table className="table table-sm">
+                  <thead>
                     <tr>
-                      <td colSpan="8" className="text-center">
-                        No hay variantes (o recarga para ver)
-                      </td>
+                      <th>ID</th>
+                      <th>Color</th>
+                      <th>Talla</th>
+                      <th>Stock</th>
+                      <th>Precio</th>
+                      <th>Imagen</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
-                  ) : (
-                    variantesList.map((v) => (
+                  </thead>
+                  <tbody>
+                    {variantesList.map((v) => (
                       <tr key={v.VarianteID || v.id}>
                         <td>{v.VarianteID || v.id}</td>
-                        <td>{v.Color || v.NombreColor || v.colorNombre || v.color}</td>
-                        <td>{v.Talla || v.NombreTalla || v.tallaNombre || v.talla}</td>
+                        <td>{colores.find(c => c.ColorID === v.ColorID)?.Nombre || "—"}</td>
+                        <td>{tallas.find(t => t.TallaID === v.TallaID)?.Nombre || "—"}</td>
                         <td>{v.Stock}</td>
-                        <td>{v.Precio}</td>
+                        <td>${v.Precio}</td>
                         <td>
-                          {v.Imagen ? <img src={v.Imagen} alt="img" style={{ width: 50 }} /> : "—"}
+                          {v.Imagen ? (
+                            <button
+                              className="btn btn-sm btn-primary"
+                              onClick={() => {
+                                Swal.fire({
+                                  imageUrl: v.Imagen,
+                                  imageWidth: 400,
+                                  imageHeight: 400,
+                                  imageAlt: 'Imagen de variante',
+                                  showCloseButton: true,
+                                  showConfirmButton: false,
+                                  className: 'swal2-modal-custom'
+                                })
+                              }}
+                            >
+                              Ver imagen
+                            </button>
+                          ) : "—"}
                         </td>
                         <td>{v.Estado === 1 || v.Estado === true ? "Disponible" : "No disponible"}</td>
                         <td>
-                          <button className="btn btn-sm btn-warning me-1" onClick={() => handleEditarVariante(v)}>
-                            ✏️
-                          </button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleEliminarVariante(v)}>
-                            🗑️
-                          </button>
+                          <div className="d-flex gap-1">
+                            <button
+                              className="btn btn-outline-warning btn-sm rounded-circle"
+                              title="Editar"
+                              onClick={() => handleEditarVariante(v)}
+                            >
+                              <FaEdit size={14} />
+                            </button>
+                            <button
+                              className="btn btn-outline-danger btn-sm rounded-circle"
+                              onClick={() => handleEliminarVariante(v)}
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </>
-        )}
-
-        {/* Tabla general de productos */}
-        <div className="mt-5">
-          <h4>Productos guardados</h4>
-          <table className="table table-hover">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Tela</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productos.map((p) => (
-                <tr key={p.ProductoID || p.id}>
-                  <td>{p.ProductoID || p.id}</td>
-                  <td>{p.Nombre}</td>
-                  <td>{p.Descripcion}</td>
-                  <td>{p.Tela || p.Tela}</td>
-                  <td>
-                    <button className="btn btn-sm btn-info me-1" onClick={() => handleVer(p)}>
-                      Ver
-                    </button>
-                    <button className="btn btn-sm btn-warning me-1" onClick={() => editarProducto(p)}>
-                      Editar
-                    </button>
-                    <button className="btn btn-sm btn-danger" onClick={() => eliminarProducto(p)}>
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          )}
         </div>
+      )}
 
-        {/* Modal simple interno para ver variantes (no dependencia externa) */}
-        {showModal && (
-          <div className="modal show d-block" tabIndex="-1" role="dialog">
-            <div className="modal-dialog modal-lg" role="document">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Variantes de {modalProducto?.Nombre}</h5>
-                  <button type="button" className="btn-close" onClick={handleCerrarModal}></button>
+      {/* Modal de variantes - Actualizar esta sección */}
+      {showModal && (
+        <div className="modal show d-block" tabIndex="-1" role="dialog">
+          <div className="modal-dialog modal-lg" role="document">
+            <div className="modal-content">
+              <div className="modal-header" style={{
+                background: "linear-gradient(120deg, #1976d2 60%, #64b5f6 100%)",
+                color: "white"
+              }}>
+                <h5 className="modal-title">Detalle del Producto</h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={handleCerrarModal}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Información del Producto */}
+                <div className="card mb-4">
+                  <div className="card-body">
+                    <h6 className="card-subtitle mb-3 text-primary fw-bold">
+                      Información General
+                    </h6>
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <p className="mb-1">
+                          <strong className="text-muted">ID:</strong> {modalProducto?.ProductoID || modalProducto?.id}
+                        </p>
+                        <p className="mb-1">
+                          <strong className="text-muted">Nombre:</strong> {modalProducto?.Nombre}
+                        </p>
+                        <p className="mb-1">
+                          <strong className="text-muted">Tela:</strong> {modalProducto?.Tela}
+                        </p>
+                      </div>
+                      <div className="col-md-6">
+                        <p className="mb-1">
+                          <strong className="text-muted">Descripción:</strong>
+                        </p>
+                        <p className="border-start border-4 border-primary ps-2">
+                          {modalProducto?.Descripcion}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="modal-body">
-                  {variantesList.length === 0 ? (
-                    <p>No hay variantes para este producto.</p>
-                  ) : (
-                    <table className="table table-bordered">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Color</th>
-                          <th>Talla</th>
-                          <th>Stock</th>
-                          <th>Precio</th>
-                          <th>Imagen</th>
-                          <th>Estado</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variantesList.map((v) => (
-                          <tr key={v.VarianteID || v.id}>
-                            <td>{v.VarianteID || v.id}</td>
-                            <td>{v.Color || v.colorNombre || v.NombreColor}</td>
-                            <td>{v.Talla || v.tallaNombre || v.NombreTalla}</td>
-                            <td>{v.Stock}</td>
-                            <td>{v.Precio}</td>
-                            <td>{v.Imagen ? <img src={v.Imagen} alt="" style={{ width: 50 }} /> : "—"}</td>
-                            <td>{v.Estado === 1 || v.Estado === true ? "Disponible" : "No disponible"}</td>
-                            <td>
-                              <button className="btn btn-sm btn-warning me-1" onClick={() => { handleEditarVariante(v); setShowModal(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-                                Editar
-                              </button>
-                              <button className="btn btn-sm btn-danger" onClick={() => handleEliminarVariante(v)}>Eliminar</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+
+                {/* Tabla de Variantes */}
+                <div className="card">
+                  <div className="card-body">
+                    <h6 className="card-subtitle mb-3 text-primary fw-bold">
+                      Variantes del Producto
+                    </h6>
+                    {variantesList.length === 0 ? (
+                      <div className="alert alert-info">
+                        No hay variantes registradas para este producto.
+                      </div>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-bordered table-hover text-white">
+                          <thead className="table-light">
+                            <tr className="text-center">
+                              <th>Color</th>
+                              <th>Talla</th>
+                              <th>Stock</th>
+                              <th>Precio</th>
+                              <th>Imagen</th>
+                              <th>Estado</th>
+                              <th>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {variantesList.map((v) => (
+                              <tr key={v.VarianteID || v.id} className="text-center">
+                                <td>{colores.find(c => c.ColorID === v.ColorID)?.Nombre || "—"}</td>
+                                <td>{tallas.find(t => t.TallaID === v.TallaID)?.Nombre || "—"}</td>
+                                <td>{v.Stock}</td>
+                                <td>${v.Precio?.toLocaleString()}</td>
+                                <td>
+                                  {v.Imagen ? (
+                                    <button
+                                      className="btn btn-sm btn-primary"
+                                      onClick={() => {
+                                        Swal.fire({
+                                          imageUrl: v.Imagen,
+                                          imageWidth: 400,
+                                          imageHeight: 400,
+                                          imageAlt: 'Imagen de variante',
+                                          showCloseButton: true,
+                                          showConfirmButton: false,
+                                          className: 'swal2-modal-custom'
+                                        })
+                                      }}
+                                    >
+                                      Ver imagen
+                                    </button>
+                                  ) : "—"}
+                                </td>
+                                <td>
+                                  <span>
+                                    {v.Estado === 1 || v.Estado === true ?
+                                      "Disponible" : "No disponible"}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="d-flex justify-content-center">
+                                    <button
+                                      className="btn btn-outline-warning btn-sm rounded-circle me-2"
+                                      title="Editar"
+                                      onClick={() => {
+                                        handleEditarVariante(v);
+                                        handleCerrarModal();
+                                        setShowForm(true); // Mostrar el formulario
+                                      }}
+                                    >
+                                      <FaEdit size={14} />
+                                    </button>
+                                    <button
+                                      className="btn btn-outline-danger btn-sm rounded-circle"
+                                      title="Eliminar"
+                                      onClick={() => {
+                                        handleEliminarVariante(v);
+                                        handleCerrarModal();
+                                      }}
+                                    >
+                                      <FaTrash size={14} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={handleCerrarModal}>Cerrar</button>
-                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleCerrarModal}
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

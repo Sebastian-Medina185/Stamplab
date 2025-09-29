@@ -69,19 +69,19 @@ const Tallas = () => {
     }
   };
 
-  // =================== VER DETALLE ===================
-  const handleVer = async (id) => {
-    try {
-      const data = await getTallaById(id);
-      alert(
-        `Detalles:\n\nID: ${data.datos?.TallaID ?? data.TallaID}\nNombre: ${
-          data.datos?.Nombre ?? data.Nombre
-        }`
-      );
-    } catch (err) {
-      console.error("Error obteniendo talla:", err);
-    }
-  };
+  // // =================== VER DETALLE ===================
+  // const handleVer = async (id) => {
+  //   try {
+  //     const data = await getTallaById(id);
+  //     alert(
+  //       `Detalles:\n\nID: ${data.datos?.TallaID ?? data.TallaID}\nNombre: ${
+  //         data.datos?.Nombre ?? data.Nombre
+  //       }`
+  //     );
+  //   } catch (err) {
+  //     console.error("Error obteniendo talla:", err);
+  //   }
+  // };
 
   // =================== FILTRAR ===================
   const filtered = tallas.filter((t) =>
@@ -167,13 +167,6 @@ const Tallas = () => {
                     <td style={{ fontWeight: 500, fontSize: 16 }}>{t.Nombre}</td>
                     <td>
                       <div className="d-flex justify-content-center gap-2">
-                        <button
-                          className="btn btn-outline-primary btn-sm rounded-circle"
-                          title="Ver"
-                          onClick={() => handleVer(t.TallaID)}
-                        >
-                          <FaEye size={16} />
-                        </button>
                         <button
                           className="btn btn-outline-warning btn-sm rounded-circle"
                           title="Editar"

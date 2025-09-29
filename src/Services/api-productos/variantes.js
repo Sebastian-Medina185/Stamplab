@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/productosVariantes"; // 👈 endpoint de variantes
+const API_URL = "http://localhost:3001/productosVariantes"; 
 
 // Obtener variantes de un producto
 export const getVariantesByProducto = async (productoId) => {

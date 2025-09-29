@@ -25,7 +25,7 @@ const RegistrarProducto = () => {
     Estado: true,
   });
 
-  // ✅ Cargar atributos al iniciar
+  // Cargar atributos al iniciar
   useEffect(() => {
     const cargarDatos = async () => {
       setTelas(await getTelas());
@@ -35,17 +35,17 @@ const RegistrarProducto = () => {
     cargarDatos();
   }, []);
 
-  // ✅ Actualizar campos del producto
+  // Actualizar campos del producto
   const handleProductoChange = (e) => {
     setProducto({ ...producto, [e.target.name]: e.target.value });
   };
 
-  // ✅ Actualizar campos de la variante
+  // Actualizar campos de la variante
   const handleVarianteChange = (e) => {
     setNuevaVariante({ ...nuevaVariante, [e.target.name]: e.target.value });
   };
 
-  // ✅ Agregar variante a la tabla
+  // Agregar variante a la tabla
   const agregarVariante = () => {
     setVariantes([...variantes, nuevaVariante]);
     setNuevaVariante({
@@ -58,25 +58,25 @@ const RegistrarProducto = () => {
     });
   };
 
-  // ✅ Guardar producto y variantes en la base de datos
+  // Guardar producto y variantes en la base de datos
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // 1️⃣ Crear producto
+      // 1️Crear producto
       const productoCreado = await createProducto(producto);
       const productoID = productoCreado.datos.ProductoID;
 
-      // 2️⃣ Crear cada variante
+      // 2️Crear cada variante
       for (let v of variantes) {
         await createVariante({ ...v, ProductoID: productoID });
       }
 
-      alert("✅ Producto y variantes guardados correctamente");
+      alert("Producto y variantes guardados correctamente");
       setProducto({ Nombre: "", Descripcion: "", TelaID: "" });
       setVariantes([]);
     } catch (error) {
-      console.error("❌ Error al guardar:", error);
+      console.error("Error al guardar:", error);
       alert("Error al guardar el producto.");
     }
   };
@@ -84,9 +84,9 @@ const RegistrarProducto = () => {
   return (
     <div className="container py-4">
       <Card className="shadow-lg p-4">
-        <h3 className="text-center mb-4">📦 Registrar Nuevo Producto</h3>
+        <h3 className="text-center mb-4">Registrar Nuevo Producto</h3>
         <Form onSubmit={handleSubmit}>
-          {/* 🧵 Datos del producto */}
+          {/* Datos del producto */}
           <Row>
             <Col md={4}>
               <Form.Group>
@@ -134,8 +134,8 @@ const RegistrarProducto = () => {
 
           <hr />
 
-          {/* 🧬 Variantes */}
-          <h5>🧬 Variantes del producto</h5>
+          {/* Variantes */}
+          <h5>Variantes del producto</h5>
           <Row className="align-items-end">
             <Col md={2}>
               <Form.Label>Color</Form.Label>
@@ -193,12 +193,12 @@ const RegistrarProducto = () => {
 
             <Col md={2}>
               <Button variant="primary" onClick={agregarVariante}>
-                ➕ Agregar
+                Agregar
               </Button>
             </Col>
           </Row>
 
-          {/* 📊 Tabla de variantes */}
+          {/* Tabla de variantes */}
           <Table striped bordered hover className="mt-3">
             <thead>
               <tr>
@@ -224,7 +224,7 @@ const RegistrarProducto = () => {
 
           <div className="text-end">
             <Button type="submit" variant="success" className="mt-3">
-              💾 Guardar Producto
+              Guardar Producto
             </Button>
           </div>
         </Form>
