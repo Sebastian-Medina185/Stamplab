@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import UsuariosForm from "./formularios_dash/usuarios";
 import { getUsuarios, deleteUsuario } from "../Services/api-usuarios/usuarios";
+import VerDetalles from "../components/modals/verdetalle-usuarios";
 
 const Usuarios = () => {
     const [showForm, setShowForm] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [modalData, setModalData] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [selectedUsuario, setSelectedUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -79,17 +82,21 @@ const Usuarios = () => {
     };
 
     // Función para ver detalles del usuario
-    const handleVer = (usuario) => {
-        alert(`Detalles del Usuario:
+   const handleVer = (usuario) => {
+        // Preparar los datos para el modal
+        const data = [
+            { label: "Documento", value: usuario.DocumentoID },
+            { label: "Nombre", value: usuario.Nombre },
+            { label: "Correo", value: usuario.Correo },
+            { label: "Rol", value: getRoleName(usuario) },
+            { label: "Direccion", value: usuario.Direccion },
+            { label: "Telefono", value: usuario.Telefono },
+            { label: "Contraseña", value: "********" }
+        ];
         
-Documento: ${usuario.DocumentoID}
-Nombre: ${usuario.Nombre}
-Correo: ${usuario.Correo}
-Dirección: ${usuario.Direccion}
-Teléfono: ${usuario.Telefono}
-Rol: ${usuario.RolNombre || usuario.RolID}`);
+        setModalData(data);
+        setShowModal(true);
     };
-
     // Función para obtener el nombre del rol
     const getRoleName = (usuario) => {
         if (usuario.RolNombre) {
@@ -148,14 +155,7 @@ Rol: ${usuario.RolNombre || usuario.RolID}`);
                 </button>
             </div>
 
-            {/* Estadísticas rápidas */}
-            {!loading && usuarios.length > 0 && (
-                <div className="mb-3">
-                    <small className="text-muted">
-                        Total de usuarios: <span className="fw-bold text-primary">{usuarios.length}</span>
-                    </small>
-                </div>
-            )}
+           
 
             {/* Mensaje de error */}
             {error && (
@@ -295,7 +295,17 @@ Rol: ${usuario.RolNombre || usuario.RolID}`);
                     </table>
                 </div>
             </div>
+            {/* Modal de ver detalles */}
+            <VerDetalles
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                title="Detalle del usuario"
+                data={modalData}
+            />
+            
         </div>
+      
+        
     );
 };
 
