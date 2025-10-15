@@ -1,10 +1,93 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaEdit, FaEye, FaPlusCircle, FaSync, FaTrash } from "react-icons/fa";
 import CotizacionesForm from "./formularios_dash/cotizacion";
+import { getCotizaciones, deleteCotizacion, updateCotizacion } from "../Services/api-cotizaciones/cotizaciones";
+import Swal from "sweetalert2";
 
 const Cotizaciones = () => {
   const [search, setSearch] = useState("");
+  const [cotizaciones, setCotizaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingCotizacion, setEditingCotizacion] = useState(null);
+
+  useEffect(() => {
+    loadCotizaciones();
+  }, []);
+
+  const loadCotizaciones = async () => {
+    try {
+      setLoading(true);
+      const response = await getCotizaciones();
+      setCotizaciones(response.datos);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await Swal.fire({
+        title: "¿Estás seguro?",
+        text: "Esta acción no se puede revertir",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          await deleteCotizacion(id);
+          await loadCotizaciones();
+          Swal.fire(
+            "Eliminada",
+            "La cotización ha sido eliminada.",
+            "success"
+          );
+        }
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message
+      });
+    }
+  };
+
+  const handleChangeStatus = async (id, currentStatus) => {
+    const estados = ["pendiente", "confirmada", "rechazada"];
+    const currentIndex = estados.indexOf(currentStatus);
+    const newStatus = estados[(currentIndex + 1) % estados.length];
+
+    try {
+      await updateCotizacion(id, { Estado: newStatus });
+      await loadCotizaciones();
+      Swal.fire({
+        icon: "success",
+        title: "Estado actualizado",
+        text: `La cotización ahora está ${newStatus}`
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message
+      });
+    }
+  };
+
+  const filteredCotizaciones = cotizaciones.filter(cot =>
+    cot.DocumentoID.toString().includes(search.toLowerCase()) ||
+    cot.Estado.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div
@@ -78,58 +161,89 @@ const Cotizaciones = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: "1px solid #e3e8ee" }}>
-                    <td>
-                      <span
-                        className="badge bg-light text-dark px-3 py-2 shadow-sm"
-                        style={{ fontSize: 15 }}
-                      >
-                        01
-                      </span>
-                    </td>
-                    <td className="fw-medium">12323412</td>
-                    <td>carlos@gmail.com</td>
-                    <td>$300.000</td>
-                    <td>31065219289</td>
-                    <td>19-05-2025</td>
-                    <td>
-                      <span
-                        className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm"
-                        style={{ fontSize: 14 }}
-                      >
-                        Aprobada
-                      </span>
-                    </td>
-                    <td>
-                      <div className="d-flex justify-content-center gap-2">
-                        <button
-                          className="btn btn-outline-primary btn-sm rounded-circle"
-                          title="Ver"
-                        >
-                          <FaEye size={16} />
-                        </button>
-                        <button
-                          className="btn btn-outline-warning btn-sm rounded-circle"
-                          title="Editar"
-                        >
-                          <FaEdit size={16} />
-                        </button>
-                        <button
-                          className="btn btn-outline-danger btn-sm rounded-circle"
-                          title="Eliminar"
-                        >
-                          <FaTrash size={16} />
-                        </button>
-                        <button
-                          className="btn btn-outline-secondary btn-sm rounded-circle"
-                          title="Cambiar estado"
-                        >
-                          <FaSync size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {/* Aquí luego vamos a mapear las cotizaciones reales */}
+                  {loading ? (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Cargando...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredCotizaciones.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4">
+                        No se encontraron cotizaciones
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCotizaciones.map((cotizacion) => (
+                      <tr key={cotizacion.CotizacionID} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                        <td>
+                          <span
+                            className="badge bg-light text-dark px-3 py-2 shadow-sm"
+                            style={{ fontSize: 15 }}
+                          >
+                            {cotizacion.CotizacionID}
+                          </span>
+                        </td>
+                        <td className="fw-medium">{cotizacion.DocumentoID}</td>
+                        <td>-</td>
+                        <td>${cotizacion.ValorTotal?.toLocaleString()}</td>
+                        <td>-</td>
+                        <td>{new Date(cotizacion.FechaCotizacion).toLocaleDateString()}</td>
+                        <td>
+                          <span
+                            className={`badge text-${
+                              cotizacion.Estado === 'confirmada' ? 'success' :
+                              cotizacion.Estado === 'rechazada' ? 'danger' :
+                              'warning'
+                            } fw-bold fs-6 px-1 py-2 shadow-sm`}
+                            style={{ fontSize: 14 }}
+                          >
+                            {cotizacion.Estado}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="d-flex justify-content-center gap-2">
+                            <button
+                              className="btn btn-outline-primary btn-sm rounded-circle"
+                              title="Ver"
+                              onClick={() => {
+                                setEditingCotizacion(cotizacion);
+                                setShowForm(true);
+                              }}
+                            >
+                              <FaEye size={16} />
+                            </button>
+                            <button
+                              className="btn btn-outline-warning btn-sm rounded-circle"
+                              title="Editar"
+                              onClick={() => {
+                                setEditingCotizacion(cotizacion);
+                                setShowForm(true);
+                              }}
+                            >
+                              <FaEdit size={16} />
+                            </button>
+                            <button
+                              className="btn btn-outline-danger btn-sm rounded-circle"
+                              title="Eliminar"
+                              onClick={() => handleDelete(cotizacion.CotizacionID)}
+                            >
+                              <FaTrash size={16} />
+                            </button>
+                            <button
+                              className="btn btn-outline-secondary btn-sm rounded-circle"
+                              title="Cambiar estado"
+                              onClick={() => handleChangeStatus(cotizacion.CotizacionID, cotizacion.Estado)}
+                            >
+                              <FaSync size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

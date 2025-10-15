@@ -145,11 +145,11 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                 </div>
 
                 <div className="d-flex justify-content-end gap-2 mt-4">
+                    <button type="submit" className="btn btn-success">
+                        {proveedor ? "Actualizar" : "Guardar"}
+                    </button>
                     <button type="button" onClick={onClose} className="btn btn-secondary">
                         Cancelar
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                        {proveedor ? "Actualizar" : "Guardar"}
                     </button>
                 </div>
             </form>

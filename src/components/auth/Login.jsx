@@ -60,7 +60,7 @@ const LoginLanding = () => {
 
                                 {/* Botón que redirige */}
                                 <div className="d-grid mb-3">
-                                    <Link to="/usuarios">
+                                    <Link to="/dashboard/roles">
                                         <Button
                                             variant="primary"
                                             className="fw-bold w-100 rounded-pill shadow-sm"

@@ -28,7 +28,7 @@ const ProductosLanding = () => {
     const productos = [
         {
             titulo: "Camiseta",
-            descripcion: "Camiseta roja",
+            descripcion: "Camiseta blanca",
             precio: 15000,
             estado: "Disponible",
             img: producto1,
@@ -38,30 +38,30 @@ const ProductosLanding = () => {
         },
         {
             titulo: "Camisa",
-            descripcion: "Camisa blanca",
+            descripcion: "Camisa verde",
             precio: 16000,
             estado: "Disponible",
             img: producto2,
             tallas: ["M", "L", "XL"],
-            colores: ["#FFFFFF", "#F0F0F0"],
+            colores: ["#FFFFFF", "#FF0000"],
             tela: "Lino"
         },
         {
             titulo: "Buzo",
-            descripcion: "Buzo negro clásico",
+            descripcion: "Buzo negro",
             precio: 13000,
             estado: "Disponible",
             img: producto3,
             tallas: ["S", "M", "L", "XL"],
-            colores: ["#000000", "#222222"],
-            tela: "Mezcla algodón/poliéster"
+            colores: ["#000000", "#139bd1ff"],
+            tela: "Poliéster"
         },
         {
             titulo: "Pantalón",
-            descripcion: "Pantalón negro",
+            descripcion: "Pantalón azul",
             precio: 20000,
             estado: "Disponible",
-            img: producto5,
+            img: producto6,
             tallas: ["M", "L", "XL"],
             colores: ["#000000"],
             tela: "Algodón"
@@ -135,7 +135,6 @@ const ProductosLanding = () => {
 
                                         {/* Overlay */}
                                         <div className="overlay-info">
-                                            <h6 className="mb-3">Variantes disponibles</h6>
                                             {p.tallas && <p><strong>Tallas:</strong> {p.tallas.join(", ")}</p>}
                                             {p.colores && (
                                                 <div className="d-flex justify-content-center align-items-center gap-2 mb-2">

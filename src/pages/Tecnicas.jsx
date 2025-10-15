@@ -3,6 +3,7 @@ import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaSyncAlt } from "react-icons/fa"
 import { getTecnicas, createTecnica, updateTecnica, deleteTecnica } from "../Services/api-tecnicas/tecnicas";
 import TecnicasForm from "./formularios_dash/TecnicasForm";
 import Swal from "sweetalert2";
+import { Modal } from "react-bootstrap";
 
 const Tecnicas = () => {
   const [search, setSearch] = useState("");
@@ -11,6 +12,8 @@ const Tecnicas = () => {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [tecnicaEdit, setTecnicaEdit] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedTecnica, setSelectedTecnica] = useState(null);
 
   // Cargar técnicas al montar el componente
   useEffect(() => {
@@ -60,17 +63,39 @@ const Tecnicas = () => {
   const handleSave = async (tecnicaData) => {
     try {
       setLoading(true);
+      let response;
+      
       if (tecnicaEdit) {
         // Actualizar
-        await updateTecnica(tecnicaEdit.TecnicaID, tecnicaData);
-        Swal.fire('¡Éxito!', 'Técnica actualizada correctamente', 'success');
+        response = await updateTecnica(tecnicaEdit.TecnicaID, tecnicaData);
       } else {
         // Crear nuevo
-        await createTecnica(tecnicaData);
-        Swal.fire('¡Éxito!', 'Técnica creada correctamente', 'success');
+        response = await createTecnica(tecnicaData);
       }
-      handleCloseForm();
-      await loadTecnicas();
+
+      if (response.estado) {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+          }
+        });
+
+        Toast.fire({
+          icon: 'success',
+          title: tecnicaEdit ? 'Técnica actualizada correctamente' : 'Técnica creada correctamente'
+        });
+
+        await loadTecnicas();
+        handleCloseForm();
+      } else {
+        throw new Error(response.mensaje || 'Error al procesar la técnica');
+      }
     } catch (error) {
       console.error('Error:', error);
       Swal.fire('Error', error.response?.data?.mensaje || 'Error al procesar la técnica', 'error');
@@ -95,13 +120,89 @@ const Tecnicas = () => {
 
       if (result.isConfirmed) {
         setLoading(true);
-        await deleteTecnica(tecnicaID);
-        await loadTecnicas();
-        Swal.fire('¡Eliminado!', 'La técnica ha sido eliminada.', 'success');
+        const response = await deleteTecnica(tecnicaID);
+        
+        if (response.estado) {
+          const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+              toast.addEventListener('mouseenter', Swal.stopTimer)
+              toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+          });
+
+          await loadTecnicas();
+          Toast.fire({
+            icon: 'success',
+            title: 'Técnica eliminada correctamente'
+          });
+        } else {
+          throw new Error(response.mensaje || 'Error al eliminar la técnica');
+        }
       }
     } catch (error) {
       console.error('Error:', error);
       Swal.fire('Error', error.response?.data?.mensaje || 'Error al eliminar la técnica', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para cambiar estado
+  const handleCambiarEstado = async (tecnica) => {
+    const nuevoEstado = !tecnica.Estado;
+    const estadoTexto = nuevoEstado ? "Activo" : "Inactivo";
+
+    try {
+      const result = await Swal.fire({
+        title: '¿Cambiar estado?',
+        text: `¿Seguro que desea cambiar el estado de esta técnica a ${estadoTexto}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Confirmar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        setLoading(true);
+        const tecnicaActualizada = { ...tecnica, Estado: nuevoEstado };
+        const response = await updateTecnica(tecnica.TecnicaID, tecnicaActualizada);
+        
+        if (response.estado) {
+          await loadTecnicas();
+          const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+              toast.addEventListener('mouseenter', Swal.stopTimer)
+              toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+          });
+
+          Toast.fire({
+            icon: 'success',
+            title: `¡Estado cambiado a ${estadoTexto}!`
+          });
+        } else {
+          throw new Error(response.mensaje || 'Error al cambiar el estado');
+        }
+      }
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      Swal.fire(
+        'Error',
+        error.message || 'Error al cambiar el estado de la técnica',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -194,7 +295,7 @@ const Tecnicas = () => {
                   <td>{t.Descripcion}</td>
                   <td>
                     <span
-                      className={`badge px-3 py-2 shadow-sm ${t.Estado ? "text-success fw-bold fs-6" : "text-secondary fw-bold fs-6"
+                      className={`badge px-3 py-2 shadow-sm ${t.Estado ? "text-success fw-bold fs-6" : "text-danger fw-bold fs-6"
                         }`}
                     >
                       {t.Estado ? 'Activo' : 'Inactivo'}
@@ -204,7 +305,11 @@ const Tecnicas = () => {
                     <div className="d-flex justify-content-center gap-1">
                       <button
                         className="btn btn-outline-primary btn-sm rounded-circle"
-                        title="Ver"
+                        title="Ver detalles"
+                        onClick={() => {
+                          setSelectedTecnica(t);
+                          setShowDetailModal(true);
+                        }}
                       >
                         <FaEye size={14} />
                       </button>
@@ -222,7 +327,11 @@ const Tecnicas = () => {
                       >
                         <FaTrash size={14} />
                       </button>
-                      <button className="btn btn-outline-secondary btn-sm rounded-circle" title="Cambiar estado">
+                      <button 
+                        className="btn btn-outline-secondary btn-sm rounded-circle" 
+                        title="Cambiar estado"
+                        onClick={() => handleCambiarEstado(t)}
+                      >
                         <FaSyncAlt size={16} />
                       </button>
                     </div>
@@ -233,6 +342,116 @@ const Tecnicas = () => {
           </table>
         </div>
       </div>
+
+      {/* Modal de Detalles de la Técnica */}
+      <Modal
+        show={showDetailModal}
+        onHide={() => setShowDetailModal(false)}
+        centered
+        className="fade"
+        size="lg"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      >
+        <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
+          {selectedTecnica && (
+            <>
+              {/* Encabezado del Modal */}
+              <div className="modal-header border-0 text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
+                  padding: '20px'
+                }}>
+                <div className="d-flex align-items-center">
+                  <div>
+                    <h5 className="modal-title fw-bold mb-1">Detalles de la Técnica</h5>
+                    <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
+                      ID: {selectedTecnica.TecnicaID}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowDetailModal(false)}
+                  aria-label="Close"
+                />
+              </div>
+
+              {/* Cuerpo del Modal */}
+              <div className="modal-body p-4">
+                <div className="row g-1">
+                  {/* Nombre de la Técnica */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6">Nombre de la Técnica</label>
+                      <h4 className="mb-0 fs-6 fw-normal">{selectedTecnica.Nombre}</h4>
+                    </div>
+                  </div>
+
+
+                  {/* Descripción */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6">Descripción</label>
+                      <p className="mb-0 fs-6">{selectedTecnica.Descripcion}</p>
+                    </div>
+                  </div>
+
+
+                  {/* Imagen de la Técnica */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-2 fs-6">Imagen</label>
+                      <div className="text-center">
+                        {selectedTecnica.ImagenTecnica ? (
+                          <img
+                            src={selectedTecnica.ImagenTecnica}
+                            alt={selectedTecnica.Nombre}
+                            className="img-fluid rounded-3 shadow-sm"
+                            style={{ maxHeight: '200px', objectFit: 'contain' }}
+                          />
+                        ) : (
+                          <div className="text-muted py-4">
+                            No hay imagen disponible
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+
+                  {/* Estado */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6">Estado</label>
+                      <div className="d-flex align-items-center">
+                        <span
+                          className={`badge px-3 py-2 ${selectedTecnica.Estado ? 'bg-success' : 'bg-danger'
+                            }`}
+                          style={{ fontSize: '0.9rem' }}
+                        >
+                          {selectedTecnica.Estado ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pie del Modal */}
+              <div className="modal-footer d-flex justify-content-center border-0 pt-0">
+                <button
+                  type="button"
+                  className="btn btn-danger px-4"
+                  onClick={() => setShowDetailModal(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

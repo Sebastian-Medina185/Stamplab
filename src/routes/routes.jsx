@@ -31,22 +31,25 @@ const AppRoutes = () => {
     return (
 
         <Routes>
-
-            <Route path="/landing" element={<Home></Home>}></Route>
-            <Route path="/cotizacionesLanding" element={<CotizacionesLanding></CotizacionesLanding>}></Route>
-            <Route path="/servicios" element={<Servicios></Servicios>}></Route>
-            <Route path="/productosLanding" element={<ProductosLanding></ProductosLanding>}></Route>
-            <Route path="/signup" element={<RegistroLanding></RegistroLanding>}></Route>
-            <Route path="/login" element={<LoginLanding></LoginLanding>}></Route>
-            <Route path="/recuperarcontraseña" element={<RecuperarContraseña></RecuperarContraseña>}></Route>
-            <Route path="/restablecercontraseña" element={<RestablecerContraseña></RestablecerContraseña>}></Route>
-            <Route path="/editarperfil" element={<EditarPerfil></EditarPerfil>}></Route>
-            <Route path="/miscotizaciones" element={<MisCotizaciones></MisCotizaciones>}></Route>
+            {/* Ruta raíz redirige al registro */}
+            <Route path="/" element={<RegistroLanding />} />
+            
+            <Route path="/landing" element={<Home />} />
+            <Route path="/cotizacionesLanding" element={<CotizacionesLanding />} />
+            <Route path="/servicios" element={<Servicios />} />
+            <Route path="/productosLanding" element={<ProductosLanding />} />
+            <Route path="/signup" element={<RegistroLanding />} />
+            <Route path="/login" element={<LoginLanding />} />
+            <Route path="/recuperarcontraseña" element={<RecuperarContraseña />} />
+            <Route path="/restablecercontraseña" element={<RestablecerContraseña />} />
+            <Route path="/editarperfil" element={<EditarPerfil />} />
+            <Route path="/miscotizaciones" element={<MisCotizaciones />} />
             <Route path="/formularioCompra" element={<FormularioCompra />} />
 
-            <Route path="/" element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route index element={<DashboardMedicionesempeño />} />
                 <Route path="cotizaciones" element={<Cotizaciones />} />
-                <Route path="/productos/registrar" element={<RegistrarProducto />} />
+                <Route path="productos/registrar" element={<RegistrarProducto />} />
                 <Route path="roles" element={<Roles />} />
                 <Route path="telas" element={<Telas />} />
                 <Route path="insumos" element={<Insumos />} />
@@ -57,7 +60,7 @@ const AppRoutes = () => {
                 <Route path="usuarios" element={<Usuarios />} />
                 <Route path="proveedores" element={<Proveedores />} />
                 <Route path="tecnicas" element={<Tecnicas />} />
-                <Route path="mediciondesempeño" element={<DashboardMedicionesempeño></DashboardMedicionesempeño>} />
+                <Route path="mediciondesempeño" element={<DashboardMedicionesempeño />} />
             </Route>
 
         </Routes>

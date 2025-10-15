@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import RolesForm from "./formularios_dash/RolesForm";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaSyncAlt } from "react-icons/fa";
+import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaSyncAlt, FaUserShield, FaTimes } from "react-icons/fa";
 import { getRoles, createRol, updateRol, deleteRol } from "../Services/api-roles/roles";
+import { Modal } from "react-bootstrap";
+import Swal from "sweetalert2";
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
@@ -9,6 +11,8 @@ const Roles = () => {
   const [rolEdit, setRolEdit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedRol, setSelectedRol] = useState(null);
 
   // Cargar roles al montar el componente
   useEffect(() => {
@@ -35,10 +39,10 @@ const Roles = () => {
 
   // Función para guardar rol (crear o actualizar)
   const handleSave = async (rolData) => {
-    console.log("Datos enviados al backend:", rolData); // Verifica los datos antes de enviarlos
-
     try {
+      setLoading(true);
       let response;
+      
       if (rolEdit) {
         // Actualizar rol existente
         response = await updateRol(rolEdit.RolID, rolData);
@@ -48,17 +52,28 @@ const Roles = () => {
       }
 
       if (response.estado) {
-        // Recargar la lista de roles
         await loadRoles();
         setShowForm(false);
         setRolEdit(null);
-        alert(rolEdit ? "Rol actualizado correctamente" : "Rol creado correctamente");
+        
+        Swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: rolEdit ? 'Rol actualizado correctamente' : 'Rol creado correctamente',
+          confirmButtonColor: '#3085d6'
+        });
       } else {
-        alert("Error al guardar rol: " + response.mensaje);
+        throw new Error(response.mensaje || 'Error al guardar el rol');
       }
     } catch (error) {
       console.error("Error al guardar rol:", error);
-      alert("Error de conexión al guardar rol");
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Error al guardar el rol'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,41 +83,86 @@ const Roles = () => {
   };
 
   const handleEliminar = async (id) => {
-    if (window.confirm("¿Está seguro de eliminar este rol?")) {
-      try {
+    try {
+      const result = await Swal.fire({
+        title: '¿Eliminar rol?',
+        text: "Esta acción no se puede revertir",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        setLoading(true);
         const response = await deleteRol(id);
+        
         if (response.estado) {
-          // Recargar la lista de roles
           await loadRoles();
-          alert("Rol eliminado correctamente");
+          Swal.fire(
+            '¡Eliminado!',
+            'El rol ha sido eliminado correctamente',
+            'success'
+          );
         } else {
-          alert("Error al eliminar rol: " + response.mensaje);
+          throw new Error(response.mensaje || 'Error al eliminar el rol');
         }
-      } catch (error) {
-        console.error("Error al eliminar rol:", error);
-        alert("Error de conexión al eliminar rol");
       }
+    } catch (error) {
+      console.error("Error al eliminar rol:", error);
+      Swal.fire(
+        'Error',
+        error.message || 'Error al eliminar el rol',
+        'error'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCambiarEstado = async (rol) => {
-    const nuevoEstado = !rol.Estado; // Cambiar true/false
+    const nuevoEstado = !rol.Estado;
     const estadoTexto = nuevoEstado ? "Activo" : "Inactivo";
 
-    if (window.confirm(`¿Cambiar estado del rol a ${estadoTexto}?`)) {
-      try {
+    try {
+      const result = await Swal.fire({
+        title: '¿Cambiar estado?',
+        text: `¿Seguro que desea cambiar el estado de este rol a ${estadoTexto}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Confirmar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (result.isConfirmed) {
+        setLoading(true);
         const rolActualizado = { ...rol, Estado: nuevoEstado };
         const response = await updateRol(rol.RolID, rolActualizado);
+        
         if (response.estado) {
           await loadRoles();
-          alert(`Estado cambiado a ${estadoTexto} correctamente`);
+          Swal.fire(
+            '¡Actualizado!',
+            `El estado del rol ha sido cambiado a ${estadoTexto}`,
+            'success'
+          );
         } else {
-          alert("Error al cambiar estado: " + response.mensaje);
+          throw new Error(response.mensaje || 'Error al cambiar el estado');
         }
-      } catch (error) {
-        console.error("Error al cambiar estado:", error);
-        alert("Error de conexión al cambiar estado");
       }
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      Swal.fire(
+        'Error',
+        error.message || 'Error al cambiar el estado del rol',
+        'error'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -223,8 +283,11 @@ const Roles = () => {
                       <div className="d-flex justify-content-center gap-1">
                         <button
                           className="btn btn-outline-primary btn-sm rounded-circle"
-                          title="Ver"
-                          onClick={() => console.log("Ver rol:", r)}
+                          title="Ver detalles"
+                          onClick={() => {
+                            setSelectedRol(r);
+                            setShowDetailModal(true);
+                          }}
                         >
                           <FaEye size={14} />
                         </button>
@@ -242,7 +305,11 @@ const Roles = () => {
                         >
                           <FaTrash size={14} />
                         </button>
-                        <button className="btn btn-outline-secondary btn-sm rounded-circle" title="Cambiar estado">
+                        <button 
+                          className="btn btn-outline-secondary btn-sm rounded-circle" 
+                          title="Cambiar estado"
+                          onClick={() => handleCambiarEstado(r)}
+                        >
                           <FaSyncAlt size={16} />
                         </button>
                       </div>
@@ -254,6 +321,92 @@ const Roles = () => {
           </table>
         </div>
       </div>
+
+      {/* Modal de Detalles del Rol */}
+      <Modal
+        show={showDetailModal}
+        onHide={() => setShowDetailModal(false)}
+        centered
+        className="fade"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      >
+        <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
+          {selectedRol && (
+            <>
+              {/* Encabezado del Modal */}
+              <div className="modal-header border-0 text-white" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
+                  padding: '20px'
+                }}>
+                <div className="d-flex align-items-center">
+                  <div>
+                    <h5 className="modal-title fw-bold mb-1">Detalles del Rol</h5>
+                    <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
+                      ID: {selectedRol.RolID}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowDetailModal(false)}
+                  aria-label="Close"
+                />
+              </div>
+
+              {/* Cuerpo del Modal */}
+              <div className="modal-body p-4">
+                <div className="row g-1">
+                  {/* Nombre del Rol */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6">Nombre del Rol</label>
+                      <h4 className="mb-0 fs-6 fw-normal">{selectedRol.Nombre}</h4>
+                    </div>
+                  </div>
+
+                  {/* Descripción */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Descripción</label>
+                      <p className="mb-0 fs-6">{selectedRol.Descripcion}</p>
+                    </div>
+                  </div>
+
+                  {/* Estado */}
+                  <div className="col-12">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6">Estado</label>
+                      <div className="d-flex align-items-center">
+                        <span 
+                          className={`badge px-3 py-2 ${
+                            selectedRol.Estado ? 'bg-success' : 'bg-danger'
+                          }`}
+                          style={{ fontSize: '0.9rem' }}
+                        >
+                          {selectedRol.Estado ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pie del Modal */}
+              <div className="modal-footer d-flex justify-content-center border-0 pt-0">
+                <button
+                  type="button"
+                  className="btn btn-danger px-4"
+                  onClick={() => setShowDetailModal(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

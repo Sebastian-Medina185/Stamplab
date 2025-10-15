@@ -78,3 +78,18 @@ export const deleteProveedor = async (nit) => {
         throw error;
     }
 };
+
+// Cambiar estado del proveedor
+export const cambiarEstadoProveedor = async (nit, nuevoEstado) => {
+    try {
+        // Usar PUT en lugar de PATCH para mayor compatibilidad
+        const response = await axios.put(`${API_URL}/${nit}`, { 
+            Estado: nuevoEstado,
+            _method: 'PATCH' // Para compatibilidad con backends que no soportan PATCH directamente
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error en cambiarEstadoProveedor:", error);
+        throw error;
+    }
+};

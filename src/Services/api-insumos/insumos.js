@@ -71,7 +71,7 @@ export const deleteInsumo = async (id) => {
 // Cambiar estado de un insumo
 export const cambiarEstadoInsumo = async (id, nuevoEstado) => {
   try {
-    const response = await axios.patch(`${API_URL}/${id}/estado`, { estado: nuevoEstado });
+    const response = await axios.put(`${API_URL}/${id}`, { Estado: nuevoEstado });
     return response.data;
   } catch (error) {
     console.error("Error en cambiarEstadoInsumo:", error);

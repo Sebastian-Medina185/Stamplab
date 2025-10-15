@@ -181,24 +181,15 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
             }
 
             if (result.estado) {
-                // Éxito
-                alert(usuario ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
-                onSave(result.datos); // Llamar callback con los datos del usuario
-                handleCloseForm(); // Cerrar el formulario después de guardar exitosamente
+                // Éxito - No mostramos alerta aquí, se manejará en el componente padre
+                onSave(); // Llamar callback con los datos del usuario
             } else {
-                // Error del servidor
-                alert('Error: ' + (result.mensaje || 'Error al guardar usuario'));
+                throw new Error(result.mensaje || 'Error al guardar usuario');
             }
 
         } catch (error) {
             console.error('Error al guardar usuario:', error);
-
-            // Manejar errores específicos de axios
-            if (error.response && error.response.data) {
-                alert('Error: ' + error.response.data.mensaje);
-            } else {
-                alert('Error de conexión. Intente nuevamente.');
-            }
+            throw error; // Propagar el error al componente padre
         } finally {
             setLoading(false);
         }

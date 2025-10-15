@@ -12,7 +12,7 @@ const menuItems = [
         key: "roles",
         icon: <FaCogs className="me-2" />,
         items: [
-            { to: "/roles", label: "Roles", icon: <FaClipboardList className="me-2" /> }
+            { to: "/dashboard/roles", label: "Roles", icon: <FaClipboardList className="me-2" /> }
         ]
     },
     {
@@ -20,7 +20,7 @@ const menuItems = [
         key: "usuarios",
         icon: <FaUserCog className="me-2" />,
         items: [
-            { to: "/usuarios", label: "Usuarios", icon: <FaUsers className="me-2" /> },
+            { to: "/dashboard/usuarios", label: "Usuarios", icon: <FaUsers className="me-2" /> },
         ]
     },
     {
@@ -28,7 +28,7 @@ const menuItems = [
         key: "tecnicas",
         icon: <FaTools className="me-2" />,
         items: [
-            { to: "/tecnicas", label: "Técnicas", icon: <FaTools className="me-2" /> },
+            { to: "/dashboard/tecnicas", label: "Técnicas", icon: <FaTools className="me-2" /> },
         ]
     },
     {
@@ -36,8 +36,8 @@ const menuItems = [
         key: "ventas",
         icon: <FaShoppingCart className="me-2" />,
         items: [
-            { to: "/cotizaciones", label: "Cotizaciones", icon: <FaClipboardList className="me-2" /> },
-            { to: "/productos", label: "Productos", icon: <FaBox className="me-2" /> },
+            { to: "/dashboard/cotizaciones", label: "Cotizaciones", icon: <FaClipboardList className="me-2" /> },
+            { to: "/dashboard/productos", label: "Productos", icon: <FaBox className="me-2" /> },
         ]
     },
     {
@@ -45,9 +45,9 @@ const menuItems = [
         key: "caracteristicasproducto",
         icon: <FaTshirt className="me-2" />,
         items: [
-            { to: "/telas", label: "Telas", icon: <FaTshirt className="me-2" /> },
-            { to: "/tallas", label: "Tallas", icon: <FaRuler className="me-2" /> },
-            { to: "/colores", label: "Colores", icon: <FaPalette className="me-2" /> }
+            { to: "/dashboard/telas", label: "Telas", icon: <FaTshirt className="me-2" /> },
+            { to: "/dashboard/tallas", label: "Tallas", icon: <FaRuler className="me-2" /> },
+            { to: "/dashboard/colores", label: "Colores", icon: <FaPalette className="me-2" /> }
         ]
     },
     {
@@ -55,7 +55,7 @@ const menuItems = [
         key: "insumos",
         icon: <FaBox className="me-2" />,
         items: [
-            { to: "/insumos", label: "Insumos", icon: <FaBox className="me-2" /> },
+            { to: "/dashboard/insumos", label: "Insumos", icon: <FaBox className="me-2" /> },
         ]
     },
     {
@@ -63,8 +63,8 @@ const menuItems = [
         key: "procesocompras",
         icon: <FaWarehouse className="me-2" />,
         items: [
-            { to: "/pedidos", label: "Pedidos", icon: <FaClipboardList className="me-2" /> },
-            { to: "/proveedores", label: "Proveedores", icon: <FaWarehouse className="me-2" /> }
+            { to: "/dashboard/pedidos", label: "Pedidos", icon: <FaClipboardList className="me-2" /> },
+            { to: "/dashboard/proveedores", label: "Proveedores", icon: <FaWarehouse className="me-2" /> }
         ]
     },
     {
@@ -72,7 +72,7 @@ const menuItems = [
         key: "indicadores",
         icon: <FaChartBar className="me-2" />,
         items: [
-            { to: "/mediciondesempeño", label: "Medición y Desempeño", icon: <FaChartLine className="me-2" /> }
+            { to: "/dashboard/mediciondesempeño", label: "Medición y Desempeño", icon: <FaChartLine className="me-2" /> }
         ]
     }
 ];

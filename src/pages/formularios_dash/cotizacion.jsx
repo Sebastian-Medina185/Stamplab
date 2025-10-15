@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "../../components/Icon";
 import { FaTimes } from "react-icons/fa";
+import { createCotizacion, updateCotizacion } from "../../Services/api-cotizaciones/cotizaciones";
+import { createDetalleCotizacion, updateDetalleCotizacion } from "../../Services/api-cotizaciones/detalleCotizacion";
+import Swal from "sweetalert2";
 
-const CotizacionesForm = ({ onClose }) => {
-  const [traePrenda, setTraePrenda] = useState("no"); // "no" predeterminado
+const CotizacionesForm = ({ onClose, cotizacionToEdit }) => {
+  const [loading, setLoading] = useState(false);
+  const [traePrenda, setTraePrenda] = useState("no");
   const [showDiseno, setShowDiseno] = useState(false);
+  const [detalles, setDetalles] = useState([]);
+  const [formData, setFormData] = useState({
+    DocumentoID: "",
+    ValorTotal: 0,
+    Estado: "pendiente"
+  });
 
   return (
     <>
@@ -214,10 +224,27 @@ const CotizacionesForm = ({ onClose }) => {
 
           {/* Botones */}
           <div className="d-flex gap-3 mt-4">
-            <button type="button" className="btn btn-success">
-              + Agregar Cotización
+            <button 
+              type="button" 
+              className="btn btn-success"
+              onClick={handleSubmitCotizacion}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Procesando...
+                </>
+              ) : (
+                `+ ${cotizacionToEdit ? 'Actualizar' : 'Agregar'} Cotización`
+              )}
             </button>
-            <button type="button" className="btn btn-primary">
+            <button 
+              type="button" 
+              className="btn btn-primary"
+              onClick={handleAddProducto}
+              disabled={loading}
+            >
               + Agregar Producto
             </button>
           </div>
@@ -260,10 +287,27 @@ const CotizacionesForm = ({ onClose }) => {
 
           {/* Generar / Cancelar */}
           <div className="d-flex justify-content-center gap-3 mt-4">
-            <button type="submit" className="btn btn-success px-4">
-              Generar cotización
+            <button 
+              type="button" 
+              className="btn btn-success px-4"
+              onClick={handleSubmitCotizacion}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Procesando...
+                </>
+              ) : (
+                `Generar cotización`
+              )}
             </button>
-            <button type="button" className="btn btn-danger px-4">
+            <button 
+              type="button" 
+              className="btn btn-danger px-4"
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancelar
             </button>
           </div>
@@ -271,6 +315,88 @@ const CotizacionesForm = ({ onClose }) => {
       </div>
     </>
   );
+
+  useEffect(() => {
+    if (cotizacionToEdit) {
+      setFormData({
+        DocumentoID: cotizacionToEdit.DocumentoID,
+        ValorTotal: cotizacionToEdit.ValorTotal,
+        Estado: cotizacionToEdit.Estado
+      });
+      // Aquí podrías cargar los detalles de la cotización si es necesario
+    }
+  }, [cotizacionToEdit]);
+
+  const handleSubmitCotizacion = async () => {
+    try {
+      setLoading(true);
+
+      // Validar datos
+      if (!formData.DocumentoID || detalles.length === 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Por favor, complete todos los campos requeridos y agregue al menos un producto'
+        });
+        return;
+      }
+
+      // Crear o actualizar la cotización
+      const cotizacionResponse = cotizacionToEdit
+        ? await updateCotizacion(cotizacionToEdit.CotizacionID, formData)
+        : await createCotizacion(formData);
+
+      // Procesar los detalles
+      for (const detalle of detalles) {
+        if (detalle.id) {
+          await updateDetalleCotizacion(detalle.id, {
+            ...detalle,
+            CotizacionID: cotizacionResponse.datos.CotizacionID
+          });
+        } else {
+          await createDetalleCotizacion({
+            ...detalle,
+            CotizacionID: cotizacionResponse.datos.CotizacionID
+          });
+        }
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: cotizacionToEdit 
+          ? 'Cotización actualizada correctamente'
+          : 'Cotización creada correctamente'
+      });
+
+      onClose();
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddProducto = () => {
+    setDetalles([
+      ...detalles,
+      {
+        VarianteID: "",
+        Cantidad: 1,
+        TraePrenda: traePrenda === "si",
+        PrendaDescripcion: ""
+      }
+    ]);
+  };
+
+  const handleRemoveProducto = (index) => {
+    const newDetalles = detalles.filter((_, i) => i !== index);
+    setDetalles(newDetalles);
+  };
 };
 
 export default CotizacionesForm;

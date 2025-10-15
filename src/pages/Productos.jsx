@@ -782,7 +782,6 @@ const Productos = () => {
                               <th>Precio</th>
                               <th>Imagen</th>
                               <th>Estado</th>
-                              <th>Acciones</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -818,7 +817,7 @@ const Productos = () => {
                                       "Disponible" : "No disponible"}
                                   </span>
                                 </td>
-                                <td>
+                                {/* <td>
                                   <div className="d-flex justify-content-center">
                                     <button
                                       className="btn btn-outline-warning btn-sm rounded-circle me-2"
@@ -842,7 +841,7 @@ const Productos = () => {
                                       <FaTrash size={14} />
                                     </button>
                                   </div>
-                                </td>
+                                </td> */}
                               </tr>
                             ))}
                           </tbody>

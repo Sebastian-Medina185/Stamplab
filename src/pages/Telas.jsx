@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
 import TelasForm from "./formularios_dash/TelasForm";
 import { getTelas, deleteTela } from "../Services/api-telas/telas.js";
+import { Modal } from "react-bootstrap";
 
 const Telas = () => {
   const [search, setSearch] = useState("");
@@ -10,6 +11,8 @@ const Telas = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [telaEdit, setTelaEdit] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedTela, setSelectedTela] = useState(null);
 
   // ========== Cargar telas ==========
   const fetchTelas = async () => {
@@ -204,6 +207,7 @@ const Telas = () => {
           </table>
         </div>
       </div>
+      
     </div>
   );
 };

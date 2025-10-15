@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaUser } from "react-icons/fa";
 import UsuariosForm from "./formularios_dash/usuarios";
 import { getUsuarios, deleteUsuario } from "../Services/api-usuarios/usuarios";
+import { Modal } from "react-bootstrap";
+import Swal from 'sweetalert2';
 
 const Usuarios = () => {
     const [showForm, setShowForm] = useState(false);
@@ -9,6 +11,7 @@ const Usuarios = () => {
     const [selectedUsuario, setSelectedUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
 
     // Cargar usuarios al montar el componente
     useEffect(() => {
@@ -53,48 +56,66 @@ const Usuarios = () => {
     };
 
     // Función para manejar guardado exitoso
-    const handleSaveSuccess = async () => {
-        // Recargar la lista de usuarios
-        await loadUsuarios();
-        handleCloseForm();
+    const handleSaveSuccess = async (isNewUser = false) => {
+        try {
+            await loadUsuarios();
+            handleCloseForm();
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: isNewUser ? 'Usuario creado correctamente' : 'Usuario actualizado correctamente',
+                confirmButtonColor: '#3085d6'
+            });
+        } catch (error) {
+            console.error("Error después de guardar:", error);
+            // No mostrar error aquí ya que el guardado fue exitoso
+        }
     };
 
     // Función para eliminar usuario
     const handleEliminar = async (documentoID) => {
-        if (window.confirm("¿Está seguro de eliminar este usuario?")) {
-            try {
+        try {
+            const result = await Swal.fire({
+                title: '¿Está seguro?',
+                text: "No podrá revertir esta acción",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
                 setLoading(true);
                 const response = await deleteUsuario(documentoID);
                 if (response.estado) {
-                    // Recargar la lista de usuarios
                     await loadUsuarios();
-                    alert("Usuario eliminado correctamente");
+                    Swal.fire(
+                        '¡Eliminado!',
+                        'El usuario ha sido eliminado correctamente',
+                        'success'
+                    );
                 } else {
-                    alert("Error al eliminar usuario: " + response.mensaje);
+                    throw new Error(response.mensaje || 'Error al eliminar el usuario');
                 }
-            } catch (error) {
-                console.error("Error al eliminar usuario:", error);
-                if (error.response && error.response.data) {
-                    alert("Error: " + error.response.data.mensaje);
-                } else {
-                    alert("Error de conexión al eliminar usuario");
-                }
-            } finally {
-                setLoading(false);
             }
+        } catch (error) {
+            console.error("Error al eliminar usuario:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.response?.data?.mensaje || error.message || 'Error al eliminar el usuario'
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
     // Función para ver detalles del usuario
     const handleVer = (usuario) => {
-        alert(`Detalles del Usuario:
-        
-Documento: ${usuario.DocumentoID}
-Nombre: ${usuario.Nombre}
-Correo: ${usuario.Correo}
-Dirección: ${usuario.Direccion}
-Teléfono: ${usuario.Telefono}
-Rol: ${usuario.RolNombre || usuario.RolID}`);
+        setSelectedUsuario(usuario);
+        setShowDetailModal(true);
     };
 
     // Función para obtener el nombre del rol
@@ -121,7 +142,7 @@ Rol: ${usuario.RolNombre || usuario.RolID}`);
         return (
             <UsuariosForm
                 onClose={handleCloseForm}
-                onSave={handleSaveSuccess}
+                onSave={() => handleSaveSuccess(!selectedUsuario)}
                 usuario={selectedUsuario}
             />
         );
@@ -302,6 +323,102 @@ Rol: ${usuario.RolNombre || usuario.RolID}`);
                     </table>
                 </div>
             </div>
+
+            {/* Modal de Detalles del Usuario */}
+            <Modal
+                show={showDetailModal}
+                onHide={() => setShowDetailModal(false)}
+                centered
+                className="fade"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            >
+                <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
+                    {selectedUsuario && (
+                        <>
+                            {/* Encabezado del Modal */}
+                            <div className="modal-header border-0 text-white" 
+                                style={{ 
+                                    background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
+                                    padding: '20px'
+                                }}>
+                                <div className="d-flex align-items-center">
+                                    <div>
+                                        <h5 className="modal-title fw-bold mb-1">Detalles del Usuario</h5>
+                                        <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
+                                            Documento: {selectedUsuario.DocumentoID}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={() => setShowDetailModal(false)}
+                                    aria-label="Close"
+                                />
+                            </div>
+
+                            {/* Cuerpo del Modal */}
+                            <div className="modal-body p-4">
+                                <div className="row g-1">
+                                    {/* Nombre */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Nombre</label>
+                                            <h4 className="mb-0 fs-6 fw-normal">{selectedUsuario.Nombre}</h4>
+                                        </div>
+                                    </div>
+
+                                    {/* Correo */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Correo Electrónico</label>
+                                            <h4 className="mb-0 fs-6 fw-normal">{selectedUsuario.Correo}</h4>
+                                        </div>
+                                    </div>
+
+                                    {/* Dirección */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Dirección</label>
+                                            <p className="mb-0 fs-6">{selectedUsuario.Direccion}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Teléfono y Rol en la misma fila */}
+                                    <div className="col-md-6">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Teléfono</label>
+                                            <h4 className="mb-0 fs-6 fw-normal">{selectedUsuario.Telefono}</h4>
+                                        </div>
+                                    </div>
+
+                                    <div className="col-md-6">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Rol</label>
+                                            <div className="d-flex align-items-center">
+                                                <span className="badge bg-secondary px-3 py-2">
+                                                    {getRoleName(selectedUsuario)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Pie del Modal */}
+                            <div className="modal-footer d-flex justify-content-center border-0 pt-0">
+                                <button
+                                    type="button"
+                                    className="btn btn-danger px-4"
+                                    onClick={() => setShowDetailModal(false)}
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 };
