@@ -2,61 +2,124 @@ import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 
 const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
+    // ==========================
+    // 🎯 ESTADOS DEL FORMULARIO
+    // ==========================
     const [formData, setFormData] = useState({
         nombre: "",
-        stock: "",  // Cambiado de 0 a string vacío
+        stock: "",
         estado: true,
     });
 
-    // Cargar datos del insumo si estamos editando
+    const [errors, setErrors] = useState({
+        nombre: "",
+        stock: "",
+    });
+
+    const [touched, setTouched] = useState({
+        nombre: false,
+        stock: false,
+    });
+
+    // ==========================
+    // 🔁 CARGAR DATOS AL EDITAR
+    // ==========================
     useEffect(() => {
         if (insumoEdit) {
             setFormData({
                 nombre: insumoEdit.Nombre || "",
-                stock: insumoEdit.Stock?.toString() || "", // Convertir a string
+                stock: insumoEdit.Stock?.toString() || "",
                 estado: insumoEdit.Estado !== undefined ? insumoEdit.Estado : true,
             });
         } else {
-            // Limpiar formulario si es crear nuevo
-            setFormData({
-                nombre: "",
-                stock: "",  // Cambiado de 0 a string vacío
-                estado: true,
-            });
+            setFormData({ nombre: "", stock: "", estado: true });
         }
+
+        setErrors({ nombre: "", stock: "" });
+        setTouched({ nombre: false, stock: false });
     }, [insumoEdit]);
 
+    // ==========================
+    // ✅ VALIDACIONES
+    // ==========================
+    const validateNombre = (value) => {
+        const nombre = value.trim();
+
+        if (!nombre) return "El nombre es obligatorio";
+        if (nombre.length < 4) return "El nombre debe tener al menos 4 caracteres";
+        if (nombre.length > 50) return "El nombre no puede exceder 50 caracteres";
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-_]+$/.test(nombre))
+            return "Solo se permiten letras, números, espacios, guiones y guiones bajos";
+        if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(nombre))
+            return "No se permiten numeros, solo letras."
+            // return "El nombre debe contener al menos una letra";
+
+        return "";
+    };
+
+    const validateStock = (value) => {
+        if (value === "" || value === null) return "El stock es obligatorio";
+
+        const stockNum = Number(value);
+        if (isNaN(stockNum)) return "El stock debe ser un número válido";
+        if (!Number.isInteger(stockNum)) return "El stock debe ser un número entero";
+        if (stockNum < 0) return "El stock no puede ser negativo";
+
+        return "";
+    };
+
+    // ==========================
+    // ✍️ MANEJADORES DE EVENTOS
+    // ==========================
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: name === 'estado' 
-                ? value === 'true'
-                : value, // Ya no necesitamos la conversión parseInt aquí
-        }));
+        const newValue = name === "estado" ? value === "true" : value;
+
+        setFormData((prev) => ({ ...prev, [name]: newValue }));
+
+        // Validar en tiempo real si ya fue tocado
+        if (touched[name]) {
+            const error =
+                name === "nombre" ? validateNombre(value) : validateStock(value);
+            setErrors((prev) => ({ ...prev, [name]: error }));
+        }
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched((prev) => ({ ...prev, [name]: true }));
+
+        const error =
+            name === "nombre" ? validateNombre(value) : validateStock(value);
+        setErrors((prev) => ({ ...prev, [name]: error }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Validaciones básicas
-        if (!formData.nombre.trim()) {
-            alert("El nombre del insumo es obligatorio");
-            return;
-        }
+        // Validar todos los campos antes de enviar
+        const nombreError = validateNombre(formData.nombre);
+        const stockError = validateStock(formData.stock);
 
-        // Preparar datos para enviar
+        setErrors({ nombre: nombreError, stock: stockError });
+        setTouched({ nombre: true, stock: true });
+
+        if (nombreError || stockError) return;
+
+        // Preparar datos para guardar
         const insumoData = {
-            Nombre: formData.nombre,
-            Stock: formData.stock === "" ? 0 : parseInt(formData.stock), // Convertir a número al enviar
+            Nombre: formData.nombre.trim(),
+            Stock: formData.stock === "" ? 0 : parseInt(formData.stock),
             Estado: formData.estado,
-            ...(insumoEdit && { InsumoID: insumoEdit.InsumoID })
+            ...(insumoEdit && { InsumoID: insumoEdit.InsumoID }),
         };
 
-        // Llamar a la función onSave del componente padre
         onSave(insumoData);
     };
 
+    // ==========================
+    // 🧱 INTERFAZ DEL FORMULARIO
+    // ==========================
     return (
         <div className="container py-4">
             <div className="position-relative mb-4 text-center">
@@ -86,14 +149,25 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
                         </label>
                         <input
                             type="text"
-                            className="form-control"
                             name="nombre"
                             value={formData.nombre}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder="Ingrese el nombre del insumo"
                             maxLength="50"
-                            required
+                            className={`form-control ${
+                                touched.nombre && errors.nombre
+                                    ? "is-invalid"
+                                    : touched.nombre && !errors.nombre
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
+                        {touched.nombre && errors.nombre && (
+                            <div className="invalid-feedback d-block">
+                                {errors.nombre}
+                            </div>
+                        )}
                     </div>
 
                     {/* Stock */}
@@ -103,13 +177,26 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
                         </label>
                         <input
                             type="number"
-                            className="form-control"
                             name="stock"
                             value={formData.stock}
                             onChange={handleChange}
+                            onBlur={handleBlur}
                             placeholder="Cantidad disponible"
-                            required
+                            min="0"
+                            step="1"
+                            className={`form-control ${
+                                touched.stock && errors.stock
+                                    ? "is-invalid"
+                                    : touched.stock && !errors.stock
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
+                        {touched.stock && errors.stock && (
+                            <div className="invalid-feedback d-block">
+                                {errors.stock}
+                            </div>
+                        )}
                     </div>
 
                     {/* Estado */}
@@ -124,16 +211,28 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
                             <option value="true">Activo</option>
                             <option value="false">Inactivo</option>
                         </select>
+                        {formData.stock === "0" && (
+                            <small className="text-muted">
+                                * Si el stock es 0, el estado será inactivo automáticamente
+                            </small>
+                        )}
                     </div>
                 </div>
 
-
                 {/* Botones */}
                 <div className="d-flex justify-content-center gap-3 mt-4">
-                    <button type="submit" className="btn btn-success px-4">
+                    <button
+                        type="submit"
+                        className="btn btn-success px-4"
+                        disabled={!!errors.nombre || !!errors.stock}
+                    >
                         {insumoEdit ? "Actualizar Insumo" : "Crear Insumo"}
                     </button>
-                    <button type="button" className="btn btn-secondary px-4" onClick={onClose}>
+                    <button
+                        type="button"
+                        className="btn btn-secondary px-4"
+                        onClick={onClose}
+                    >
                         Cancelar
                     </button>
                 </div>
