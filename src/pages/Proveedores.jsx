@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaBuilding, FaSyncAlt } from "react-icons/fa";
+import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaSyncAlt } from "react-icons/fa";
 import ProveedoresForm from './formularios_dash/ProveedoresForm';
 import { 
     getProveedores, 
     createProveedor, 
     updateProveedor, 
-    deleteProveedor,
-    cambiarEstadoProveedor
-} from "../Services/api-proveedores/proveedores";
+    deleteProveedor
+} from "../Services/api-proveedores/proveedores.js";
 import Swal from 'sweetalert2';
 import { Modal } from 'react-bootstrap';
 
@@ -21,7 +20,6 @@ const Proveedores = () => {
   const [error, setError] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Cargar proveedores al montar el componente
   useEffect(() => {
     cargarProveedores();
   }, []);
@@ -45,30 +43,24 @@ const Proveedores = () => {
     }
   };
 
-  // Función para abrir formulario de agregar
   const handleAgregar = () => {
     setSelectedProveedor(null);
     setShowForm(true);
   };
 
-  // Función para abrir formulario de editar
   const handleEditar = (proveedor) => {
     setSelectedProveedor(proveedor);
     setShowForm(true);
   };
 
-  // Función para cerrar formulario y recargar datos
   const handleCloseForm = (proveedorActualizado = false) => {
     setShowForm(false);
     setSelectedProveedor(null);
-
-    // Si se agregó o editó un proveedor, recargar la lista
     if (proveedorActualizado) {
       cargarProveedores();
     }
   };
 
-  // Modificar el handleEliminar para usar SweetAlert2
   const handleEliminar = async (nit) => {
     try {
       const result = await Swal.fire({
@@ -85,7 +77,7 @@ const Proveedores = () => {
       if (result.isConfirmed) {
         const response = await deleteProveedor(nit);
         if (response.estado) {
-          await cargarProveedores(); // Recargar la lista
+          await cargarProveedores();
           Swal.fire('Eliminado', 'El proveedor ha sido eliminado', 'success');
         }
       }
@@ -95,15 +87,12 @@ const Proveedores = () => {
     }
   };
 
-  // Función para cambiar estado
   const handleCambiarEstado = async (proveedor) => {
     try {
-      // Determinar el estado actual y el nuevo estado
       const estadoActual = proveedor.Estado === true || proveedor.Estado === "Activo";
       const nuevoEstado = !estadoActual;
       const estadoTexto = nuevoEstado ? "Activo" : "Inactivo";
 
-      // Confirmar con el usuario
       const result = await Swal.fire({
         title: '¿Cambiar estado?',
         text: `¿Seguro que desea cambiar el estado de este proveedor a ${estadoTexto}?`,
@@ -117,8 +106,7 @@ const Proveedores = () => {
 
       if (result.isConfirmed) {
         setLoading(true);
-        
-        // Intentar actualizar primero con PATCH
+
         try {
           const response = await cambiarEstadoProveedor(proveedor.Nit, nuevoEstado);
           if (response.estado) {
@@ -132,7 +120,6 @@ const Proveedores = () => {
             throw new Error(response.mensaje || 'Error al cambiar el estado');
           }
         } catch (patchError) {
-          // Si PATCH falla, intentar con una actualización completa
           console.warn("PATCH falló, intentando actualización completa:", patchError);
           const updatedData = {
             ...proveedor,
@@ -163,12 +150,10 @@ const Proveedores = () => {
     }
   };
 
-  // Agregar esta función después de handleCloseForm
   const handleSave = async (proveedorData) => {
     try {
         setLoading(true);
         if (selectedProveedor) {
-            // Asegurarse que estamos enviando los datos en el formato correcto
             const response = await updateProveedor(selectedProveedor.Nit, proveedorData);
             if (response.estado) {
                 Swal.fire({
@@ -207,7 +192,6 @@ const Proveedores = () => {
     }
 };
 
-  // Filtrado de proveedores
   const filtered = proveedores.filter(
     (proveedor) =>
       proveedor.Nombre.toLowerCase().includes(searchName.toLowerCase()) &&
@@ -215,7 +199,6 @@ const Proveedores = () => {
        proveedor.Estado === (searchStatus.toLowerCase() === "activo"))
   );
 
-  // Si el formulario está abierto, mostrar solo el formulario
   if (showForm) {
     return (
         <ProveedoresForm
@@ -413,7 +396,6 @@ const Proveedores = () => {
         <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
           {selectedProveedor && (
             <>
-              {/* Encabezado del Modal */}
               <div className="modal-header border-0 text-white" 
                 style={{ 
                   background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
@@ -435,10 +417,8 @@ const Proveedores = () => {
                 />
               </div>
 
-              {/* Cuerpo del Modal */}
               <div className="modal-body p-4">
                 <div className="row g-1">
-                  {/* Nombre del Proveedor */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Nombre del Proveedor</label>
@@ -446,7 +426,6 @@ const Proveedores = () => {
                     </div>
                   </div>
 
-                  {/* Correo */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Correo Electrónico</label>
@@ -454,7 +433,6 @@ const Proveedores = () => {
                     </div>
                   </div>
 
-                  {/* Teléfono */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Teléfono</label>
@@ -462,7 +440,6 @@ const Proveedores = () => {
                     </div>
                   </div>
 
-                  {/* Dirección */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Dirección</label>
@@ -470,15 +447,12 @@ const Proveedores = () => {
                     </div>
                   </div>
 
-                  {/* Estado */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Estado</label>
                       <div className="d-flex align-items-center">
                         <span 
-                          className={`badge px-3 py-2 ${
-                            selectedProveedor.Estado ? 'bg-success' : 'bg-danger'
-                          }`}
+                          className={`badge px-3 py-2 ${selectedProveedor.Estado ? 'bg-success' : 'bg-danger'}`}
                           style={{ fontSize: '0.9rem' }}
                         >
                           {selectedProveedor.Estado ? 'Activo' : 'Inactivo'}
@@ -489,7 +463,6 @@ const Proveedores = () => {
                 </div>
               </div>
 
-              {/* Pie del Modal */}
               <div className="modal-footer d-flex justify-content-center border-0 pt-0">
                 <button
                   type="button"

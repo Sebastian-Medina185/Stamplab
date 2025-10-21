@@ -1,59 +1,88 @@
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
-import { createColor, updateColor } from "../../Services/api-colores/colores";
+import Swal from "sweetalert2";
+import { createColor, updateColor, getColores } from "../../Services/api-colores/colores";
 
 const ColoresForm = ({ onClose, onSave, colorEdit }) => {
-    const [formData, setFormData] = useState({
-        Nombre: ""
-    });
+    const [formData, setFormData] = useState({ Nombre: "" });
+    const [error, setError] = useState("");
+    const [coloresExistentes, setColoresExistentes] = useState([]);
 
-    // Si estamos editando, llenar el formulario
     useEffect(() => {
-        if (colorEdit) {
-            setFormData({
-                Nombre: colorEdit.Nombre || ""
-            });
-        }
+        const fetchColores = async () => {
+            try {
+                const response = await getColores();
+                if (response.estado) setColoresExistentes(response.datos.map(c => c.Nombre.toLowerCase().trim()));
+            } catch (err) {
+                console.error("Error cargando colores:", err);
+            }
+        };
+        fetchColores();
+    }, []);
+
+    useEffect(() => {
+        if (colorEdit) setFormData({ Nombre: colorEdit.Nombre || "" });
     }, [colorEdit]);
 
+    const validarNombre = (nombre) => {
+        const trimmed = nombre.trim();
+        if (!trimmed) return "El nombre no puede estar vacío";
+        if (trimmed.length < 3) return "El nombre debe tener al menos 3 caracteres";
+        if (trimmed.length > 15) return "El nombre no puede tener más de 15 caracteres";
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(trimmed)) return "Solo se permiten letras y espacios";
+        if (coloresExistentes.includes(trimmed.toLowerCase()) && (!colorEdit || trimmed.toLowerCase() !== colorEdit.Nombre.toLowerCase().trim()))
+            return "Ya existe un color con este nombre";
+        return "";
+    };
+
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        setError(validarNombre(value));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const mensajeError = validarNombre(formData.Nombre);
+        if (mensajeError) return setError(mensajeError);
+
         try {
+            let result;
             if (colorEdit) {
-                // Editar
-                const result = await updateColor({
-                    ColorID: colorEdit.ColorID,
-                    ...formData
-                });
-                if (result.estado) {
-                    alert("Color actualizado con éxito");
-                    onSave();
-                } else {
-                    alert("Error: " + result.mensaje);
-                }
+                result = await updateColor({ ColorID: colorEdit.ColorID, ...formData });
             } else {
-                // Crear
-                const result = await createColor(formData);
-                if (result.estado) {
-                    alert("Color creado con éxito");
-                    onSave();
-                } else {
-                    alert("Error: " + result.mensaje);
-                }
+                result = await createColor(formData);
+            }
+
+            if (result.estado) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    }
+                });
+
+                Toast.fire({
+                    icon: 'success',
+                    title: colorEdit ? 'Color actualizado correctamente' : 'Color creado correctamente'
+                });
+
+                onSave();
+            } else {
+                throw new Error(result.mensaje);
             }
         } catch (error) {
-            console.error("Error guardando color:", error);
-            alert("Ocurrió un error al guardar");
+            Swal.fire("Error", error.message || "Error al guardar el color", "error");
         }
     };
 
     return (
         <div className="card shadow-sm border-0 p-4 mx-4">
-            {/* Encabezado */}
             <div className="position-relative mb-4 text-center">
                 <p className="fw-bold fs-3 mb-0">
                     {colorEdit ? "Editar Color" : "Crear Color"}
@@ -67,7 +96,6 @@ const ColoresForm = ({ onClose, onSave, colorEdit }) => {
                 </button>
             </div>
 
-            {/* Formulario */}
             <form className="row g-3" onSubmit={handleSubmit}>
                 <div className="col-12">
                     <label className="form-label fw-bold">Nombre del Color</label>
@@ -76,21 +104,18 @@ const ColoresForm = ({ onClose, onSave, colorEdit }) => {
                         name="Nombre"
                         value={formData.Nombre}
                         onChange={handleChange}
-                        className="form-control"
+                        className={`form-control ${error ? "is-invalid" : ""}`}
+                        placeholder="Ej: Azul Cielo"
                         required
                     />
+                    {error && <div className="invalid-feedback">{error}</div>}
                 </div>
 
-                {/* Botones */}
                 <div className="col-12 d-flex justify-content-end gap-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="btn btn-secondary shadow-sm"
-                    >
+                    <button type="button" onClick={onClose} className="btn btn-secondary shadow-sm">
                         Cancelar
                     </button>
-                    <button type="submit" className="btn btn-primary shadow-sm">
+                    <button type="submit" className="btn btn-primary shadow-sm" disabled={!!error}>
                         {colorEdit ? "Actualizar" : "Guardar"}
                     </button>
                 </div>

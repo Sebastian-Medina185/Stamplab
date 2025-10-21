@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { FaTimes } from "react-icons/fa";
 
 const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
   const [formData, setFormData] = useState({
@@ -9,7 +8,18 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
     estado: true,
   });
 
-  // Cargar datos de la técnica si estamos editando
+  const [errors, setErrors] = useState({
+    nombre: "",
+    descripcion: "",
+    imagenTecnica: "",
+  });
+
+  const [touched, setTouched] = useState({
+    nombre: false,
+    descripcion: false,
+    imagenTecnica: false,
+  });
+
   useEffect(() => {
     if (tecnicaEdit) {
       setFormData({
@@ -19,7 +29,6 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
         estado: tecnicaEdit.Estado !== undefined ? tecnicaEdit.Estado : true,
       });
     } else {
-      // Limpiar formulario si es crear nuevo
       setFormData({
         nombre: "",
         descripcion: "",
@@ -29,40 +38,153 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
     }
   }, [tecnicaEdit]);
 
+  // ================= VALIDACIONES =================
+
+  const validarNombre = (valor) => {
+    const nombre = valor.trim();
+
+    if (!nombre) {
+      return "El nombre es obligatorio y no puede estar vacío.";
+    }
+    if (nombre.length < 4) {
+      return "El nombre debe tener al menos 4 caracteres.";
+    }
+    if (nombre.length > 20) {
+      return "El nombre no puede tener más de 20 caracteres.";
+    }
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(nombre)) {
+      return "El nombre solo puede contener letras y espacios (sin números ni caracteres especiales).";
+    }
+
+    return "";
+  };
+
+  const validarDescripcion = (valor) => {
+    const descripcion = valor.trim();
+
+    if (!descripcion) {
+      return "La descripción es obligatoria y no puede estar vacía.";
+    }
+    if (descripcion.length < 10) {
+      return "La descripción debe tener al menos 10 caracteres.";
+    }
+    if (descripcion.length > 255) {
+      return "La descripción no puede tener más de 255 caracteres.";
+    }
+    if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s]+$/.test(descripcion)) {
+      return "La descripción solo puede contener letras, números y espacios (sin caracteres especiales).";
+    }
+
+    return "";
+  };
+
+  const validarImagen = (valor) => {
+    const imagen = valor.trim();
+
+    if (!imagen) {
+      return "La imagen es obligatoria y no puede estar vacía.";
+    }
+    if (imagen.length > 255) {
+      return "La URL o ruta de la imagen no puede tener más de 255 caracteres.";
+    }
+
+    // Permitir tanto URLs como rutas locales con extensión de imagen
+    const urlRegex = /^(https?:\/\/)?([\w\-]+\.)+[\w\-]+(\/[\w\-./]*)*\.(jpg|jpeg|png|gif|webp|svg)$/i;
+    const rutaLocalRegex = /^[\w\-./]+\.(jpg|jpeg|png|gif|webp|svg)$/i;
+
+    if (!urlRegex.test(imagen) && !rutaLocalRegex.test(imagen)) {
+      return "Debe ser una URL o ruta válida que termine con una extensión de imagen (.jpg, .png, etc.).";
+    }
+
+    return "";
+  };
+
+  // ================= EVENTOS =================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'estado' ? value === 'true' : value,
+      [name]: name === "estado" ? value === "true" : value,
     }));
+
+    if (touched[name]) {
+      validateField(name, value);
+    }
+  };
+
+  const validateField = (fieldName, value) => {
+    let error = "";
+
+    switch (fieldName) {
+      case "nombre":
+        error = validarNombre(value);
+        break;
+      case "descripcion":
+        error = validarDescripcion(value);
+        break;
+      case "imagenTecnica":
+        error = validarImagen(value);
+        break;
+      default:
+        break;
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      [fieldName]: error,
+    }));
+
+    return error;
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+
+    validateField(name, value);
+  };
+
+  const validateForm = () => {
+    const nombreError = validarNombre(formData.nombre);
+    const descripcionError = validarDescripcion(formData.descripcion);
+    const imagenError = validarImagen(formData.imagenTecnica);
+
+    setErrors({
+      nombre: nombreError,
+      descripcion: descripcionError,
+      imagenTecnica: imagenError,
+    });
+
+    setTouched({
+      nombre: true,
+      descripcion: true,
+      imagenTecnica: true,
+    });
+
+    return !nombreError && !descripcionError && !imagenError;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
 
-    // Validaciones básicas
-    if (!formData.nombre.trim()) {
-      alert("El nombre de la técnica es obligatorio");
-      return;
-    }
-
-    if (!formData.descripcion.trim()) {
-      alert("La descripción de la técnica es obligatoria");
-      return;
-    }
-
-    // Preparar datos para enviar
     const tecnicaData = {
-      Nombre: formData.nombre,
-      Descripcion: formData.descripcion,
-      ImagenTecnica: formData.imagenTecnica,
+      Nombre: formData.nombre.trim(),
+      Descripcion: formData.descripcion.trim(),
+      ImagenTecnica: formData.imagenTecnica.trim(),
       Estado: formData.estado,
-      ...(tecnicaEdit && { TecnicaID: tecnicaEdit.TecnicaID })
+      ...(tecnicaEdit && { TecnicaID: tecnicaEdit.TecnicaID }),
     };
 
-    // Llamar a la función onSave del componente padre
     onSave(tecnicaData);
   };
+
+  // ================= INTERFAZ =================
 
   return (
     <div className="container py-4">
@@ -76,7 +198,7 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
           className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
           title="Cerrar"
         >
-          <FaTimes />
+          ✕
         </button>
       </div>
 
@@ -86,57 +208,90 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
         onSubmit={handleSubmit}
       >
         <div className="row g-3">
-          {/* Nombre de la técnica */}
+          {/* NOMBRE */}
           <div className="col-md-12">
             <label className="form-label fw-bold">
               Nombre de la Técnica <span className="text-danger">*</span>
             </label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${
+                touched.nombre && errors.nombre
+                  ? "is-invalid"
+                  : touched.nombre && !errors.nombre && formData.nombre
+                  ? "is-valid"
+                  : ""
+              }`}
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Ingrese el nombre de la técnica"
               maxLength="20"
-              required
             />
+            {touched.nombre && errors.nombre && (
+              <div className="invalid-feedback d-block">{errors.nombre}</div>
+            )}
+            <small className="text-muted">{formData.nombre.length}/20 caracteres</small>
           </div>
 
-          {/* Descripción */}
+          {/* DESCRIPCIÓN */}
           <div className="col-md-12">
             <label className="form-label fw-bold">
               Descripción <span className="text-danger">*</span>
             </label>
             <textarea
-              className="form-control"
+              className={`form-control ${
+                touched.descripcion && errors.descripcion
+                  ? "is-invalid"
+                  : touched.descripcion && !errors.descripcion && formData.descripcion
+                  ? "is-valid"
+                  : ""
+              }`}
               name="descripcion"
               value={formData.descripcion}
               onChange={handleChange}
-              placeholder="Describa la técnica de estampado"
+              onBlur={handleBlur}
+              placeholder="Describa la técnica de estampado (mínimo 10 caracteres)"
               rows="4"
               maxLength="255"
-              required
             />
+            {touched.descripcion && errors.descripcion && (
+              <div className="invalid-feedback d-block">{errors.descripcion}</div>
+            )}
+            <small className="text-muted">{formData.descripcion.length}/255 caracteres</small>
           </div>
 
-          {/* Imagen de la técnica */}
+          {/* IMAGEN */}
           <div className="col-md-12">
             <label className="form-label fw-bold">
-              URL de la Imagen
+              URL o Ruta de la Imagen <span className="text-danger">*</span>
             </label>
             <input
               type="text"
-              className="form-control"
+              className={`form-control ${
+                touched.imagenTecnica && errors.imagenTecnica
+                  ? "is-invalid"
+                  : touched.imagenTecnica && !errors.imagenTecnica && formData.imagenTecnica
+                  ? "is-valid"
+                  : ""
+              }`}
               name="imagenTecnica"
               value={formData.imagenTecnica}
               onChange={handleChange}
-              placeholder="Ingrese la URL de la imagen"
+              onBlur={handleBlur}
+              placeholder="https://ejemplo.com/imagen.png o imagenes/imagen.png"
               maxLength="255"
             />
+            {touched.imagenTecnica && errors.imagenTecnica && (
+              <div className="invalid-feedback d-block">{errors.imagenTecnica}</div>
+            )}
+            <small className="text-muted d-block">
+              Extensiones válidas: .jpg, .jpeg, .png, .gif, .webp, .svg
+            </small>
           </div>
 
-          {/* Estado */}
+          {/* ESTADO */}
           <div className="col-md-6">
             <label className="form-label fw-bold">Estado</label>
             <select
@@ -151,20 +306,15 @@ const TecnicasForm = ({ onClose, onSave, tecnicaEdit = null }) => {
           </div>
         </div>
 
-        {/* Información adicional
-        <div className="mt-4 p-3 rounded" style={{ backgroundColor: "#e9e6f3" }}>
-          <h6 className="text-dark mb-3">Información importante:</h6>
-          <ul className="mb-0 text-muted small">
-            <li>Todos los campos marcados con (*) son obligatorios</li>
-            <li>El nombre de la técnica debe ser único en el sistema</li>
-            <li>Las técnicas inactivas no estarán disponibles para las cotizaciones</li>
-            <li>La URL de la imagen es opcional</li>
-          </ul>
-        </div> */}
-
-        {/* Botones */}
+        {/* BOTONES */}
         <div className="d-flex justify-content-center gap-3 mt-4">
-          <button type="submit" className="btn btn-success px-4">
+          <button
+            type="submit"
+            className="btn btn-success px-4"
+            disabled={
+              errors.nombre || errors.descripcion || errors.imagenTecnica
+            }
+          >
             {tecnicaEdit ? "Actualizar Técnica" : "Crear Técnica"}
           </button>
           <button type="button" className="btn btn-secondary px-4" onClick={onClose}>

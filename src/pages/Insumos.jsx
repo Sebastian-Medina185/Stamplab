@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaSync, FaBoxOpen } from "react-icons/fa";
+import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaSync } from "react-icons/fa";
 import InsumoForm from "./formularios_dash/InsumoForm";
 import {
   getInsumos,
@@ -20,6 +20,19 @@ const Insumos = () => {
   const [search, setSearch] = useState("");
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedInsumo, setSelectedInsumo] = useState(null);
+
+  // Toast configuración
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
 
   // Cargar insumos al montar el componente
   useEffect(() => {
@@ -51,11 +64,17 @@ const Insumos = () => {
       if (insumoEdit) {
         // Actualizar
         await updateInsumo(insumoEdit.InsumoID, insumoData);
-        Swal.fire("¡Éxito!", "Insumo actualizado correctamente", "success");
+        Toast.fire({
+          icon: 'success',
+          title: 'Insumo actualizado correctamente'
+        });
       } else {
         // Crear nuevo
         await createInsumo(insumoData);
-        Swal.fire("¡Éxito!", "Insumo creado correctamente", "success");
+        Toast.fire({
+          icon: 'success',
+          title: 'Insumo creado correctamente'
+        });
       }
       setShowForm(false);
       await loadInsumos();
@@ -89,7 +108,11 @@ const Insumos = () => {
         setLoading(true);
         await deleteInsumo(insumoID);
         await loadInsumos();
-        Swal.fire("¡Eliminado!", "El insumo ha sido eliminado.", "success");
+        
+        Toast.fire({
+          icon: 'success',
+          title: 'Insumo eliminado correctamente'
+        });
       }
     } catch (error) {
       console.error("Error:", error);
@@ -126,11 +149,11 @@ const Insumos = () => {
         
         if (response.estado) {
           await loadInsumos();
-          Swal.fire(
-            '¡Actualizado!',
-            `El estado del insumo ha sido cambiado a ${estadoTexto}`,
-            'success'
-          );
+          
+          Toast.fire({
+            icon: 'success',
+            title: `Estado cambiado a ${estadoTexto}`
+          });
         } else {
           throw new Error(response.mensaje || 'Error al cambiar el estado');
         }
@@ -331,7 +354,6 @@ const Insumos = () => {
         <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
           {selectedInsumo && (
             <>
-              {/* Encabezado del Modal */}
               <div className="modal-header border-0 text-white" 
                 style={{ 
                   background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
@@ -353,10 +375,8 @@ const Insumos = () => {
                 />
               </div>
 
-              {/* Cuerpo del Modal */}
               <div className="modal-body p-4">
                 <div className="row g-1">
-                  {/* Nombre del Insumo */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Nombre del Insumo</label>
@@ -364,15 +384,13 @@ const Insumos = () => {
                     </div>
                   </div>
 
-                  {/* Stock */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
-                      <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Stock Disponible</label>
+                      <label className="text-muted mb-1 fs-6">Stock Disponible</label>
                       <p className="mb-0 fs-6">{selectedInsumo.Stock}</p>
                     </div>
                   </div>
 
-                  {/* Estado */}
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Estado</label>
@@ -381,7 +399,6 @@ const Insumos = () => {
                           className={`badge px-3 py-2 ${
                             selectedInsumo.Estado ? 'bg-success' : 'bg-danger'
                           }`}
-                          style={{ fontSize: '0.9rem' }}
                         >
                           {selectedInsumo.Estado ? 'Activo' : 'Inactivo'}
                         </span>
@@ -391,7 +408,6 @@ const Insumos = () => {
                 </div>
               </div>
 
-              {/* Pie del Modal */}
               <div className="modal-footer d-flex justify-content-center border-0 pt-0">
                 <button
                   type="button"

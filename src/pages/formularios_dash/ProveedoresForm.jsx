@@ -12,39 +12,103 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
         estado: proveedor?.Estado ?? true
     });
 
+    const [errores, setErrores] = useState({
+        nit: "",
+        nombre: "",
+        correo: "",
+        telefono: "",
+        direccion: ""
+    });
+
+    // Validación de campos
+    const validarCampo = (name, value) => {
+        let error = "";
+
+        switch (name) {
+            case "nit":
+                if (!value.trim()) error = "El NIT es obligatorio";
+                else if (!/^\d+$/.test(value)) error = "El NIT solo debe contener números";
+                break;
+            case "nombre":
+                if (!value.trim()) error = "El nombre es obligatorio";
+                else if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) error = "Solo letras y espacios";
+                else if (value.length < 3 || value.length > 20) error = "Debe tener entre 3 y 20 caracteres";
+                break;
+            case "correo":
+                if (!value.trim()) error = "El correo es obligatorio";
+                else if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value)) error = "Formato inválido";
+                else if (value.length < 10 || value.length > 30) error = "Debe tener entre 10 y 30 caracteres";
+                break;
+            case "telefono":
+                if (!value.trim()) error = "El teléfono es obligatorio";
+                else if (!/^\+?\d+$/.test(value)) error = "Solo números (y opcionalmente '+')";
+                else if (value.length < 7 || value.length > 15) error = "Debe tener entre 7 y 15 caracteres";
+                break;
+            case "direccion":
+                if (!value.trim()) error = "La dirección es obligatoria";
+                else if (!/^[A-Za-z0-9\s\.\-#]+$/.test(value)) error = "Caracteres no permitidos";
+                else if (value.length < 10 || value.length > 20) error = "Debe tener entre 10 y 20 caracteres";
+                break;
+            default:
+                break;
+        }
+
+        setErrores((prev) => ({ ...prev, [name]: error }));
+        return error === "";
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'estado' ? value === 'true' : value
+            [name]: name === "estado" ? value === "true" : value
         }));
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        validarCampo(name, value);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validación de campos
-        const camposRequeridos = ['nit', 'nombre', 'correo', 'telefono', 'direccion'];
-        const camposFaltantes = camposRequeridos.filter(campo => !formData[campo].trim());
+        let todoValido = true;
+        for (let key of ["nit", "nombre", "correo", "telefono", "direccion"]) {
+            const valido = validarCampo(key, formData[key]);
+            if (!valido) todoValido = false;
+        }
 
-        if (camposFaltantes.length > 0) {
+        if (!todoValido) {
             Swal.fire({
-                icon: 'error',
-                title: 'Campos requeridos',
-                text: `Los siguientes campos son obligatorios: ${camposFaltantes.join(', ')}`
+                icon: "error",
+                title: "Errores en el formulario",
+                text: "Por favor corrija los campos en rojo antes de enviar"
             });
             return;
         }
 
         try {
             await onSave(formData);
+
+            Swal.fire({
+                position: "top-end",
+                icon: "success",
+                title: proveedor
+                    ? "Proveedor actualizado exitosamente"
+                    : "Proveedor creado exitosamente",
+                showConfirmButton: false,
+                timer: 2000,
+                toast: true
+            });
+
             onClose();
         } catch (error) {
-            console.error('Error al guardar:', error);
+            console.error("Error al guardar:", error);
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.response?.data?.mensaje || 'Error al guardar el proveedor'
+                icon: "error",
+                title: "Error",
+                text: error.response?.data?.mensaje || "Error al guardar el proveedor"
             });
         }
     };
@@ -52,12 +116,14 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
     return (
         <div className="container py-4">
             <div className="position-relative mb-4 text-center">
-                <h2 className="fs-4 fw-bold mb-0">
+                <p className="fw-bold fs-3 mb-0">
                     {proveedor ? "Editar Proveedor" : "Nuevo Proveedor"}
-                </h2>
+                </p>
                 <button
+                    type="button"
                     onClick={onClose}
-                    className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                    className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
+                    title="Cerrar"
                 >
                     <FaTimes />
                 </button>
@@ -72,10 +138,11 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                             name="nit"
                             value={formData.nit}
                             onChange={handleChange}
-                            className="form-control"
-                            required
+                            onBlur={handleBlur}
+                            className={`form-control ${errores.nit ? "is-invalid" : ""}`}
                             maxLength="20"
                         />
+                        <div className="invalid-feedback">{errores.nit}</div>
                     </div>
 
                     <div className="col-md-6">
@@ -85,10 +152,11 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                             name="nombre"
                             value={formData.nombre}
                             onChange={handleChange}
-                            className="form-control"
-                            required
+                            onBlur={handleBlur}
+                            className={`form-control ${errores.nombre ? "is-invalid" : ""}`}
                             maxLength="50"
                         />
+                        <div className="invalid-feedback">{errores.nombre}</div>
                     </div>
 
                     <div className="col-md-6">
@@ -98,10 +166,11 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                             name="correo"
                             value={formData.correo}
                             onChange={handleChange}
-                            className="form-control"
-                            required
+                            onBlur={handleBlur}
+                            className={`form-control ${errores.correo ? "is-invalid" : ""}`}
                             maxLength="100"
                         />
+                        <div className="invalid-feedback">{errores.correo}</div>
                     </div>
 
                     <div className="col-md-6">
@@ -111,10 +180,11 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                             name="telefono"
                             value={formData.telefono}
                             onChange={handleChange}
-                            className="form-control"
-                            required
+                            onBlur={handleBlur}
+                            className={`form-control ${errores.telefono ? "is-invalid" : ""}`}
                             maxLength="15"
                         />
+                        <div className="invalid-feedback">{errores.telefono}</div>
                     </div>
 
                     <div className="col-12">
@@ -124,10 +194,11 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                             name="direccion"
                             value={formData.direccion}
                             onChange={handleChange}
-                            className="form-control"
-                            required
+                            onBlur={handleBlur}
+                            className={`form-control ${errores.direccion ? "is-invalid" : ""}`}
                             maxLength="155"
                         />
+                        <div className="invalid-feedback">{errores.direccion}</div>
                     </div>
 
                     <div className="col-md-6">

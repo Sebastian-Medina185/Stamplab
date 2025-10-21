@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlusCircle, FaEdit, FaTrash } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 import ColoresForm from "./formularios_dash/colores.jsx";
 import { getColores, deleteColor } from "../Services/api-colores/colores.js";
@@ -11,7 +12,6 @@ const Colores = () => {
     const [colorEdit, setColorEdit] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Cargar colores al iniciar
     useEffect(() => {
         fetchColores();
     }, []);
@@ -24,7 +24,6 @@ const Colores = () => {
                 setColores(result.datos);
             } else {
                 setColores([]);
-                console.warn("No se encontraron colores");
             }
         } catch (error) {
             console.error("Error cargando colores:", error);
@@ -33,43 +32,67 @@ const Colores = () => {
         }
     };
 
-    // Guardar (crear o actualizar)
     const handleSave = async () => {
         await fetchColores();
         setShowForm(false);
         setColorEdit(null);
     };
 
-    // Editar
     const handleEdit = (c) => {
         setColorEdit(c);
         setShowForm(true);
     };
 
-    // Eliminar
     const handleDelete = async (id) => {
-        if (!window.confirm("¿Seguro que deseas eliminar este color?")) return;
-        try {
-            const result = await deleteColor(id);
-            if (result.estado) {
-                alert("Color eliminado correctamente");
-                fetchColores();
-            } else {
-                alert("Error: " + result.mensaje);
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede revertir",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await deleteColor(id);
+                if (response.estado) {
+                    await fetchColores();
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.addEventListener('mouseenter', Swal.stopTimer);
+                            toast.addEventListener('mouseleave', Swal.resumeTimer);
+                        }
+                    });
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Color eliminado correctamente'
+                    });
+                } else {
+                    throw new Error(response.mensaje);
+                }
+            } catch (error) {
+                Swal.fire('Error', error.message || 'No se pudo eliminar el color', 'error');
             }
-        } catch (error) {
-            console.error("Error eliminando color:", error);
-            alert("Error de conexión al eliminar");
         }
     };
 
-    // Cerrar formulario
     const handleCloseForm = () => {
         setShowForm(false);
         setColorEdit(null);
     };
 
-    // Si el formulario está abierto → mostramos solo el form
+    const filtered = colores.filter((c) =>
+        c.Nombre.toLowerCase().includes(search.toLowerCase())
+    );
+
     if (showForm) {
         return (
             <ColoresForm
@@ -79,11 +102,6 @@ const Colores = () => {
             />
         );
     }
-
-    // Tabla/listado
-    const filtered = colores.filter((c) =>
-        c.Nombre.toLowerCase().includes(search.toLowerCase())
-    );
 
     return (
         <div
@@ -95,7 +113,6 @@ const Colores = () => {
                 fontSize: "0.9rem",
             }}
         >
-            {/* Encabezado y botón agregar */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h1 className="fs-5 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
                     Gestión de Colores
@@ -112,7 +129,6 @@ const Colores = () => {
                 </button>
             </div>
 
-            {/* Buscador */}
             <div className="d-flex justify-content-end mb-3">
                 <div className="input-group input-group-sm" style={{ maxWidth: 260 }}>
                     <span className="input-group-text bg-white border-end-0">🔍</span>
@@ -126,7 +142,6 @@ const Colores = () => {
                 </div>
             </div>
 
-            {/* Tabla */}
             <div className="flex-grow-1" style={{ overflow: "auto", minHeight: 0 }}>
                 <div className="table-responsive rounded-4 shadow-sm" style={{ background: "#fff" }}>
                     <table className="table table-sm align-middle mb-0">
@@ -164,9 +179,7 @@ const Colores = () => {
                                                 {c.ColorID}
                                             </span>
                                         </td>
-                                        <td>
-                                            <span className="fw-medium">{c.Nombre}</span>
-                                        </td>
+                                        <td className="fw-medium">{c.Nombre}</td>
                                         <td>
                                             <div className="d-flex justify-content-center gap-1">
                                                 <button

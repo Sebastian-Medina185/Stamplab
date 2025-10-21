@@ -1,95 +1,50 @@
-// src/services/proveedores/proveedoresService.js
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/proveedores";
+const API_URL = "http://localhost:3001/proveedores"; // Cambia el puerto si tu backend usa otro
 
 // Obtener todos los proveedores
 export const getProveedores = async () => {
     try {
         const response = await axios.get(API_URL);
-        return response.data;
+        return response.data; // ya es data
     } catch (error) {
-        console.error("Error en getProveedores:", error);
+        console.error("Error al obtener los proveedores:", error);
         throw error;
     }
 };
 
-// Obtener un proveedor por NIT
-export const getProveedorByNit = async (nit) => {
+// Crear un nuevo proveedor
+export const createProveedor = async (proveedor) => {
     try {
-        const response = await axios.get(`${API_URL}/${nit}`);
+        const response = await axios.post(API_URL, proveedor);
         return response.data;
     } catch (error) {
-        console.error("Error en getProveedorByNit:", error);
+        if (error.response && error.response.status === 400) {
+            throw new Error("Ya existe un proveedor con ese nombre.");
+        }
+        console.error("Error al crear el proveedor:", error);
         throw error;
     }
 };
 
-// Crear un proveedor
-export const createProveedor = async (nuevoProveedor) => {
+// Actualizar un proveedor existente
+export const updateProveedor = async (id, proveedor) => {
     try {
-        // Transformar los datos al formato que espera el backend
-        const proveedorData = {
-            Nit: nuevoProveedor.nit,
-            Nombre: nuevoProveedor.nombre,
-            Correo: nuevoProveedor.correo,
-            Telefono: nuevoProveedor.telefono,
-            Direccion: nuevoProveedor.direccion,
-            Estado: Boolean(nuevoProveedor.estado)
-        };
-
-        console.log('Datos enviados al servidor:', proveedorData);
-        const response = await axios.post(API_URL, proveedorData);
+        const response = await axios.put(`${API_URL}/${id}`, proveedor);
         return response.data;
     } catch (error) {
-        console.error("Error en createProveedor:", error.response?.data || error);
-        throw error;
-    }
-};
-
-// Editar un proveedor
-export const updateProveedor = async (nit, proveedorActualizado) => {
-    try {
-        // Transformar los datos al mismo formato que createProveedor
-        const proveedorData = {
-            Nombre: proveedorActualizado.nombre,
-            Correo: proveedorActualizado.correo,
-            Telefono: proveedorActualizado.telefono,
-            Direccion: proveedorActualizado.direccion,
-            Estado: Boolean(proveedorActualizado.estado)
-        };
-
-        console.log('Datos enviados al servidor:', proveedorData);
-        const response = await axios.put(`${API_URL}/${nit}`, proveedorData);
-        return response.data;
-    } catch (error) {
-        console.error("Error en updateProveedor:", error.response?.data || error);
+        console.error("Error al actualizar el proveedor:", error);
         throw error;
     }
 };
 
 // Eliminar un proveedor
-export const deleteProveedor = async (nit) => {
+export const deleteProveedor = async (id) => {
     try {
-        const response = await axios.delete(`${API_URL}/${nit}`);
+        const response = await axios.delete(`${API_URL}/${id}`);
         return response.data;
     } catch (error) {
-        console.error("Error en deleteProveedor:", error);
-        throw error;
-    }
-};
-
-// Cambiar estado del proveedor
-export const cambiarEstadoProveedor = async (nit, nuevoEstado) => {
-    try {
-        // Usar PUT en lugar de PATCH para mayor compatibilidad
-        const response = await axios.put(`${API_URL}/${nit}`, { 
-            Estado: nuevoEstado,
-            _method: 'PATCH' // Para compatibilidad con backends que no soportan PATCH directamente
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error en cambiarEstadoProveedor:", error);
+        console.error("Error al eliminar el proveedor:", error);
         throw error;
     }
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
 import { FaPlusCircle, FaSearch, FaTimes, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 
 import {
@@ -20,6 +21,9 @@ import {
 import { getTelas, getTallas, getColores } from "../Services/api-productos/atributos";
 
 const Productos = () => {
+  const navigate = useNavigate();
+
+
   // listas de atributos
   const [telas, setTelas] = useState([]);
   const [tallas, setTallas] = useState([]);
@@ -124,14 +128,14 @@ const Productos = () => {
         // Crear nuevo producto
         const response = await createProducto(productoData);
         const nuevoProducto = response?.datos || response;
-        
+
         // Establecer el producto creado manteniendo el nombre
         setProductoCreado({
           ...nuevoProducto,
           Nombre: productoData.Nombre,
           isNew: true
         });
-        
+
         // Limpiar el formulario y el estado de edición
         setProducto({
           Nombre: "",
@@ -139,7 +143,7 @@ const Productos = () => {
           TelaID: "",
         });
         setEditandoVariante(null); // Asegurar que no estamos en modo edición
-        
+
         Swal.fire("Creado", "Producto creado correctamente. Ahora puedes agregar variantes.", "success");
       }
 
@@ -323,17 +327,17 @@ const Productos = () => {
       showCancelButton: true,
       confirmButtonText: "Sí, eliminar",
     });
-    
+
     if (!confirm.isConfirmed) return;
-    
+
     try {
       await deleteVariante(id);
       Swal.fire("Eliminada", "Variante eliminada", "success");
-      
+
       // Recargar variantes tanto en el modal como en el formulario
-      const prodId = modalProducto?.ProductoID || modalProducto?.id || 
-                    productoCreado?.ProductoID || productoCreado?.id;
-                    
+      const prodId = modalProducto?.ProductoID || modalProducto?.id ||
+        productoCreado?.ProductoID || productoCreado?.id;
+
       if (prodId) {
         await cargarVariantes(prodId);
       }
@@ -384,7 +388,7 @@ const Productos = () => {
         <h1 className="fs-5 fw-bold mb-0 text-primary" style={{ letterSpacing: 1 }}>
           Gestión de Productos
         </h1>
-        <button
+        {/* <button
           className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
           onClick={() => {
             setProducto({ Nombre: "", Descripcion: "", TelaID: "" });
@@ -394,7 +398,14 @@ const Productos = () => {
         >
           <FaPlusCircle size={18} />
           Agregar Producto
+        </button> */}
+        <button
+          className="btn btn-primary"
+          onClick={() => navigate("/dashboard/agregar-producto")}
+        >
+          Agregar producto
         </button>
+
       </div>
 
       {/* Buscador */}

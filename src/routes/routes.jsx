@@ -23,7 +23,8 @@ import DashboardMedicionesempeño from "../pages/MedicionDesempeño";
 import EditarPerfil from "../components/landing/EditarPerfil";
 import MisCotizaciones from "../components/landing/Miscotizaciones";
 import FormularioCompra from "../components/landing/FormularioCompra";
-import RegistrarProducto from "../pages/formularios_dash/RegistrarProducto";
+import AgregarProducto from "../pages/formularios_dash/AgregarProducto";
+import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
 
 
 const AppRoutes = () => {
@@ -49,12 +50,13 @@ const AppRoutes = () => {
             <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardMedicionesempeño />} />
                 <Route path="cotizaciones" element={<Cotizaciones />} />
-                <Route path="productos/registrar" element={<RegistrarProducto />} />
+                <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
                 <Route path="roles" element={<Roles />} />
                 <Route path="telas" element={<Telas />} />
                 <Route path="insumos" element={<Insumos />} />
                 <Route path="pedidos" element={<Pedidos />} />
                 <Route path="productos" element={<Productos />} />
+                <Route path="agregar-producto" element={<AgregarProducto />} />
                 <Route path="colores" element={<Colores />} />
                 <Route path="tallas" element={<Tallas />} />
                 <Route path="usuarios" element={<Usuarios />} />

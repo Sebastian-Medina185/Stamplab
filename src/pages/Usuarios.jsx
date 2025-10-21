@@ -1,5 +1,6 @@
+// src/pages/Usuarios.jsx
 import { useState, useEffect } from "react";
-import { FaPlusCircle, FaEye, FaEdit, FaTrash, FaUser } from "react-icons/fa";
+import { FaPlusCircle, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import UsuariosForm from "./formularios_dash/usuarios";
 import { getUsuarios, deleteUsuario } from "../Services/api-usuarios/usuarios";
 import { Modal } from "react-bootstrap";
@@ -12,6 +13,19 @@ const Usuarios = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
+
+    // Toast configuración
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
 
     // Cargar usuarios al montar el componente
     useEffect(() => {
@@ -56,20 +70,9 @@ const Usuarios = () => {
     };
 
     // Función para manejar guardado exitoso
-    const handleSaveSuccess = async (isNewUser = false) => {
-        try {
-            await loadUsuarios();
-            handleCloseForm();
-            Swal.fire({
-                icon: 'success',
-                title: '¡Éxito!',
-                text: isNewUser ? 'Usuario creado correctamente' : 'Usuario actualizado correctamente',
-                confirmButtonColor: '#3085d6'
-            });
-        } catch (error) {
-            console.error("Error después de guardar:", error);
-            // No mostrar error aquí ya que el guardado fue exitoso
-        }
+    const handleSaveSuccess = async () => {
+        await loadUsuarios();
+        handleCloseForm();
     };
 
     // Función para eliminar usuario
@@ -89,13 +92,15 @@ const Usuarios = () => {
             if (result.isConfirmed) {
                 setLoading(true);
                 const response = await deleteUsuario(documentoID);
+                
                 if (response.estado) {
                     await loadUsuarios();
-                    Swal.fire(
-                        '¡Eliminado!',
-                        'El usuario ha sido eliminado correctamente',
-                        'success'
-                    );
+                    
+                    // Toast de éxito al eliminar
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Usuario eliminado correctamente'
+                    });
                 } else {
                     throw new Error(response.mensaje || 'Error al eliminar el usuario');
                 }
@@ -142,7 +147,7 @@ const Usuarios = () => {
         return (
             <UsuariosForm
                 onClose={handleCloseForm}
-                onSave={() => handleSaveSuccess(!selectedUsuario)}
+                onSave={handleSaveSuccess}
                 usuario={selectedUsuario}
             />
         );
@@ -176,19 +181,9 @@ const Usuarios = () => {
                 </button>
             </div>
 
-            {/* Estadísticas rápidas */}
-            {!loading && usuarios.length > 0 && (
-                <div className="mb-3">
-                    <small className="text-muted">
-                        Total de usuarios: <span className="fw-bold text-primary">{usuarios.length}</span>
-                    </small>
-                </div>
-            )}
-
             {/* Mensaje de error */}
             {error && (
                 <div className="alert alert-danger d-flex align-items-center" role="alert">
-                    <span className="me-2"></span>
                     <div>
                         {error}
                         <button
@@ -241,7 +236,7 @@ const Usuarios = () => {
                                 <tr>
                                     <td colSpan={7} className="text-center py-5 text-danger">
                                         <div className="d-flex flex-column align-items-center">
-                                            <span className="mb-2">Error al cargar datos</span>
+                                            <span className="mb-2">❌ Error al cargar datos</span>
                                             <button
                                                 className="btn btn-sm btn-outline-primary"
                                                 onClick={loadUsuarios}

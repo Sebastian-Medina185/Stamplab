@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
+import { FaEdit, FaPlusCircle, FaTrash } from "react-icons/fa";
 import TelasForm from "./formularios_dash/TelasForm";
 import { getTelas, deleteTela } from "../Services/api-telas/telas.js";
+import Swal from "sweetalert2";
 import { Modal } from "react-bootstrap";
 
 const Telas = () => {
@@ -11,8 +12,6 @@ const Telas = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [telaEdit, setTelaEdit] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedTela, setSelectedTela] = useState(null);
 
   // ========== Cargar telas ==========
   const fetchTelas = async () => {
@@ -52,20 +51,57 @@ const Telas = () => {
     setShowForm(true);
   };
 
-  // ========== Eliminar ==========
+  // ========== Eliminar con confirmación y toast ==========
   const handleDelete = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta tela?")) return;
-    try {
-      const result = await deleteTela(id);
-      if (result.estado) {
-        alert("Tela eliminada correctamente");
-        fetchTelas();
-      } else {
-        alert("Error: " + result.mensaje);
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Esta acción eliminará la tela permanentemente.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await deleteTela(id);
+        if (response.estado) {
+          // ✅ Notificación tipo toast (arriba a la derecha)
+          const Toast = Swal.mixin({
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+              toast.onmouseenter = Swal.stopTimer;
+              toast.onmouseleave = Swal.resumeTimer;
+            },
+          });
+
+          Toast.fire({
+            icon: "success",
+            title: "Tela eliminada correctamente",
+          });
+
+          fetchTelas();
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: response.mensaje || "No se pudo eliminar la tela.",
+          });
+        }
+      } catch (error) {
+        console.error("Error eliminando tela:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error de conexión",
+          text: "Ocurrió un problema al intentar eliminar la tela.",
+        });
       }
-    } catch (error) {
-      console.error("Error eliminando tela:", error);
-      alert("Error de conexión al eliminar");
     }
   };
 
@@ -207,7 +243,6 @@ const Telas = () => {
           </table>
         </div>
       </div>
-      
     </div>
   );
 };

@@ -1,6 +1,7 @@
 // src/pages/formularios_dash/usuariosForm.jsx
 import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
+import Swal from "sweetalert2";
 import { createUsuario, updateUsuario, getRoles } from "../../Services/api-usuarios/usuarios";
 
 const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
@@ -33,30 +34,24 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                 Correo: usuario.Correo || "",
                 Direccion: usuario.Direccion || "",
                 Telefono: usuario.Telefono || "",
-                Contraseña: "", // No cargar contraseña por seguridad
-                RolID: usuario.RolID ? usuario.RolID.toString() : "", // Asegurar que RolID sea string
+                Contraseña: "",
+                RolID: usuario.RolID ? usuario.RolID.toString() : "",
             });
-            console.log("Cargando usuario para editar:", usuario); // Para debugging
         }
     }, [usuario]);
 
-    // Función para cargar roles desde la API
-    // ...
     const loadRoles = async () => {
         try {
             setLoadingRoles(true);
             const result = await getRoles();
 
             if (result.estado && Array.isArray(result.datos)) {
-                // Asegurarnos de que cada rol tenga RolID como string
                 const rolesFormateados = result.datos.map(rol => ({
                     ...rol,
                     RolID: rol.RolID.toString()
                 }));
                 setRoles(rolesFormateados);
-                console.log("Roles cargados:", rolesFormateados); // Para debugging
             } else {
-                console.error("Respuesta inválida de roles:", result);
                 setRoles([]);
             }
         } catch (error) {
@@ -67,8 +62,68 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
         }
     };
 
+    // Validaciones individuales por campo
+    const validarDocumento = (documento) => {
+        const doc = documento.trim();
+        if (!doc) return "El número de documento es obligatorio";
+        if (!/^\d+$/.test(doc)) return "El documento solo puede contener números";
+        if (doc.length < 4) return "El documento debe tener al menos 4 dígitos";
+        if (doc.length > 10) return "El documento no puede tener más de 10 dígitos";
+        return "";
+    };
 
+    const validarNombre = (nombre) => {
+        const nom = nombre.trim();
+        if (!nom) return "El nombre es obligatorio y no puede estar vacío";
+        if (nom.length < 3) return "El nombre debe tener al menos 3 caracteres";
+        if (nom.length > 30) return "El nombre no puede tener más de 30 caracteres";
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ\s]+$/.test(nom)) return "El nombre solo puede contener letras y espacios";
+        return "";
+    };
 
+    const validarCorreo = (correo) => {
+        const cor = correo.trim();
+        if (!cor) return "El correo electrónico es obligatorio";
+        if (cor.length < 6) return "El correo debe tener al menos 6 caracteres";
+        if (cor.length > 40) return "El correo no puede tener más de 40 caracteres";
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(cor)) return "Formato de correo electrónico inválido";
+        return "";
+    };
+
+    const validarTelefono = (telefono) => {
+        const tel = telefono.trim();
+        if (!tel) return "El teléfono es obligatorio";
+        if (!/^\d+$/.test(tel)) return "El teléfono solo puede contener números";
+        if (tel.length < 7) return "El teléfono debe tener al menos 7 dígitos";
+        if (tel.length > 10) return "El teléfono no puede tener más de 10 dígitos";
+        return "";
+    };
+
+    const validarDireccion = (direccion) => {
+        const dir = direccion.trim();
+        if (!dir) return "La dirección es obligatoria";
+        if (dir.length < 8) return "La dirección debe tener al menos 8 caracteres";
+        if (dir.length > 80) return "La dirección no puede tener más de 80 caracteres";
+        return "";
+    };
+
+    const validarContraseña = (contraseña, esEdicion) => {
+        if (esEdicion && !contraseña) return ""; // En edición es opcional
+        if (!contraseña) return "La contraseña es obligatoria";
+        if (contraseña.length < 8) return "La contraseña debe tener al menos 8 caracteres";
+        if (contraseña.length > 50) return "La contraseña no puede tener más de 50 caracteres";
+        if (!/[A-Z]/.test(contraseña)) return "Debe contener al menos una letra mayúscula";
+        if (!/[a-z]/.test(contraseña)) return "Debe contener al menos una letra minúscula";
+        if (!/[0-9]/.test(contraseña)) return "Debe contener al menos un número";
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(contraseña)) return "Debe contener al menos un carácter especial (!@#$%^&*...)";
+        return "";
+    };
+
+    const validarRol = (rolID) => {
+        if (!rolID || rolID === "") return "Debe seleccionar un rol";
+        return "";
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -77,81 +132,73 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
             [name]: value,
         });
 
-        // Limpiar error del campo cuando el usuario empiece a escribir
-        if (errors[name]) {
-            setErrors({
-                ...errors,
-                [name]: ""
-            });
+        // Validar en tiempo real
+        let error = "";
+        switch (name) {
+            case "DocumentoID":
+                error = validarDocumento(value);
+                break;
+            case "Nombre":
+                error = validarNombre(value);
+                break;
+            case "Correo":
+                error = validarCorreo(value);
+                break;
+            case "Telefono":
+                error = validarTelefono(value);
+                break;
+            case "Direccion":
+                error = validarDireccion(value);
+                break;
+            case "Contraseña":
+                error = validarContraseña(value, !!usuario);
+                break;
+            case "RolID":
+                error = validarRol(value);
+                break;
+            default:
+                break;
         }
+
+        setErrors({
+            ...errors,
+            [name]: error
+        });
     };
 
-    // Validaciones del formulario
     const validateForm = () => {
-        const newErrors = {};
+        const newErrors = {
+            DocumentoID: validarDocumento(formData.DocumentoID),
+            Nombre: validarNombre(formData.Nombre),
+            Correo: validarCorreo(formData.Correo),
+            Telefono: validarTelefono(formData.Telefono),
+            Direccion: validarDireccion(formData.Direccion),
+            Contraseña: validarContraseña(formData.Contraseña, !!usuario),
+            RolID: validarRol(formData.RolID),
+        };
 
-        // Validar DocumentoID
-        if (!formData.DocumentoID.trim()) {
-            newErrors.DocumentoID = "El documento es requerido";
-        } else if (formData.DocumentoID.length > 15) {
-            newErrors.DocumentoID = "El documento no puede tener más de 15 caracteres";
-        }
-
-        // Validar Nombre
-        if (!formData.Nombre.trim()) {
-            newErrors.Nombre = "El nombre es requerido";
-        } else if (formData.Nombre.length > 50) {
-            newErrors.Nombre = "El nombre no puede tener más de 50 caracteres";
-        }
-
-        // Validar Correo
-        if (!formData.Correo.trim()) {
-            newErrors.Correo = "El correo es requerido";
-        } else if (formData.Correo.length > 100) {
-            newErrors.Correo = "El correo no puede tener más de 100 caracteres";
-        } else {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(formData.Correo)) {
-                newErrors.Correo = "Formato de correo inválido";
+        // Filtrar solo los errores que tienen valor
+        const filteredErrors = {};
+        Object.keys(newErrors).forEach(key => {
+            if (newErrors[key]) {
+                filteredErrors[key] = newErrors[key];
             }
-        }
+        });
 
-        // Validar Dirección
-        if (!formData.Direccion.trim()) {
-            newErrors.Direccion = "La dirección es requerida";
-        } else if (formData.Direccion.length > 150) {
-            newErrors.Direccion = "La dirección no puede tener más de 150 caracteres";
-        }
-
-        // Validar Teléfono
-        if (!formData.Telefono.trim()) {
-            newErrors.Telefono = "El teléfono es requerido";
-        } else if (formData.Telefono.length > 15) {
-            newErrors.Telefono = "El teléfono no puede tener más de 15 caracteres";
-        }
-
-        // Validar Contraseña (solo para nuevos usuarios)
-        if (!usuario && !formData.Contraseña.trim()) {
-            newErrors.Contraseña = "La contraseña es requerida";
-        } else if (formData.Contraseña && formData.Contraseña.length > 100) {
-            newErrors.Contraseña = "La contraseña no puede tener más de 100 caracteres";
-        }
-
-        // Validar Rol
-        if (!formData.RolID) {
-            newErrors.RolID = "Debe seleccionar un rol";
-        }
-
-        return newErrors;
+        return filteredErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validar formulario
         const formErrors = validateForm();
         if (Object.keys(formErrors).length > 0) {
             setErrors(formErrors);
+            Swal.fire({
+                icon: 'error',
+                title: 'Errores en el formulario',
+                text: 'Por favor corrija los errores antes de continuar',
+            });
             return;
         }
 
@@ -159,11 +206,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
         setErrors({});
 
         try {
-            // Preparar datos para enviar
-            const dataToSend = {
-                ...formData,
-                RolID: formData.RolID.toString().substring(0, 2) // Aseguramos que RolID sea string y máximo 2 caracteres
-            };
+            const dataToSend = { ...formData };
 
             // Si estamos editando y no se cambió la contraseña, no enviarla
             if (usuario && !dataToSend.Contraseña.trim()) {
@@ -173,208 +216,222 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
             let result;
 
             if (usuario) {
-                // Actualizar usuario existente
                 result = await updateUsuario(usuario.DocumentoID, dataToSend);
             } else {
-                // Crear nuevo usuario
                 result = await createUsuario(dataToSend);
             }
 
             if (result.estado) {
-                // Éxito - No mostramos alerta aquí, se manejará en el componente padre
-                onSave(); // Llamar callback con los datos del usuario
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    }
+                });
+
+                Toast.fire({
+                    icon: 'success',
+                    title: usuario ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente'
+                });
+
+                onSave();
             } else {
                 throw new Error(result.mensaje || 'Error al guardar usuario');
             }
 
         } catch (error) {
             console.error('Error al guardar usuario:', error);
-            throw error; // Propagar el error al componente padre
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Error al guardar el usuario'
+            });
         } finally {
             setLoading(false);
         }
     };
 
+    const tieneErrores = Object.values(errors).some(error => error !== "");
+
     return (
-        <div className="container py-4">
-            {/* Título */}
+        <div className="card shadow-sm border-0 p-4 mx-4">
             <div className="position-relative mb-4 text-center">
                 <p className="fw-bold fs-3 mb-0">
-                    {usuario ? 'Editar Usuario' : 'Nuevo Usuario'}
+                    {usuario ? 'Editar Usuario' : 'Crear Usuario'}
                 </p>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
-                    title="Cerrar"
+                    className="btn btn-warning btn-sm shadow-sm position-absolute top-0 end-0"
                     disabled={loading}
                 >
                     <FaTimes />
                 </button>
             </div>
 
-            {/* Formulario */}
-            <form
-                className="p-4 rounded shadow"
-                style={{ backgroundColor: "#f5f5fa", color: "#2a273a" }}
-                onSubmit={handleSubmit}
-            >
-                <div className="row g-3">
-                    <div className="col-md-6">
-                        <label className="form-label">Documento:</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.DocumentoID ? 'is-invalid' : ''}`}
-                            name="DocumentoID"
-                            value={formData.DocumentoID}
-                            onChange={handleChange}
-                            disabled={loading || !!usuario}
-                            maxLength={15}
-                            readOnly={!!usuario}
-                            required
-                        />
-                        {errors.DocumentoID && (
-                            <div className="invalid-feedback">{errors.DocumentoID}</div>
-                        )}
-                    </div>
-
-                    <div className="col-md-6">
-                        <label className="form-label">Nombre:</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.Nombre ? 'is-invalid' : ''}`}
-                            name="Nombre"
-                            value={formData.Nombre}
-                            onChange={handleChange}
-                            disabled={loading}
-                            maxLength={50}
-                            required
-                        />
-                        {errors.Nombre && (
-                            <div className="invalid-feedback">{errors.Nombre}</div>
-                        )}
-                    </div>
-
-                    <div className="col-md-6">
-                        <label className="form-label">Correo:</label>
-                        <input
-                            type="email"
-                            className={`form-control ${errors.Correo ? 'is-invalid' : ''}`}
-                            name="Correo"
-                            value={formData.Correo}
-                            onChange={handleChange}
-                            disabled={loading}
-                            maxLength={100}
-                            required
-                        />
-                        {errors.Correo && (
-                            <div className="invalid-feedback">{errors.Correo}</div>
-                        )}
-                    </div>
-
-                    <div className="col-md-6">
-                        <label className="form-label">Teléfono:</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.Telefono ? 'is-invalid' : ''}`}
-                            name="Telefono"
-                            value={formData.Telefono}
-                            onChange={handleChange}
-                            disabled={loading}
-                            maxLength={15}
-                            required
-                        />
-                        {errors.Telefono && (
-                            <div className="invalid-feedback">{errors.Telefono}</div>
-                        )}
-                    </div>
-
-                    <div className="col-12">
-                        <label className="form-label">Dirección:</label>
-                        <input
-                            type="text"
-                            className={`form-control ${errors.Direccion ? 'is-invalid' : ''}`}
-                            name="Direccion"
-                            value={formData.Direccion}
-                            onChange={handleChange}
-                            disabled={loading}
-                            maxLength={150}
-                            required
-                        />
-                        {errors.Direccion && (
-                            <div className="invalid-feedback">{errors.Direccion}</div>
-                        )}
-                    </div>
-
-                    <div className="col-md-6">
-                        <label className="form-label">
-                            Contraseña:
-                            {usuario && <small className="text-muted"> (dejar vacío para mantener actual)</small>}
-                        </label>
-                        <input
-                            type="password"
-                            className={`form-control ${errors.Contraseña ? 'is-invalid' : ''}`}
-                            name="Contraseña"
-                            value={formData.Contraseña}
-                            onChange={handleChange}
-                            disabled={loading}
-                            maxLength={100}
-                            required={!usuario} // Solo requerido para nuevos usuarios
-                        />
-                        {errors.Contraseña && (
-                            <div className="invalid-feedback">{errors.Contraseña}</div>
-                        )}
-                    </div>
-
-                    <div className="col-md-6">
-                        <label className="form-label">Rol:</label>
-                        <select
-                            className={`form-select ${errors.RolID ? 'is-invalid' : ''}`}
-                            name="RolID"
-                            value={formData.RolID}
-                            onChange={handleChange}
-                            disabled={loading || loadingRoles}
-                            required
-                        >
-                            <option value="">
-                                {loadingRoles ? 'Cargando roles...' : 'Seleccione un rol'}
-                            </option>
-                            {roles.map((rol) => (
-                                <option key={rol.RolID} value={rol.RolID}>
-                                    {rol.Nombre}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.RolID && (
-                            <div className="invalid-feedback">{errors.RolID}</div>
-                        )}
-                    </div>
+            <form className="row g-3" onSubmit={handleSubmit}>
+                <div className="col-md-6">
+                    <label className="form-label fw-bold">Documento</label>
+                    <input
+                        type="text"
+                        className={`form-control ${errors.DocumentoID ? 'is-invalid' : ''}`}
+                        name="DocumentoID"
+                        value={formData.DocumentoID}
+                        onChange={handleChange}
+                        disabled={loading || !!usuario}
+                        readOnly={!!usuario}
+                        placeholder="Ej: 123456789"
+                        required
+                    />
+                    {errors.DocumentoID && (
+                        <div className="invalid-feedback">{errors.DocumentoID}</div>
+                    )}
+                    {/* {!usuario && (
+                        <small className="form-text text-muted">
+                            Entre 4 y 10 dígitos. Solo números.
+                        </small>
+                    )} */}
                 </div>
 
-                {/* Botones */}
-                <div className="d-flex justify-content-center gap-3 mt-4">
-                    <button
-                        type="submit"
-                        className="btn btn-success px-4"
-                        disabled={loading || loadingRoles}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                {usuario ? 'Actualizando...' : 'Guardando...'}
-                            </>
-                        ) : (
-                            usuario ? 'Actualizar Usuario' : 'Guardar Usuario'
-                        )}
-                    </button>
+                <div className="col-md-6">
+                    <label className="form-label fw-bold">Nombre Completo</label>
+                    <input
+                        type="text"
+                        className={`form-control ${errors.Nombre ? 'is-invalid' : ''}`}
+                        name="Nombre"
+                        value={formData.Nombre}
+                        onChange={handleChange}
+                        disabled={loading}
+                        placeholder="Ej: Juan Pérez"
+                        required
+                    />
+                    {errors.Nombre && (
+                        <div className="invalid-feedback">{errors.Nombre}</div>
+                    )}
+                </div>
 
+                <div className="col-md-6">
+                    <label className="form-label fw-bold">Correo Electrónico</label>
+                    <input
+                        type="email"
+                        className={`form-control ${errors.Correo ? 'is-invalid' : ''}`}
+                        name="Correo"
+                        value={formData.Correo}
+                        onChange={handleChange}
+                        disabled={loading}
+                        placeholder="correo@ejemplo.com"
+                        required
+                    />
+                    {errors.Correo && (
+                        <div className="invalid-feedback">{errors.Correo}</div>
+                    )}
+                </div>
+
+                <div className="col-md-6">
+                    <label className="form-label fw-bold">Teléfono</label>
+                    <input
+                        type="text"
+                        className={`form-control ${errors.Telefono ? 'is-invalid' : ''}`}
+                        name="Telefono"
+                        value={formData.Telefono}
+                        onChange={handleChange}
+                        disabled={loading}
+                        placeholder="3001234567"
+                        required
+                    />
+                    {errors.Telefono && (
+                        <div className="invalid-feedback">{errors.Telefono}</div>
+                    )}
+                </div>
+
+                <div className="col-12">
+                    <label className="form-label fw-bold">Dirección</label>
+                    <input
+                        type="text"
+                        className={`form-control ${errors.Direccion ? 'is-invalid' : ''}`}
+                        name="Direccion"
+                        value={formData.Direccion}
+                        onChange={handleChange}
+                        disabled={loading}
+                        placeholder="Calle 123 #45-67, Barrio, Ciudad"
+                        required
+                    />
+                    {errors.Direccion && (
+                        <div className="invalid-feedback">{errors.Direccion}</div>
+                    )}
+                </div>
+
+                <div className="col-md-6">
+                    <label className="form-label fw-bold">
+                        Contraseña
+                        {usuario && <small className="text-muted"> (opcional - dejar vacío para mantener)</small>}
+                    </label>
+                    <input
+                        type="password"
+                        className={`form-control ${errors.Contraseña ? 'is-invalid' : ''}`}
+                        name="Contraseña"
+                        value={formData.Contraseña}
+                        onChange={handleChange}
+                        disabled={loading}
+                        placeholder="********"
+                        required={!usuario}
+                    />
+                    {errors.Contraseña && (
+                        <div className="invalid-feedback">{errors.Contraseña}</div>
+                    )}
+                </div>
+
+                <div className="col-md-6">
+                    <label className="form-label fw-bold">Rol</label>
+                    <select
+                        className={`form-select ${errors.RolID ? 'is-invalid' : ''}`}
+                        name="RolID"
+                        value={formData.RolID}
+                        onChange={handleChange}
+                        disabled={loading || loadingRoles}
+                        required
+                    >
+                        <option value="">
+                            {loadingRoles ? 'Cargando roles...' : 'Seleccione un rol'}
+                        </option>
+                        {roles.map((rol) => (
+                            <option key={rol.RolID} value={rol.RolID}>
+                                {rol.Nombre}
+                            </option>
+                        ))}
+                    </select>
+                    {errors.RolID && (
+                        <div className="invalid-feedback">{errors.RolID}</div>
+                    )}
+                </div>
+
+                <div className="col-12 d-flex justify-content-end gap-2">
                     <button
                         type="button"
-                        className="btn btn-danger px-4"
                         onClick={onClose}
+                        className="btn btn-secondary shadow-sm"
                         disabled={loading}
                     >
                         Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        className="btn btn-primary shadow-sm"
+                        disabled={loading || loadingRoles || tieneErrores}
+                    >
+                        {loading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                {usuario ? 'Actualizando...' : 'Guardando...'}
+                            </>
+                        ) : (
+                            usuario ? 'Actualizar' : 'Guardar'
+                        )}
                     </button>
                 </div>
             </form>
