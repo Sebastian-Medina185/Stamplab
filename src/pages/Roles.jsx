@@ -76,14 +76,14 @@ const Roles = () => {
     } catch (error) {
       console.error("Error al guardar rol:", error);
 
-      // 🔍 Capturar correctamente el mensaje del backend
+
       const mensaje =
         error.response?.data?.mensaje ||
         error.response?.data?.error ||
         error.message ||
         "Error desconocido al guardar el rol";
 
-      // 💡 Mostrar alerta especial si el nombre está duplicado
+
       if (mensaje.toLowerCase().includes("ya existe")) {
         Swal.fire({
           icon: "warning",
@@ -109,7 +109,7 @@ const Roles = () => {
     setShowForm(true);
   };
 
-  const handleEliminar = async (id) => {
+  const handleEliminar = async (id, nombreRol) => {
     try {
       const result = await Swal.fire({
         title: "¿Eliminar rol?",
@@ -128,22 +128,40 @@ const Roles = () => {
 
         if (response.estado) {
           await loadRoles();
-          Swal.fire(
-            "¡Eliminado!",
-            "El rol ha sido eliminado correctamente",
-            "success"
-          );
+          Swal.fire({
+            icon: "success",
+            title: "¡Eliminado!",
+            text: "El rol ha sido eliminado correctamente",
+            confirmButtonColor: "#198754",
+          });
         } else {
           throw new Error(response.mensaje || "Error al eliminar el rol");
         }
       }
     } catch (error) {
       console.error("Error al eliminar rol:", error);
-      Swal.fire(
-        "Error",
-        error.message || "Error al eliminar el rol",
-        "error"
-      );
+
+      const errorMsg = error.message || "No puedes eliminar este rol.";
+
+      // Verificar si es un rol protegido
+      if (errorMsg.toLowerCase().includes("no se puede eliminar") ||
+        errorMsg.toLowerCase().includes("protegido") ||
+        errorMsg.toLowerCase().includes("administrador") ||
+        errorMsg.toLowerCase().includes("cliente")) {
+        Swal.fire({
+          icon: "warning",
+          title: "Rol Protegido",
+          text: errorMsg,
+          confirmButtonColor: "#f0ad4e",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: errorMsg,
+          confirmButtonColor: "#dc3545",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -172,22 +190,44 @@ const Roles = () => {
 
         if (response.estado) {
           await loadRoles();
-          Swal.fire(
-            "¡Actualizado!",
-            `El estado del rol ha sido cambiado a ${estadoTexto}`,
-            "success"
-          );
+          Swal.fire({
+            icon: "success",
+            title: "¡Actualizado!",
+            text: `El estado del rol ha sido cambiado a ${estadoTexto}`,
+            confirmButtonColor: "#198754",
+          });
         } else {
           throw new Error(response.mensaje || "Error al cambiar el estado");
         }
       }
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      Swal.fire(
-        "Error",
-        error.message || "Error al cambiar el estado del rol",
-        "error"
-      );
+      
+      const errorMsg = 
+        error.response?.data?.mensaje || 
+        error.response?.data?.error || 
+        error.message || 
+        "No puedes cambiar el estado de este rol.";
+      
+      // Verificar si es un rol protegido
+      if (errorMsg.toLowerCase().includes("no se puede") || 
+          errorMsg.toLowerCase().includes("protegido") ||
+          errorMsg.toLowerCase().includes("administrador") ||
+          errorMsg.toLowerCase().includes("cliente")) {
+        Swal.fire({
+          icon: "warning",
+          title: "Rol Protegido",
+          text: errorMsg,
+          confirmButtonColor: "#f0ad4e",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: errorMsg,
+          confirmButtonColor: "#dc3545",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -305,11 +345,10 @@ const Roles = () => {
                     <td>{r.Descripcion}</td>
                     <td>
                       <span
-                        className={`badge px-2 py-2 shadow-sm ${
-                          r.Estado
+                        className={`badge px-2 py-2 shadow-sm ${r.Estado
                             ? "text-success fw-bold fs-6"
                             : "text-danger fw-bold fs-6"
-                        }`}
+                          }`}
                       >
                         {r.Estado ? "Activo" : "Inactivo"}
                       </span>
@@ -350,4 +389,4 @@ const Roles = () => {
   );
 };
 
-export default Roles;
+export default Roles; 

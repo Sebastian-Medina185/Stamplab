@@ -68,9 +68,7 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
         return "";
     };
 
-    // ==========================
-    // ✍️ MANEJADORES DE EVENTOS
-    // ==========================
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         const newValue = name === "estado" ? value === "true" : value;
@@ -117,9 +115,7 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
         onSave(insumoData);
     };
 
-    // ==========================
-    // 🧱 INTERFAZ DEL FORMULARIO
-    // ==========================
+    
     return (
         <div className="container py-4">
             <div className="position-relative mb-4 text-center">

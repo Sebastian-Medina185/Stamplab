@@ -27,41 +27,56 @@ export const createRol = async (nuevoRol) => {
 };
 
 // Editar un rol
+// export const updateRol = async (id, rolActualizado) => {
+//     try {
+//         const response = await axios.put(`${API_URL}/${id}`, rolActualizado);
+//         return response.data;
+//     } catch (error) {
+//         console.error("Error en updateRol:", error);
+//         throw error;
+//     }
+// };
+
+
+
+// Editar un rol
 export const updateRol = async (id, rolActualizado) => {
     try {
         const response = await axios.put(`${API_URL}/${id}`, rolActualizado);
         return response.data;
     } catch (error) {
         console.error("Error en updateRol:", error);
+        
+        // Extraer el mensaje de error del backend
+        if (error.response && error.response.data) {
+            throw {
+                message: error.response.data.mensaje || error.response.data.error || "No puedes hacer esta acción",
+                status: error.response.status,
+                response: error.response
+            };
+        }
+        
         throw error;
     }
 };
 
-// Eliminar un rol
-// export const deleteRol = async (id) => {
-//     try {
-//         const response = await axios.delete(`${API_URL}/${id}`);
-//         return response.data;
-//     } catch (error) {
-//         console.error("Error en deleteRol:", error);
-//         throw error;
-//     }
-// };
+
+
 export const deleteRol = async (id) => {
     try {
         const response = await axios.delete(`${API_URL}/${id}`);
         return response.data;
     } catch (error) {
-        if (error.response) {
-            // Error del backend
-            console.error("Respuesta del servidor:", error.response.data);
-        } else if (error.request) {
-            // No hay respuesta (problema de conexión con el backend)
-            console.error("No se recibió respuesta del servidor:", error.request);
-        } else {
-            // Otro error
-            console.error("Error al configurar la petición:", error.message);
+        console.error("Error en deleteRol:", error);
+        
+        // Extraer el mensaje de error del backend
+        if (error.response && error.response.data) {
+            throw {
+                message: error.response.data.mensaje || error.response.data.error || "Error al eliminar el rol",
+                status: error.response.status
+            };
         }
+        
         throw error;
     }
 };
