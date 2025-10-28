@@ -25,6 +25,7 @@ const Roles = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRol, setSelectedRol] = useState(null);
 
+
   useEffect(() => {
     loadRoles();
   }, []);
@@ -33,8 +34,12 @@ const Roles = () => {
     try {
       setLoading(true);
       const response = await getRoles();
-      if (response.estado) {
-        setRoles(response.datos);
+
+      // Para ver que llega desde el backend
+      console.log("Respuesta completa del backend:", response);
+
+      if (response) {
+        setRoles(response);
       } else {
         setError("Error al cargar roles");
       }
@@ -45,6 +50,7 @@ const Roles = () => {
       setLoading(false);
     }
   };
+
 
   const handleSave = async (rolData) => {
     try {
@@ -202,18 +208,18 @@ const Roles = () => {
       }
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      
-      const errorMsg = 
-        error.response?.data?.mensaje || 
-        error.response?.data?.error || 
-        error.message || 
+
+      const errorMsg =
+        error.response?.data?.mensaje ||
+        error.response?.data?.error ||
+        error.message ||
         "No puedes cambiar el estado de este rol.";
-      
+
       // Verificar si es un rol protegido
-      if (errorMsg.toLowerCase().includes("no se puede") || 
-          errorMsg.toLowerCase().includes("protegido") ||
-          errorMsg.toLowerCase().includes("administrador") ||
-          errorMsg.toLowerCase().includes("cliente")) {
+      if (errorMsg.toLowerCase().includes("no se puede") ||
+        errorMsg.toLowerCase().includes("protegido") ||
+        errorMsg.toLowerCase().includes("administrador") ||
+        errorMsg.toLowerCase().includes("cliente")) {
         Swal.fire({
           icon: "warning",
           title: "Rol Protegido",
@@ -346,8 +352,8 @@ const Roles = () => {
                     <td>
                       <span
                         className={`badge px-2 py-2 shadow-sm ${r.Estado
-                            ? "text-success fw-bold fs-6"
-                            : "text-danger fw-bold fs-6"
+                          ? "text-success fw-bold fs-6"
+                          : "text-danger fw-bold fs-6"
                           }`}
                       >
                         {r.Estado ? "Activo" : "Inactivo"}

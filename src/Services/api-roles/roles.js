@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/roles"; 
+const API_URL = "http://localhost:3000/api/roles";
 
 // Obtener todos los roles
 export const getRoles = async () => {
