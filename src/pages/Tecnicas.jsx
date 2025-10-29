@@ -25,8 +25,8 @@ const Tecnicas = () => {
     try {
       setLoading(true);
       const response = await getTecnicas();
-      if (response.estado) {
-        setTecnicas(response.datos);
+      if (response) {
+        setTecnicas(response);
       } else {
         setError(response.mensaje);
       }

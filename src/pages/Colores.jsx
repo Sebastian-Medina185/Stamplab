@@ -20,8 +20,8 @@ const Colores = () => {
         setLoading(true);
         try {
             const result = await getColores();
-            if (result.estado) {
-                setColores(result.datos);
+            if (result) {
+                setColores(result);
             } else {
                 setColores([]);
             }

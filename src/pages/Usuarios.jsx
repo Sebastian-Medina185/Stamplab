@@ -38,8 +38,8 @@ const Usuarios = () => {
             setLoading(true);
             setError(null);
             const response = await getUsuarios();
-            if (response.estado) {
-                setUsuarios(response.datos);
+            if (response) {
+                setUsuarios(response);
             } else {
                 setError(response.mensaje || "Error al cargar usuarios");
             }

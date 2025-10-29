@@ -30,8 +30,8 @@ const Proveedores = () => {
       setError(null);
       const response = await getProveedores();
 
-      if (response.estado) {
-        setProveedores(response.datos);
+      if (response) {
+        setProveedores(response);
       } else {
         setError('Error al cargar los proveedores');
       }

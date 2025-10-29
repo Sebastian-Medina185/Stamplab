@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/colores"; // Cambia el puerto si es necesario
+const API_URL = "http://localhost:3000/api/colores"; // Cambia el puerto si es necesario
 
 // =================== LISTAR ===================
 export const getColores = async () => {
