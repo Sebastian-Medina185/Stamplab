@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/insumos"; 
+const API_URL = "http://localhost:3000/api/insumos"; // Cambia el puerto si tu backend usa otro
 
 // Obtener todos los insumos
 export const getInsumos = async () => {

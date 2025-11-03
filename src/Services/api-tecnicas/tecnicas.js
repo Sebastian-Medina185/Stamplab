@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = "http://localhost:3001/tecnicas";
+const API_URL = "http://localhost:3000/api/tecnicas"; // Cambia el puerto si tu backend usa otro
 
 // Obtener todas las técnicas
 export const getTecnicas = async () => {

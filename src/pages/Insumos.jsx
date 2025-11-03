@@ -44,8 +44,8 @@ const Insumos = () => {
     try {
       setLoading(true);
       const response = await getInsumos();
-      if (response.estado) {
-        setInsumos(response.datos);
+      if (response) {
+        setInsumos(response);
         setError(null);
       } else {
         setError(response.mensaje);

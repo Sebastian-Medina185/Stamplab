@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/proveedores"; // Cambia el puerto si tu backend usa otro
+const API_URL = "http://localhost:3000/api/proveedores"; // Cambia el puerto si tu backend usa otro
 
 // Obtener todos los proveedores
 export const getProveedores = async () => {
