@@ -25,6 +25,7 @@ import MisCotizaciones from "../components/landing/Miscotizaciones";
 import FormularioCompra from "../components/landing/FormularioCompra";
 import AgregarProducto from "../pages/formularios_dash/AgregarProducto";
 import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
+import Ventas from "../pages/Ventas";
 
 
 const AppRoutes = () => {
@@ -49,6 +50,7 @@ const AppRoutes = () => {
 
             <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardMedicionesempeño />} />
+                <Route path="ventas" element={<Ventas></Ventas>} />
                 <Route path="cotizaciones" element={<Cotizaciones />} />
                 <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
                 <Route path="roles" element={<Roles />} />

@@ -36,6 +36,7 @@ const menuItems = [
         key: "ventas",
         icon: <FaShoppingCart className="me-2" />,
         items: [
+            { to: "/dashboard/ventas", label: "Ventas", icon: <FaBox className="me-2" /> },
             { to: "/dashboard/cotizaciones", label: "Cotizaciones", icon: <FaClipboardList className="me-2" /> },
             { to: "/dashboard/productos", label: "Productos", icon: <FaBox className="me-2" /> },
         ]
