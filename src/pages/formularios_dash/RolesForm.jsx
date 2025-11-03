@@ -9,16 +9,17 @@ const RolesForm = ({ onClose, onSave, rolEdit = null, rolesExistentes = [] }) =>
     estado: true,
   });
 
-  const [errores, setErrores] = useState({});
   const [esRolProtegido, setEsRolProtegido] = useState(false);
 
   useEffect(() => {
     if (rolEdit) {
       const nombreRol = rolEdit.Nombre || "";
-      const esProtegido = nombreRol.toLowerCase() === 'administrador' || nombreRol.toLowerCase() === 'cliente';
-      
+      const esProtegido =
+        nombreRol.toLowerCase() === "administrador" ||
+        nombreRol.toLowerCase() === "cliente";
+
       setEsRolProtegido(esProtegido);
-      
+
       setFormData({
         nombre: nombreRol,
         descripcion: rolEdit.Descripcion || "",
@@ -32,79 +33,19 @@ const RolesForm = ({ onClose, onSave, rolEdit = null, rolesExistentes = [] }) =>
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Prevenir cambios en nombre y estado si es rol protegido
-    if (esRolProtegido) {
-      if (name === "nombre" || name === "estado") {
-        return; // No permitir cambios
-      }
+
+    if (esRolProtegido && (name === "nombre" || name === "estado")) {
+      return;
     }
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: name === "estado" ? value === "true" : value,
     }));
   };
 
-  // 🔹 Validar un campo individual al perder el foco
-  const validarCampo = (name) => {
-    let error = "";
-
-    if (name === "nombre") {
-      // Si es rol protegido, no validar el nombre
-      if (esRolProtegido) {
-        return;
-      }
-      
-      if (!formData.nombre.trim()) {
-        error = "El nombre del rol es obligatorio.";
-      } else if (formData.nombre.length < 3) {
-        error = "El nombre debe tener al menos 3 caracteres.";
-      } else if (formData.nombre.length > 25) {
-        error = "El nombre no debe superar los 25 caracteres.";
-      } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/.test(formData.nombre)) {
-        error = "El nombre solo debe contener letras sin espacios.";
-      } else {
-        const existe = rolesExistentes.some(
-          (r) =>
-            r.Nombre.toLowerCase() === formData.nombre.toLowerCase() &&
-            (!rolEdit || r.RolID !== rolEdit.RolID)
-        );
-        if (existe) {
-          error = "Ya existe un rol con este nombre.";
-        }
-      }
-    }
-
-    if (name === "descripcion") {
-      if (!formData.descripcion.trim()) {
-        error = "La descripción es obligatoria.";
-      } else if (formData.descripcion.length < 20) {
-        error = "Debe tener al menos 20 caracteres.";
-      } else if (formData.descripcion.length > 50) {
-        error = "No debe superar los 50 caracteres.";
-      } else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(formData.descripcion)) {
-        error = "La descripción solo puede contener letras y espacios.";
-      }
-    }
-
-    setErrores((prev) => ({ ...prev, [name]: error }));
-  };
-
-  // 🔹 Validar todo el formulario al enviar
-  const validarFormulario = () => {
-    if (!esRolProtegido) {
-      validarCampo("nombre");
-    }
-    validarCampo("descripcion");
-
-    return Object.values(errores).every((err) => err === "");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validarFormulario()) return;
 
     const rolData = {
       Nombre: formData.nombre.trim(),
@@ -197,21 +138,21 @@ const RolesForm = ({ onClose, onSave, rolEdit = null, rolesExistentes = [] }) =>
             </label>
             <input
               type="text"
-              className={`form-control ${errores.nombre ? "is-invalid" : ""} ${esRolProtegido ? "bg-light" : ""}`}
+              className={`form-control ${esRolProtegido ? "bg-light" : ""}`}
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
-              onBlur={() => validarCampo("nombre")}
               placeholder="Ingrese el nombre del rol"
               maxLength="25"
               required
               disabled={esRolProtegido}
               readOnly={esRolProtegido}
-              title={esRolProtegido ? "No se puede modificar el nombre de este rol del sistema" : ""}
+              title={
+                esRolProtegido
+                  ? "No se puede modificar el nombre de este rol del sistema"
+                  : ""
+              }
             />
-            {errores.nombre && (
-              <div className="invalid-feedback">{errores.nombre}</div>
-            )}
             {esRolProtegido && (
               <small className="text-muted">Este campo no puede ser modificado.</small>
             )}
@@ -223,19 +164,15 @@ const RolesForm = ({ onClose, onSave, rolEdit = null, rolesExistentes = [] }) =>
               Descripción <span className="text-danger">*</span>
             </label>
             <textarea
-              className={`form-control ${errores.descripcion ? "is-invalid" : ""}`}
+              className="form-control"
               name="descripcion"
               value={formData.descripcion}
               onChange={handleChange}
-              onBlur={() => validarCampo("descripcion")}
               placeholder="Describa las funciones y permisos del rol"
               rows="4"
               maxLength="50"
               required
             />
-            {errores.descripcion && (
-              <div className="invalid-feedback">{errores.descripcion}</div>
-            )}
           </div>
 
           {/* Estado */}
@@ -247,7 +184,11 @@ const RolesForm = ({ onClose, onSave, rolEdit = null, rolesExistentes = [] }) =>
               value={formData.estado.toString()}
               onChange={handleChange}
               disabled={esRolProtegido}
-              title={esRolProtegido ? "No se puede modificar el estado de este rol del sistema" : ""}
+              title={
+                esRolProtegido
+                  ? "No se puede modificar el estado de este rol del sistema"
+                  : ""
+              }
             >
               <option value="true">Activo</option>
               <option value="false">Inactivo</option>
@@ -263,7 +204,11 @@ const RolesForm = ({ onClose, onSave, rolEdit = null, rolesExistentes = [] }) =>
           <button type="submit" className="btn btn-success px-4">
             {rolEdit ? "Actualizar Rol" : "Crear Rol"}
           </button>
-          <button type="button" className="btn btn-secondary px-4" onClick={onClose}>
+          <button
+            type="button"
+            className="btn btn-secondary px-4"
+            onClick={onClose}
+          >
             Cancelar
           </button>
         </div>

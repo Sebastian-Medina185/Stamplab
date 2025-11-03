@@ -64,7 +64,18 @@ const Roles = () => {
       }
 
       if (response.estado) {
-        await loadRoles();
+        if (rolEdit) {
+          // Si estás editando, actualiza el rol en el array existente
+          setRoles((prevRoles) =>
+            prevRoles.map((r) =>
+              r.RolID === rolEdit.RolID ? { ...r, ...rolData } : r
+            )
+          );
+        } else {
+          // Si es un rol nuevo, agrégalo directamente al estado
+          setRoles((prevRoles) => [...prevRoles, response.datos || rolData]);
+        }
+
         setShowForm(false);
         setRolEdit(null);
 
