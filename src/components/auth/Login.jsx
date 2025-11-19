@@ -17,20 +17,33 @@ const LoginLanding = () => {
         setLoading(true);
 
         try {
-            // Intentar login con la API
-            const res = await loginUsuario({ 
-                Correo: correo, 
-                Contraseña: contraseña 
+            // VALIDACIÓN HARDCODEADA
+            if (correo === "admin@gmail.com" && contraseña === "admin123") {
+
+                // Guardar datos "falsos" del admin
+                localStorage.setItem("token", "TOKEN_ADMIN_QUEMADO");
+                localStorage.setItem("user", JSON.stringify({
+                    nombre: "Administrador",
+                    rol: 1
+                }));
+
+                alert("Bienvenido Administrador");
+                navigate("/dashboard");
+                return;
+            }
+
+            // SI NO ES EL ADMIN QUEMADO → INTENTA LOGIN NORMAL CON LA API
+            const res = await loginUsuario({
+                Correo: correo,
+                Contraseña: contraseña
             });
 
-            // Guardar token y datos del usuario
             localStorage.setItem("token", res.data.token);
-            localStorage.setItem("user", JSON.stringify({ 
-                nombre: res.data.nombre, 
-                rol: res.data.rol 
+            localStorage.setItem("user", JSON.stringify({
+                nombre: res.data.nombre,
+                rol: res.data.rol
             }));
 
-            // Redirigir según el rol
             if (res.data.rol === 1 || res.data.rol === "1") {
                 alert(`Bienvenido Administrador ${res.data.nombre}`);
                 navigate("/dashboard");
@@ -41,8 +54,7 @@ const LoginLanding = () => {
 
         } catch (err) {
             console.error("Error en login:", err);
-            
-            // Mostrar mensaje de error específico
+
             if (err.response?.data?.mensaje) {
                 alert(err.response.data.mensaje);
             } else {
@@ -52,6 +64,7 @@ const LoginLanding = () => {
             setLoading(false);
         }
     };
+
 
     return (
         <>
