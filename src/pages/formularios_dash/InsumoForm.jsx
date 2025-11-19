@@ -3,40 +3,48 @@ import { FaTimes } from "react-icons/fa";
 
 const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
     // ==========================
-    // 🎯 ESTADOS DEL FORMULARIO
+    // ESTADOS DEL FORMULARIO
     // ==========================
     const [formData, setFormData] = useState({
         nombre: "",
         stock: "",
+        tipo: "Otro",
+        precioTela: "",
         estado: true,
     });
 
     const [errors, setErrors] = useState({
         nombre: "",
         stock: "",
+        tipo: "",
+        precioTela: "",
     });
 
     const [touched, setTouched] = useState({
         nombre: false,
         stock: false,
+        tipo: false,
+        precioTela: false,
     });
 
     // ==========================
-    // 🔁 CARGAR DATOS AL EDITAR
+    //  CARGAR DATOS AL EDITAR
     // ==========================
     useEffect(() => {
         if (insumoEdit) {
             setFormData({
                 nombre: insumoEdit.Nombre || "",
                 stock: insumoEdit.Stock?.toString() || "",
+                tipo: insumoEdit.Tipo || "Otro",
+                precioTela: insumoEdit.PrecioTela?.toString() || "",
                 estado: insumoEdit.Estado !== undefined ? insumoEdit.Estado : true,
             });
         } else {
-            setFormData({ nombre: "", stock: "", estado: true });
+            setFormData({ nombre: "", stock: "", tipo: "Otro", precioTela: "", estado: true });
         }
 
-        setErrors({ nombre: "", stock: "" });
-        setTouched({ nombre: false, stock: false });
+        setErrors({ nombre: "", stock: "", tipo: "", precioTela: "" });
+        setTouched({ nombre: false, stock: false, tipo: false, precioTela: false });
     }, [insumoEdit]);
 
     // ==========================
@@ -51,8 +59,7 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
         if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-_]+$/.test(nombre))
             return "Solo se permiten letras, números, espacios, guiones y guiones bajos";
         if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(nombre))
-            return "No se permiten numeros, solo letras."
-            // return "El nombre debe contener al menos una letra";
+            return "No se permiten números solamente, debe contener letras";
 
         return "";
     };
@@ -68,17 +75,48 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
         return "";
     };
 
+    const validateTipo = (value) => {
+        if (!value || !value.trim()) return "El tipo es obligatorio";
+        return "";
+    };
+
+    const validatePrecioTela = (value, tipo) => {
+        // Solo validar si el tipo es "Tela"
+        if (tipo.toLowerCase() !== "tela") return "";
+
+        if (value === "" || value === null) return "El precio de tela es obligatorio para tipo Tela";
+
+        const precio = Number(value);
+        if (isNaN(precio)) return "El precio debe ser un número válido";
+        if (precio < 0) return "El precio no puede ser negativo";
+
+        return "";
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         const newValue = name === "estado" ? value === "true" : value;
 
-        setFormData((prev) => ({ ...prev, [name]: newValue }));
+        setFormData((prev) => {
+            const updated = { ...prev, [name]: newValue };
+            
+            // Si cambia el tipo y no es "Tela", limpiar precioTela
+            if (name === "tipo" && value.toLowerCase() !== "tela") {
+                updated.precioTela = "";
+                setErrors((prevErrors) => ({ ...prevErrors, precioTela: "" }));
+            }
+            
+            return updated;
+        });
 
         // Validar en tiempo real si ya fue tocado
         if (touched[name]) {
-            const error =
-                name === "nombre" ? validateNombre(value) : validateStock(value);
+            let error = "";
+            if (name === "nombre") error = validateNombre(value);
+            else if (name === "stock") error = validateStock(value);
+            else if (name === "tipo") error = validateTipo(value);
+            else if (name === "precioTela") error = validatePrecioTela(value, formData.tipo);
+            
             setErrors((prev) => ({ ...prev, [name]: error }));
         }
     };
@@ -87,8 +125,12 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
         const { name, value } = e.target;
         setTouched((prev) => ({ ...prev, [name]: true }));
 
-        const error =
-            name === "nombre" ? validateNombre(value) : validateStock(value);
+        let error = "";
+        if (name === "nombre") error = validateNombre(value);
+        else if (name === "stock") error = validateStock(value);
+        else if (name === "tipo") error = validateTipo(value);
+        else if (name === "precioTela") error = validatePrecioTela(value, formData.tipo);
+        
         setErrors((prev) => ({ ...prev, [name]: error }));
     };
 
@@ -98,24 +140,39 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
         // Validar todos los campos antes de enviar
         const nombreError = validateNombre(formData.nombre);
         const stockError = validateStock(formData.stock);
+        const tipoError = validateTipo(formData.tipo);
+        const precioTelaError = validatePrecioTela(formData.precioTela, formData.tipo);
 
-        setErrors({ nombre: nombreError, stock: stockError });
-        setTouched({ nombre: true, stock: true });
+        setErrors({ 
+            nombre: nombreError, 
+            stock: stockError, 
+            tipo: tipoError,
+            precioTela: precioTelaError 
+        });
+        setTouched({ nombre: true, stock: true, tipo: true, precioTela: true });
 
-        if (nombreError || stockError) return;
+        if (nombreError || stockError || tipoError || precioTelaError) return;
 
         // Preparar datos para guardar
         const insumoData = {
             Nombre: formData.nombre.trim(),
             Stock: formData.stock === "" ? 0 : parseInt(formData.stock),
+            Tipo: formData.tipo,
             Estado: formData.estado,
             ...(insumoEdit && { InsumoID: insumoEdit.InsumoID }),
         };
 
+        // Solo agregar PrecioTela si el tipo es "Tela"
+        if (formData.tipo.toLowerCase() === "tela") {
+            insumoData.PrecioTela = formData.precioTela === "" ? 0 : parseFloat(formData.precioTela);
+        }
+
         onSave(insumoData);
     };
 
-    
+    // Determinar si se debe mostrar el campo de precio
+    const mostrarPrecioTela = formData.tipo.toLowerCase() === "tela";
+
     return (
         <div className="container py-4">
             <div className="position-relative mb-4 text-center">
@@ -166,6 +223,35 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
                         )}
                     </div>
 
+                    {/* Tipo de Insumo */}
+                    <div className="col-md-6">
+                        <label className="form-label fw-bold">
+                            Tipo de Insumo <span className="text-danger">*</span>
+                        </label>
+                        <select
+                            className={`form-select ${
+                                touched.tipo && errors.tipo
+                                    ? "is-invalid"
+                                    : touched.tipo && !errors.tipo
+                                    ? "is-valid"
+                                    : ""
+                            }`}
+                            name="tipo"
+                            value={formData.tipo}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                        >
+                            <option value="Tela">Tela</option>
+                            <option value="Material">Material</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                        {touched.tipo && errors.tipo && (
+                            <div className="invalid-feedback d-block">
+                                {errors.tipo}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Stock */}
                     <div className="col-md-6">
                         <label className="form-label fw-bold">
@@ -195,8 +281,39 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
                         )}
                     </div>
 
+                    {/* Precio Tela - Solo visible si tipo es "Tela" */}
+                    {mostrarPrecioTela && (
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                                Precio de Tela <span className="text-danger">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                name="precioTela"
+                                value={formData.precioTela}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder="Precio por unidad"
+                                min="0"
+                                step="0.01"
+                                className={`form-control ${
+                                    touched.precioTela && errors.precioTela
+                                        ? "is-invalid"
+                                        : touched.precioTela && !errors.precioTela
+                                        ? "is-valid"
+                                        : ""
+                                }`}
+                            />
+                            {touched.precioTela && errors.precioTela && (
+                                <div className="invalid-feedback d-block">
+                                    {errors.precioTela}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Estado */}
-                    <div className="col-md-6">
+                    <div className={mostrarPrecioTela ? "col-md-6" : "col-md-12"}>
                         <label className="form-label fw-bold">Estado</label>
                         <select
                             className="form-select"
@@ -220,7 +337,7 @@ const InsumoForm = ({ onClose, onSave, insumoEdit = null }) => {
                     <button
                         type="submit"
                         className="btn btn-success px-4"
-                        disabled={!!errors.nombre || !!errors.stock}
+                        disabled={!!errors.nombre || !!errors.stock || !!errors.tipo || !!errors.precioTela}
                     >
                         {insumoEdit ? "Actualizar Insumo" : "Crear Insumo"}
                     </button>
