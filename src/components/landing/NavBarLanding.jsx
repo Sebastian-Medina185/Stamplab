@@ -1,17 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar, Nav, Container, Button, Modal } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
-// Importa el logo
-// <-- Ajusta la ruta según dónde guardes la imagen
-import logo from "../../assets/logo.png"; 
-
 
 const NavbarComponent = () => {
     const [showPerfil, setShowPerfil] = useState(false);
+    const [userData, setUserData] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const navigate = useNavigate();
 
-    // Abrir/Cerrar modal perfil
-    const handlePerfilOpen = () => setShowPerfil(true);
+    // Verificar si hay sesión activa al cargar el componente
+    useEffect(() => {
+        checkAuth();
+    }, []);
+
+    const checkAuth = () => {
+        const token = localStorage.getItem("token");
+        const user = localStorage.getItem("user");
+
+        if (token && user) {
+            try {
+                const parsedUser = JSON.parse(user);
+                setUserData(parsedUser);
+                setIsAuthenticated(true);
+            } catch (error) {
+                console.error("Error al parsear usuario:", error);
+                setIsAuthenticated(false);
+                setUserData(null);
+            }
+        } else {
+            setIsAuthenticated(false);
+            setUserData(null);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setIsAuthenticated(false);
+        setUserData(null);
+        setShowPerfil(false);
+        navigate("/login");
+    };
+
+    const handlePerfilOpen = () => {
+        if (isAuthenticated) {
+            setShowPerfil(true);
+        }
+    };
+
     const handlePerfilClose = () => setShowPerfil(false);
 
     return (
@@ -37,16 +74,16 @@ const NavbarComponent = () => {
                                 as={Link}
                                 to="/landing"
                                 style={{
-                                    color: "#384c6f", // Azul rey por defecto
+                                    color: "#384c6f",
                                     fontWeight: 650,
                                     transition: "all 0.2s ease-in-out",
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.target.style.color = "#64b5f6"; // Azul claro al pasar
+                                    e.target.style.color = "#64b5f6";
                                     e.target.style.fontWeight = "600";
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.target.style.color = "#384c6f"; // Vuelve al azul rey
+                                    e.target.style.color = "#384c6f";
                                     e.target.style.fontWeight = "650";
                                 }}
                             >
@@ -116,55 +153,84 @@ const NavbarComponent = () => {
                                 Servicios
                             </Nav.Link>
 
-                            {/* Icono Perfil */}
-                            <FaUserCircle
-                                size={30}
-                                className="text-secondary"
-                                style={{ cursor: "pointer" }}
-                                onClick={handlePerfilOpen}
-                            />
+                            {/* Mostrar opciones solo si está autenticado */}
+                            {isAuthenticated ? (
+                                <>
+                                    {/* Icono Perfil */}
+                                    <FaUserCircle
+                                        size={30}
+                                        className="text-secondary"
+                                        style={{ cursor: "pointer" }}
+                                        onClick={handlePerfilOpen}
+                                        title="Ver perfil"
+                                    />
 
-                            {/* Botón Cerrar Sesión */}
-                            <Button as={Link} to="/login" variant="dark" size="sm">
-                                Cerrar Sesión
-                            </Button>
+                                    {/* Botón Cerrar Sesión */}
+                                    <Button variant="dark" size="sm" onClick={handleLogout}>
+                                        Cerrar Sesión
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Botones para usuarios no autenticados */}
+                                    <Button
+                                        as={Link}
+                                        to="/login"
+                                        variant="outline-primary"
+                                        size="sm"
+                                    >
+                                        Iniciar Sesión
+                                    </Button>
+                                    <Button
+                                        as={Link}
+                                        to="/signup"
+                                        variant="primary"
+                                        size="sm"
+                                    >
+                                        Registrarse
+                                    </Button>
+                                </>
+                            )}
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
             </Navbar>
 
-            {/* MODAL PERFIL */}
-            <Modal show={showPerfil} onHide={handlePerfilClose} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Perfil de Usuario</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="text-center">
-                    <FaUserCircle size={60} className="mb-3 text-secondary" />
-                    <h6 className="fw-normal fst-italic">Pepito Ramírez</h6>
-                    <p className="text-muted small">pepito@gmail.com</p>
+            {/* MODAL PERFIL - Solo se muestra si hay usuario autenticado */}
+            {isAuthenticated && userData && (
+                <Modal show={showPerfil} onHide={handlePerfilClose} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Perfil de Usuario</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="text-center">
+                        <FaUserCircle size={60} className="mb-3 text-secondary" />
+                        <h6 className="fw-normal fst-italic">{userData.nombre || "Usuario"}</h6>
+                        <p className="text-muted small">{userData.correo || "Sin correo"}</p>
 
-                    {/* Botones del modal */}
-                    <div className="d-flex justify-content-center gap-2 mt-3">
-                        <Button variant="secondary" onClick={handlePerfilClose}>
-                            Cerrar Sesión
-                        </Button>
-                        <Button as={Link} to="/editarperfil" variant="primary">
-                            Editar Información
-                        </Button>
-                    </div>
+                        {/* Botones del modal */}
+                        <div className="d-flex justify-content-center gap-2 mt-3">
+                            <Button variant="secondary" onClick={handleLogout}>
+                                Cerrar Sesión
+                            </Button>
+                            <Button as={Link} to="/editarperfil" variant="primary" onClick={handlePerfilClose}>
+                                Editar Información
+                            </Button>
+                        </div>
 
-                    <div className="mt-3">
-                        <Button
-                            as={Link}
-                            to="/miscotizaciones"
-                            variant="info"
-                            className="w-100 text-white fw-bold"
-                        >
-                            Mis Cotizaciones
-                        </Button>
-                    </div>
-                </Modal.Body>
-            </Modal>
+                        <div className="mt-3">
+                            <Button
+                                as={Link}
+                                to="/miscotizaciones"
+                                variant="info"
+                                className="w-100 text-white fw-bold"
+                                onClick={handlePerfilClose}
+                            >
+                                Mis Cotizaciones
+                            </Button>
+                        </div>
+                    </Modal.Body>
+                </Modal>
+            )}
         </>
     );
 };

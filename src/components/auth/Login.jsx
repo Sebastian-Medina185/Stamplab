@@ -1,10 +1,58 @@
+import { useState } from "react";
 import { Form, Button, Card, Row, Col } from "react-bootstrap";
-import { Link } from "react-router-dom";
-import fondo from '../../assets/images/imagenfondo.png'; 
+import { Link, useNavigate } from "react-router-dom";
+import { loginUsuario } from "../../Services/api-auth/auth";
+import fondo from "../../assets/images/imagenfondo.png";
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
 
 const LoginLanding = () => {
+    const [correo, setCorreo] = useState("");
+    const [contraseña, setContraseña] = useState("");
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            // Intentar login con la API
+            const res = await loginUsuario({ 
+                Correo: correo, 
+                Contraseña: contraseña 
+            });
+
+            // Guardar token y datos del usuario
+            localStorage.setItem("token", res.data.token);
+            localStorage.setItem("user", JSON.stringify({ 
+                nombre: res.data.nombre, 
+                rol: res.data.rol 
+            }));
+
+            // Redirigir según el rol
+            if (res.data.rol === 1 || res.data.rol === "1") {
+                alert(`Bienvenido Administrador ${res.data.nombre}`);
+                navigate("/dashboard");
+            } else {
+                alert(`Bienvenido/a ${res.data.nombre}`);
+                navigate("/landing");
+            }
+
+        } catch (err) {
+            console.error("Error en login:", err);
+            
+            // Mostrar mensaje de error específico
+            if (err.response?.data?.mensaje) {
+                alert(err.response.data.mensaje);
+            } else {
+                alert("Error al iniciar sesión. Verifica tus credenciales.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <>
             <NavbarComponent />
@@ -20,11 +68,10 @@ const LoginLanding = () => {
                     className="shadow-lg rounded-4 overflow-hidden"
                 >
                     <Row className="g-0">
-                        {/* Columna Izquierda - Imagen */}
                         <Col md={6} className="d-none d-md-block">
                             <div
                                 style={{
-                                    backgroundImage: `url(${fondo})`, 
+                                    backgroundImage: `url(${fondo})`,
                                     backgroundSize: "cover",
                                     backgroundPosition: "center",
                                     height: "100%",
@@ -33,19 +80,22 @@ const LoginLanding = () => {
                             ></div>
                         </Col>
 
-                        {/* Columna Derecha - Formulario */}
                         <Col md={6} className="p-5 d-flex flex-column justify-content-center">
                             <h4 className="text-center mb-4 fw-bold text-dark">
                                 Formulario de Inicio de Sesión
                             </h4>
 
-                            <Form>
+                            <Form onSubmit={handleLogin}>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="fw-semibold">Correo electrónico</Form.Label>
                                     <Form.Control
                                         type="email"
                                         placeholder="Ingresa tu correo electrónico"
+                                        value={correo}
+                                        onChange={(e) => setCorreo(e.target.value)}
                                         className="rounded-3 shadow-sm"
+                                        disabled={loading}
+                                        required
                                     />
                                 </Form.Group>
 
@@ -54,20 +104,30 @@ const LoginLanding = () => {
                                     <Form.Control
                                         type="password"
                                         placeholder="Ingresa tu contraseña"
+                                        value={contraseña}
+                                        onChange={(e) => setContraseña(e.target.value)}
                                         className="rounded-3 shadow-sm"
+                                        disabled={loading}
+                                        required
                                     />
                                 </Form.Group>
 
-                                {/* Botón que redirige */}
                                 <div className="d-grid mb-3">
-                                    <Link to="/dashboard/roles">
-                                        <Button
-                                            variant="primary"
-                                            className="fw-bold w-100 rounded-pill shadow-sm"
-                                        >
-                                            Iniciar Sesión
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        className="fw-bold w-100 rounded-pill shadow-sm"
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                Iniciando sesión...
+                                            </>
+                                        ) : (
+                                            'Iniciar Sesión'
+                                        )}
+                                    </Button>
                                 </div>
 
                                 <p className="text-center mb-0 text-secondary">
@@ -79,6 +139,7 @@ const LoginLanding = () => {
                                         Registrarme
                                     </Link>
                                 </p>
+
                                 <br />
                                 <p className="text-center mb-0 text-secondary">
                                     ¿Has olvidado tu contraseña? <br />

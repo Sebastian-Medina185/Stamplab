@@ -20,16 +20,14 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
     const [loadingRoles, setLoadingRoles] = useState(true);
     const [errors, setErrors] = useState({});
 
-    // Cargar roles disponibles al montar el componente
     useEffect(() => {
         loadRoles();
     }, []);
 
-    // Si hay un usuario para editar, cargar sus datos
     useEffect(() => {
         if (usuario) {
             setFormData({
-                DocumentoID: usuario.DocumentoID || "",
+                DocumentoID: usuario.DocumentoID ? usuario.DocumentoID.toString() : "",
                 Nombre: usuario.Nombre || "",
                 Correo: usuario.Correo || "",
                 Direccion: usuario.Direccion || "",
@@ -62,61 +60,55 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
         }
     };
 
-    // Validaciones individuales por campo
+    // ==================== VALIDACIONES SIMPLIFICADAS ====================
+    
     const validarDocumento = (documento) => {
-        const doc = documento.trim();
-        if (!doc) return "El número de documento es obligatorio";
-        if (!/^\d+$/.test(doc)) return "El documento solo puede contener números";
-        if (doc.length < 4) return "El documento debe tener al menos 4 dígitos";
-        if (doc.length > 10) return "El documento no puede tener más de 10 dígitos";
+        const doc = String(documento || "").trim();
+        if (!doc) return "El documento es obligatorio";
+        if (!/^\d+$/.test(doc)) return "Solo números";
+        if (doc.length < 4 || doc.length > 10) return "Entre 4 y 10 dígitos";
         return "";
     };
 
     const validarNombre = (nombre) => {
-        const nom = nombre.trim();
-        if (!nom) return "El nombre es obligatorio y no puede estar vacío";
-        if (nom.length < 3) return "El nombre debe tener al menos 3 caracteres";
-        if (nom.length > 30) return "El nombre no puede tener más de 30 caracteres";
-        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ\s]+$/.test(nom)) return "El nombre solo puede contener letras y espacios";
+        const nom = String(nombre || "").trim();
+        if (!nom) return "El nombre es obligatorio";
+        if (nom.length < 3 || nom.length > 50) return "Entre 3 y 50 caracteres";
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ\s]+$/.test(nom)) return "Solo letras y espacios";
         return "";
     };
 
     const validarCorreo = (correo) => {
-        const cor = correo.trim();
-        if (!cor) return "El correo electrónico es obligatorio";
-        if (cor.length < 6) return "El correo debe tener al menos 6 caracteres";
-        if (cor.length > 40) return "El correo no puede tener más de 40 caracteres";
+        const cor = String(correo || "").trim();
+        if (!cor) return "El correo es obligatorio";
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(cor)) return "Formato de correo electrónico inválido";
+        if (!emailRegex.test(cor)) return "Correo inválido";
         return "";
     };
 
     const validarTelefono = (telefono) => {
-        const tel = telefono.trim();
+        const tel = String(telefono || "").trim();
         if (!tel) return "El teléfono es obligatorio";
-        if (!/^\d+$/.test(tel)) return "El teléfono solo puede contener números";
-        if (tel.length < 7) return "El teléfono debe tener al menos 7 dígitos";
-        if (tel.length > 10) return "El teléfono no puede tener más de 10 dígitos";
+        if (!/^\d+$/.test(tel)) return "Solo números";
+        if (tel.length < 7 || tel.length > 10) return "Entre 7 y 10 dígitos";
         return "";
     };
 
+    // Dirección sin validación - solo verificar que no esté vacía
     const validarDireccion = (direccion) => {
-        const dir = direccion.trim();
+        const dir = String(direccion || "").trim();
         if (!dir) return "La dirección es obligatoria";
-        if (dir.length < 8) return "La dirección debe tener al menos 8 caracteres";
-        if (dir.length > 80) return "La dirección no puede tener más de 80 caracteres";
+        if (dir.length > 255) return "Máximo 255 caracteres";
         return "";
     };
 
+    // Contraseña - solo longitud mínima
     const validarContraseña = (contraseña, esEdicion) => {
-        if (esEdicion && !contraseña) return ""; // En edición es opcional
-        if (!contraseña) return "La contraseña es obligatoria";
-        if (contraseña.length < 8) return "La contraseña debe tener al menos 8 caracteres";
-        if (contraseña.length > 50) return "La contraseña no puede tener más de 50 caracteres";
-        if (!/[A-Z]/.test(contraseña)) return "Debe contener al menos una letra mayúscula";
-        if (!/[a-z]/.test(contraseña)) return "Debe contener al menos una letra minúscula";
-        if (!/[0-9]/.test(contraseña)) return "Debe contener al menos un número";
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(contraseña)) return "Debe contener al menos un carácter especial (!@#$%^&*...)";
+        if (esEdicion && !contraseña) return ""; // Opcional en edición
+        const pass = String(contraseña || "");
+        if (!pass) return "La contraseña es obligatoria";
+        if (pass.length < 4) return "Mínimo 4 caracteres";
+        if (pass.length > 50) return "Máximo 50 caracteres";
         return "";
     };
 
@@ -177,7 +169,6 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
             RolID: validarRol(formData.RolID),
         };
 
-        // Filtrar solo los errores que tienen valor
         const filteredErrors = {};
         Object.keys(newErrors).forEach(key => {
             if (newErrors[key]) {
@@ -206,20 +197,34 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
         setErrors({});
 
         try {
-            const dataToSend = { ...formData };
+            const dataToSend = {
+                DocumentoID: String(formData.DocumentoID).trim(),
+                Nombre: String(formData.Nombre).trim(),
+                Correo: String(formData.Correo).trim(),
+                Telefono: String(formData.Telefono).trim(),
+                Direccion: String(formData.Direccion).trim(),
+                RolID: String(formData.RolID).trim()
+            };
 
-            // Si estamos editando y no se cambió la contraseña, no enviarla
-            if (usuario && !dataToSend.Contraseña.trim()) {
-                delete dataToSend.Contraseña;
+            if (usuario) {
+                if (formData.Contraseña && formData.Contraseña.trim()) {
+                    dataToSend.Contraseña = String(formData.Contraseña).trim();
+                }
+            } else {
+                dataToSend.Contraseña = String(formData.Contraseña).trim();
             }
 
             let result;
 
             if (usuario) {
+                console.log("Editando usuario:", usuario.DocumentoID);
                 result = await updateUsuario(usuario.DocumentoID, dataToSend);
             } else {
+                console.log("Creando usuario:", dataToSend);
                 result = await createUsuario(dataToSend);
             }
+
+            console.log("Respuesta del servidor:", result);
 
             if (result.estado) {
                 const Toast = Swal.mixin({
@@ -228,10 +233,6 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                     showConfirmButton: false,
                     timer: 3000,
                     timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer);
-                        toast.addEventListener('mouseleave', Swal.resumeTimer);
-                    }
                 });
 
                 Toast.fire({
@@ -249,7 +250,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: error.message || 'Error al guardar el usuario'
+                text: error.response?.data?.mensaje || error.message || 'Error al guardar el usuario'
             });
         } finally {
             setLoading(false);
@@ -285,17 +286,11 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         onChange={handleChange}
                         disabled={loading || !!usuario}
                         readOnly={!!usuario}
-                        placeholder="Ej: 123456789"
                         required
                     />
                     {errors.DocumentoID && (
                         <div className="invalid-feedback">{errors.DocumentoID}</div>
                     )}
-                    {/* {!usuario && (
-                        <small className="form-text text-muted">
-                            Entre 4 y 10 dígitos. Solo números.
-                        </small>
-                    )} */}
                 </div>
 
                 <div className="col-md-6">
@@ -307,7 +302,6 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         value={formData.Nombre}
                         onChange={handleChange}
                         disabled={loading}
-                        placeholder="Ej: Juan Pérez"
                         required
                     />
                     {errors.Nombre && (
@@ -324,7 +318,6 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         value={formData.Correo}
                         onChange={handleChange}
                         disabled={loading}
-                        placeholder="correo@ejemplo.com"
                         required
                     />
                     {errors.Correo && (
@@ -341,7 +334,6 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         value={formData.Telefono}
                         onChange={handleChange}
                         disabled={loading}
-                        placeholder="3001234567"
                         required
                     />
                     {errors.Telefono && (
@@ -358,7 +350,6 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         value={formData.Direccion}
                         onChange={handleChange}
                         disabled={loading}
-                        placeholder="Calle 123 #45-67, Barrio, Ciudad"
                         required
                     />
                     {errors.Direccion && (
@@ -369,7 +360,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                 <div className="col-md-6">
                     <label className="form-label fw-bold">
                         Contraseña
-                        {usuario && <small className="text-muted"> (opcional - dejar vacío para mantener)</small>}
+                        {usuario && <small className="text-muted"> (opcional)</small>}
                     </label>
                     <input
                         type="password"
@@ -378,12 +369,12 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         value={formData.Contraseña}
                         onChange={handleChange}
                         disabled={loading}
-                        placeholder="********"
                         required={!usuario}
                     />
                     {errors.Contraseña && (
                         <div className="invalid-feedback">{errors.Contraseña}</div>
                     )}
+                    <small className="text-muted">Mínimo 4 caracteres</small>
                 </div>
 
                 <div className="col-md-6">
@@ -397,7 +388,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         required
                     >
                         <option value="">
-                            {loadingRoles ? 'Cargando roles...' : 'Seleccione un rol'}
+                            {loadingRoles ? 'Cargando...' : 'Seleccione un rol'}
                         </option>
                         {roles.map((rol) => (
                             <option key={rol.RolID} value={rol.RolID}>

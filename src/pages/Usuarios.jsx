@@ -92,10 +92,10 @@ const Usuarios = () => {
             if (result.isConfirmed) {
                 setLoading(true);
                 const response = await deleteUsuario(documentoID);
-                
+
                 if (response.estado) {
                     await loadUsuarios();
-                    
+
                     // Toast de éxito al eliminar
                     Toast.fire({
                         icon: 'success',
@@ -274,13 +274,14 @@ const Usuarios = () => {
                                         </td>
                                         <td>
                                             <small className="text-muted">
-                                                {usuario.Direccion.length > 40
-                                                    ? usuario.Direccion.substring(0, 40) + '...'
-                                                    : usuario.Direccion
+                                                {(usuario.Direccion || "").length > 40
+                                                    ? (usuario.Direccion || "").substring(0, 40) + '...'
+                                                    : (usuario.Direccion || "")
                                                 }
                                             </small>
+
                                         </td>
-                                        <td>{usuario.Telefono}</td>
+                                        <td>{usuario.Telefono || ""}</td>
                                         <td>
                                             <span className="badge bg-secondary px-2 py-1 shadow-sm">
                                                 {getRoleName(usuario)}
@@ -331,8 +332,8 @@ const Usuarios = () => {
                     {selectedUsuario && (
                         <>
                             {/* Encabezado del Modal */}
-                            <div className="modal-header border-0 text-white" 
-                                style={{ 
+                            <div className="modal-header border-0 text-white"
+                                style={{
                                     background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
                                     padding: '20px'
                                 }}>

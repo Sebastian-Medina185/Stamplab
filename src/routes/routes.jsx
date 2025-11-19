@@ -26,29 +26,50 @@ import FormularioCompra from "../components/landing/FormularioCompra";
 import AgregarProducto from "../pages/formularios_dash/AgregarProducto";
 import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
 import Ventas from "../pages/Ventas";
-
+import PrivateRoute from "./privateRoute";
+import { ProtectedRoute } from "./ProtectedRoute";
 
 const AppRoutes = () => {
+
 
     return (
 
         <Routes>
             {/* Ruta raíz redirige al registro */}
             <Route path="/" element={<RegistroLanding />} />
-            
+
+            {/* Rutas del Landing */}
             <Route path="/landing" element={<Home />} />
             <Route path="/cotizacionesLanding" element={<CotizacionesLanding />} />
             <Route path="/servicios" element={<Servicios />} />
             <Route path="/productosLanding" element={<ProductosLanding />} />
             <Route path="/signup" element={<RegistroLanding />} />
             <Route path="/login" element={<LoginLanding />} />
+            <Route
+                path="/dashboard"
+                element={
+                    <ProtectedRoute>
+                        <DashboardLayout />
+                    </ProtectedRoute>
+                }
+            />
             <Route path="/recuperarcontraseña" element={<RecuperarContraseña />} />
             <Route path="/restablecercontraseña" element={<RestablecerContraseña />} />
             <Route path="/editarperfil" element={<EditarPerfil />} />
             <Route path="/miscotizaciones" element={<MisCotizaciones />} />
             <Route path="/formularioCompra" element={<FormularioCompra />} />
 
-            <Route path="/dashboard" element={<DashboardLayout />}>
+
+            <Route
+                path="/dashboard"
+                element={
+                    <PrivateRoute>
+                        <DashboardLayout />
+                    </PrivateRoute>
+                }
+            >
+
+                {/* Rutas del Dashboard */}
                 <Route index element={<DashboardMedicionesempeño />} />
                 <Route path="ventas" element={<Ventas></Ventas>} />
                 <Route path="cotizaciones" element={<Cotizaciones />} />
@@ -65,6 +86,7 @@ const AppRoutes = () => {
                 <Route path="proveedores" element={<Proveedores />} />
                 <Route path="tecnicas" element={<Tecnicas />} />
                 <Route path="mediciondesempeño" element={<DashboardMedicionesempeño />} />
+
             </Route>
 
         </Routes>

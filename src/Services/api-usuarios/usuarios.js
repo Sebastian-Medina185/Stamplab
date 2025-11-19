@@ -1,14 +1,26 @@
-// src/services/usuarios/usuariosService.js
+// src/services/api-usuarios/usuarios.js
 
 import axios from "axios";
 
 const API_URL = "http://localhost:3000/api/usuarios"; 
 
+// Configurar el token en los headers
+const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    };
+};
+
 // Obtener todos los usuarios
 export const getUsuarios = async () => {
     try {
-        const response = await axios.get(API_URL);
-        return response.data; // { estado: true/false, datos: [...] }
+        const response = await axios.get(API_URL, getAuthHeaders());
+        console.log("getUsuarios response:", response.data);
+        return response.data;
     } catch (error) {
         console.error("Error en getUsuarios:", error);
         throw error;
@@ -18,7 +30,8 @@ export const getUsuarios = async () => {
 // Obtener un usuario por ID
 export const getUsuarioById = async (documentoID) => {
     try {
-        const response = await axios.get(`${API_URL}/${documentoID}`);
+        const response = await axios.get(`${API_URL}/${documentoID}`, getAuthHeaders());
+        console.log("getUsuarioById response:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error en getUsuarioById:", error);
@@ -26,44 +39,75 @@ export const getUsuarioById = async (documentoID) => {
     }
 };
 
-// Crear un usuario
+// Crear un usuario - CORREGIDO
 export const createUsuario = async (nuevoUsuario) => {
     try {
-        const response = await axios.post(API_URL, nuevoUsuario);
+        console.log("createUsuario - Enviando:", nuevoUsuario);
+        const response = await axios.post(API_URL, nuevoUsuario, getAuthHeaders());
+        console.log("createUsuario - Respuesta completa:", response.data);
+        
+        // El backend devuelve: { estado: true, mensaje: "...", datos: {...} }
         return response.data;
     } catch (error) {
         console.error("Error en createUsuario:", error);
-        throw error;
+        console.error("Error response:", error.response?.data);
+        
+        // Si hay error del servidor, devolver estructura consistente
+        if (error.response?.data) {
+            return error.response.data;
+        }
+        
+        // Error de red u otro
+        return {
+            estado: false,
+            mensaje: error.message || 'Error de conexión al crear usuario'
+        };
     }
 };
 
-// Editar un usuario
+// Editar un usuario - CORREGIDO
 export const updateUsuario = async (documentoID, usuarioActualizado) => {
     try {
-        // Asegurar que RolID sea string y tenga máximo 2 caracteres
+        // Asegurar que RolID sea string
         if (usuarioActualizado.RolID) {
-            usuarioActualizado.RolID = usuarioActualizado.RolID.toString().substring(0, 2);
+            usuarioActualizado.RolID = String(usuarioActualizado.RolID);
         }
         
-        console.log("Enviando actualización:", { documentoID, usuarioActualizado });
-        const response = await axios.put(`${API_URL}/${documentoID}`, usuarioActualizado);
-        console.log("Respuesta del servidor:", response.data);
+        console.log("updateUsuario - DocumentoID:", documentoID);
+        console.log("updateUsuario - Enviando:", usuarioActualizado);
+        
+        const response = await axios.put(
+            `${API_URL}/${documentoID}`, 
+            usuarioActualizado, 
+            getAuthHeaders()
+        );
+        
+        console.log("updateUsuario - Respuesta completa:", response.data);
+        
+        // El backend devuelve: { estado: true, mensaje: "...", datos: {...} }
         return response.data;
     } catch (error) {
         console.error("Error en updateUsuario:", error);
-        console.error("Detalles del error:", {
-            mensaje: error.message,
-            respuesta: error.response?.data
-        });
-        throw error;
+        console.error("Error response:", error.response?.data);
+        
+        // Si hay error del servidor, devolver estructura consistente
+        if (error.response?.data) {
+            return error.response.data;
+        }
+        
+        // Error de red u otro
+        return {
+            estado: false,
+            mensaje: error.message || 'Error de conexión al actualizar usuario'
+        };
     }
 };
-
 
 // Eliminar un usuario
 export const deleteUsuario = async (documentoID) => {
     try {
-        const response = await axios.delete(`${API_URL}/${documentoID}`);
+        const response = await axios.delete(`${API_URL}/${documentoID}`, getAuthHeaders());
+        console.log("deleteUsuario response:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error en deleteUsuario:", error);
@@ -74,7 +118,8 @@ export const deleteUsuario = async (documentoID) => {
 // Obtener roles disponibles
 export const getRoles = async () => {
     try {
-        const response = await axios.get(`${API_URL}/util/roles`);
+        const response = await axios.get(`${API_URL}/util/roles`, getAuthHeaders());
+        console.log("getRoles response:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error en getRoles:", error);

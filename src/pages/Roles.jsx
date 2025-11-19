@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import RolesForm from "./formularios_dash/RolesForm";
 import {
   FaPlusCircle,
-  FaEye,
   FaEdit,
   FaTrash,
   FaSyncAlt,
@@ -13,7 +12,6 @@ import {
   updateRol,
   deleteRol,
 } from "../Services/api-roles/roles";
-import { Modal } from "react-bootstrap";
 import Swal from "sweetalert2";
 
 const Roles = () => {
@@ -22,9 +20,19 @@ const Roles = () => {
   const [rolEdit, setRolEdit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedRol, setSelectedRol] = useState(null);
 
+  // Toast configuración
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
+    },
+  });
 
   useEffect(() => {
     loadRoles();
@@ -33,24 +41,23 @@ const Roles = () => {
   const loadRoles = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getRoles();
 
-      // Para ver que llega desde el backend
-      console.log("Respuesta completa del backend:", response);
+      console.log("Respuesta de roles:", response);
 
-      if (response) {
+      if (Array.isArray(response)) {
         setRoles(response);
       } else {
         setError("Error al cargar roles");
       }
     } catch (error) {
       console.error("Error al cargar roles:", error);
-      setError("Error de conexión");
+      setError("Error de conexión al servidor");
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleSave = async (rolData) => {
     try {
@@ -58,53 +65,62 @@ const Roles = () => {
       let response;
 
       if (rolEdit) {
+        // Actualizar rol existente
         response = await updateRol(rolEdit.RolID, rolData);
+        
+        if (response.estado) {
+          // Actualizar el rol en el estado local
+          setRoles((prevRoles) =>
+            prevRoles.map((r) =>
+              r.RolID === rolEdit.RolID ? { ...r, ...response.datos } : r
+            )
+          );
+
+          Toast.fire({
+            icon: "success",
+            title: "Rol actualizado correctamente",
+          });
+        }
       } else {
+        // Crear nuevo rol
         response = await createRol(rolData);
+        
+        if (response.estado) {
+          // Agregar el nuevo rol al estado local
+          setRoles((prevRoles) => [...prevRoles, response.datos]);
+
+          Toast.fire({
+            icon: "success",
+            title: "Rol creado correctamente",
+          });
+        }
       }
 
       if (response.estado) {
-        if (rolEdit) {
-          // Si estás editando, actualiza el rol en el array existente
-          setRoles((prevRoles) =>
-            prevRoles.map((r) =>
-              r.RolID === rolEdit.RolID ? { ...r, ...rolData } : r
-            )
-          );
-        } else {
-          // Si es un rol nuevo, agrégalo directamente al estado
-          setRoles((prevRoles) => [...prevRoles, response.datos || rolData]);
-        }
-
         setShowForm(false);
         setRolEdit(null);
-
-        Swal.fire({
-          icon: "success",
-          title: "¡Éxito!",
-          text: rolEdit
-            ? "Rol actualizado correctamente"
-            : "Rol creado correctamente",
-          confirmButtonColor: "#3085d6",
-        });
       } else {
         throw new Error(response.mensaje || "Error al guardar el rol");
       }
     } catch (error) {
       console.error("Error al guardar rol:", error);
 
-
       const mensaje =
-        error.response?.data?.mensaje ||
-        error.response?.data?.error ||
         error.message ||
-        "Error desconocido al guardar el rol";
-
+        error.response?.data?.mensaje ||
+        "Error al guardar el rol";
 
       if (mensaje.toLowerCase().includes("ya existe")) {
         Swal.fire({
           icon: "warning",
           title: "Rol duplicado",
+          text: mensaje,
+          confirmButtonColor: "#f0ad4e",
+        });
+      } else if (mensaje.toLowerCase().includes("protegido")) {
+        Swal.fire({
+          icon: "warning",
+          title: "Rol protegido",
           text: mensaje,
           confirmButtonColor: "#f0ad4e",
         });
@@ -116,6 +132,7 @@ const Roles = () => {
           confirmButtonColor: "#d33",
         });
       }
+      throw error; // Re-lanzar para que el formulario lo maneje
     } finally {
       setLoading(false);
     }
@@ -126,11 +143,15 @@ const Roles = () => {
     setShowForm(true);
   };
 
-  const handleEliminar = async (id, nombreRol) => {
+  const handleEliminar = async (id) => {
+    // Encontrar el rol para mostrar su nombre
+    const rol = roles.find((r) => r.RolID === id);
+    const nombreRol = rol ? rol.Nombre : "este rol";
+
     try {
       const result = await Swal.fire({
         title: "¿Eliminar rol?",
-        text: "Esta acción no se puede revertir",
+        html: `¿Estás seguro de eliminar el rol <strong>"${nombreRol}"</strong>?<br><small>Esta acción no se puede revertir</small>`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
@@ -144,12 +165,12 @@ const Roles = () => {
         const response = await deleteRol(id);
 
         if (response.estado) {
-          await loadRoles();
-          Swal.fire({
+          // Eliminar del estado local
+          setRoles((prevRoles) => prevRoles.filter((r) => r.RolID !== id));
+
+          Toast.fire({
             icon: "success",
-            title: "¡Eliminado!",
-            text: "El rol ha sido eliminado correctamente",
-            confirmButtonColor: "#198754",
+            title: "Rol eliminado correctamente",
           });
         } else {
           throw new Error(response.mensaje || "Error al eliminar el rol");
@@ -158,18 +179,28 @@ const Roles = () => {
     } catch (error) {
       console.error("Error al eliminar rol:", error);
 
-      const errorMsg = error.message || "No puedes eliminar este rol.";
+      const errorMsg =
+        error.message ||
+        error.response?.data?.mensaje ||
+        "Error al eliminar el rol";
 
-      // Verificar si es un rol protegido
-      if (errorMsg.toLowerCase().includes("no se puede eliminar") ||
+      if (
         errorMsg.toLowerCase().includes("protegido") ||
-        errorMsg.toLowerCase().includes("administrador") ||
-        errorMsg.toLowerCase().includes("cliente")) {
+        errorMsg.toLowerCase().includes("no se puede eliminar") ||
+        errorMsg.toLowerCase().includes("necesario")
+      ) {
         Swal.fire({
           icon: "warning",
           title: "Rol Protegido",
           text: errorMsg,
           confirmButtonColor: "#f0ad4e",
+        });
+      } else if (errorMsg.toLowerCase().includes("usuario")) {
+        Swal.fire({
+          icon: "info",
+          title: "Rol en uso",
+          text: errorMsg,
+          confirmButtonColor: "#0dcaf0",
         });
       } else {
         Swal.fire({
@@ -191,12 +222,12 @@ const Roles = () => {
     try {
       const result = await Swal.fire({
         title: "¿Cambiar estado?",
-        text: `¿Seguro que desea cambiar el estado de este rol a ${estadoTexto}?`,
-        icon: "warning",
+        html: `¿Seguro que deseas cambiar el estado del rol <strong>"${rol.Nombre}"</strong> a <strong>${estadoTexto}</strong>?`,
+        icon: "question",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Confirmar",
+        confirmButtonText: "Sí, cambiar",
         cancelButtonText: "Cancelar",
       });
 
@@ -206,12 +237,16 @@ const Roles = () => {
         const response = await updateRol(rol.RolID, rolActualizado);
 
         if (response.estado) {
-          await loadRoles();
-          Swal.fire({
+          // Actualizar el estado local
+          setRoles((prevRoles) =>
+            prevRoles.map((r) =>
+              r.RolID === rol.RolID ? { ...r, Estado: nuevoEstado } : r
+            )
+          );
+
+          Toast.fire({
             icon: "success",
-            title: "¡Actualizado!",
-            text: `El estado del rol ha sido cambiado a ${estadoTexto}`,
-            confirmButtonColor: "#198754",
+            title: `Estado cambiado a ${estadoTexto}`,
           });
         } else {
           throw new Error(response.mensaje || "Error al cambiar el estado");
@@ -221,16 +256,14 @@ const Roles = () => {
       console.error("Error al cambiar estado:", error);
 
       const errorMsg =
-        error.response?.data?.mensaje ||
-        error.response?.data?.error ||
         error.message ||
-        "No puedes cambiar el estado de este rol.";
+        error.response?.data?.mensaje ||
+        "Error al cambiar el estado";
 
-      // Verificar si es un rol protegido
-      if (errorMsg.toLowerCase().includes("no se puede") ||
+      if (
         errorMsg.toLowerCase().includes("protegido") ||
-        errorMsg.toLowerCase().includes("administrador") ||
-        errorMsg.toLowerCase().includes("cliente")) {
+        errorMsg.toLowerCase().includes("no se puede")
+      ) {
         Swal.fire({
           icon: "warning",
           title: "Rol Protegido",
@@ -289,6 +322,7 @@ const Roles = () => {
             setRolEdit(null);
             setShowForm(true);
           }}
+          disabled={loading}
         >
           <FaPlusCircle size={18} />
           Agregar Rol
@@ -296,14 +330,16 @@ const Roles = () => {
       </div>
 
       {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
-          <button
-            className="btn btn-sm btn-outline-danger ms-2"
-            onClick={loadRoles}
-          >
-            Reintentar
-          </button>
+        <div className="alert alert-danger d-flex align-items-center" role="alert">
+          <div>
+            {error}
+            <button
+              className="btn btn-sm btn-outline-danger ms-2"
+              onClick={loadRoles}
+            >
+              Reintentar
+            </button>
+          </div>
         </div>
       )}
 
@@ -312,7 +348,7 @@ const Roles = () => {
           className="table-responsive rounded-4 shadow-sm"
           style={{ background: "#fff" }}
         >
-          <table className="table table-sm align-middle mb-0">
+          <table className="table table-sm table-hover align-middle mb-0">
             <thead
               style={{
                 background: "linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)",
@@ -321,51 +357,80 @@ const Roles = () => {
               }}
             >
               <tr>
-                <th style={{ borderTopLeftRadius: 12 }}>ID</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th style={{ width: 160 }}>Acciones</th>
+                <th style={{ borderTopLeftRadius: 12, minWidth: 80 }}>ID</th>
+                <th style={{ minWidth: 150 }}>Nombre</th>
+                <th style={{ minWidth: 200 }}>Descripción</th>
+                <th style={{ minWidth: 100 }}>Estado</th>
+                <th style={{ width: 160, borderTopRightRadius: 12 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-4">
-                    <div
-                      className="spinner-border spinner-border-sm text-primary"
-                      role="status"
-                    >
-                      <span className="visually-hidden">Cargando...</span>
+                  <td colSpan={5} className="text-center py-5">
+                    <div className="d-flex flex-column align-items-center">
+                      <div
+                        className="spinner-border spinner-border-sm text-primary mb-2"
+                        role="status"
+                      >
+                        <span className="visually-hidden">Cargando...</span>
+                      </div>
+                      <span className="text-muted">Cargando roles...</span>
                     </div>
-                    <span className="ms-2 text-muted">Cargando roles...</span>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-5 text-danger">
+                    <div className="d-flex flex-column align-items-center">
+                      <span className="mb-2">❌ Error al cargar datos</span>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={loadRoles}
+                      >
+                        Reintentar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : roles.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-4 text-muted">
-                    No hay roles para mostrar.
+                  <td colSpan={5} className="text-center py-5">
+                    <div className="d-flex flex-column align-items-center text-muted">
+                      <span className="mb-2">📝 No hay roles registrados</span>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => {
+                          setRolEdit(null);
+                          setShowForm(true);
+                        }}
+                      >
+                        Crear primer rol
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 roles.map((r) => (
-                  <tr
-                    key={r.RolID}
-                    style={{ borderBottom: "1px solid #e3e8ee" }}
-                  >
+                  <tr key={r.RolID} style={{ borderBottom: "1px solid #e3e8ee" }}>
                     <td>
                       <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
                         {r.RolID}
                       </span>
                     </td>
                     <td className="fw-medium">{r.Nombre}</td>
-                    <td>{r.Descripcion}</td>
+                    <td>
+                      <small className="text-muted">
+                        {r.Descripcion && r.Descripcion.length > 50
+                          ? r.Descripcion.substring(0, 50) + "..."
+                          : r.Descripcion}
+                      </small>
+                    </td>
                     <td>
                       <span
-                        className={`badge px-2 py-2 shadow-sm ${r.Estado
-                          ? "text-success fw-bold fs-6"
-                          : "text-danger fw-bold fs-6"
-                          }`}
+                        className={`badge px-2 py-1 shadow-sm ${
+                          r.Estado ? "bg-success" : "bg-danger"
+                        }`}
                       >
                         {r.Estado ? "Activo" : "Inactivo"}
                       </span>
@@ -391,7 +456,7 @@ const Roles = () => {
                           title="Cambiar estado"
                           onClick={() => handleCambiarEstado(r)}
                         >
-                          <FaSyncAlt size={16} />
+                          <FaSyncAlt size={14} />
                         </button>
                       </div>
                     </td>
@@ -406,4 +471,4 @@ const Roles = () => {
   );
 };
 
-export default Roles; 
+export default Roles;

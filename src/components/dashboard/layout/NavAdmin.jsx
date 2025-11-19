@@ -51,7 +51,7 @@ const NavAdmin = () => {
             <Modal show={showPerfil} onHide={handlePerfilClose} centered>
                 <Modal.Body className="text-center">
                     <FaUserCircle size={50} className="mb-3" />
-                    <h6 className="fw-normal fst-italic">pepito ramirez</h6>
+                    <h6 className="fw-normal fst-italic">Pepito Ramirez</h6>
                     <p className="text-muted small">pepito@gmail.com</p>
                     <Button variant="primary" onClick={handleEditarOpen}>
                         Editar Información

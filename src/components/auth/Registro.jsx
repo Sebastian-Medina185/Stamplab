@@ -1,10 +1,86 @@
+import { useState } from "react";
 import { Form, Button, Card, Row, Col } from "react-bootstrap";
-import { Link } from "react-router-dom";
-import fondo from "../../assets/images/imagenfondo.png"; 
+import { Link, useNavigate } from "react-router-dom";
+import { registrarUsuario } from "../../Services/api-auth/auth";
+import fondo from "../../assets/images/imagenfondo.png";
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
+import Swal from "sweetalert2";
 
 const RegistroLanding = () => {
+    const [nombre, setNombre] = useState("");
+    const [documento, setDocumento] = useState("");
+    const [correo, setCorreo] = useState("");
+    const [telefono, setTelefono] = useState("");
+    const [direccion, setDireccion] = useState("");
+    const [contraseña, setContraseña] = useState("");
+    const [confirmar, setConfirmar] = useState("");
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const handleRegistro = async (e) => {
+        e.preventDefault();
+
+        if (contraseña !== confirmar) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Las contraseñas no coinciden",
+            });
+            return;
+        }
+
+        if (contraseña.length < 4) {
+            Swal.fire({
+                icon: "error",
+                title: "Contraseña débil",
+                text: "La contraseña debe tener al menos 4 caracteres",
+            });
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const datos = {
+                DocumentoID: documento.trim(),
+                Nombre: nombre.trim(),
+                Correo: correo.trim(),
+                Telefono: telefono.trim(),
+                Direccion: direccion.trim(),
+                Contraseña: contraseña,
+                RolID: 2, // Cliente
+            };
+
+            const response = await registrarUsuario(datos);
+
+            // El backend puede devolver estado o no, manejamos ambos casos
+            const registroExitoso = response.data?.estado !== false;
+
+            if (registroExitoso) {
+                Swal.fire({
+                    icon: "success",
+                    title: "¡Registro exitoso!",
+                    text: "Tu cuenta ha sido creada. Por favor inicia sesión.",
+                    confirmButtonColor: "#3085d6",
+                }).then(() => {
+                    navigate("/login");
+                });
+            } else {
+                throw new Error(response.data?.mensaje || "Error al registrar usuario");
+            }
+        } catch (err) {
+            console.error("Error en registro:", err);
+            Swal.fire({
+                icon: "error",
+                title: "Error al registrarse",
+                text: err.response?.data?.mensaje || err.message || "Verifica los datos e intenta nuevamente",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <>
             <NavbarComponent />
@@ -39,7 +115,7 @@ const RegistroLanding = () => {
                                 Formulario de Registro
                             </h4>
 
-                            <Form>
+                            <Form onSubmit={handleRegistro}>
                                 <Row>
                                     <Col md={6}>
                                         <Form.Group className="mb-3">
@@ -47,7 +123,11 @@ const RegistroLanding = () => {
                                             <Form.Control
                                                 type="text"
                                                 placeholder="Ingresa tu nombre"
+                                                value={nombre}
+                                                onChange={(e) => setNombre(e.target.value)}
                                                 className="rounded-3 shadow-sm"
+                                                disabled={loading}
+                                                required
                                             />
                                         </Form.Group>
                                     </Col>
@@ -58,7 +138,11 @@ const RegistroLanding = () => {
                                             <Form.Control
                                                 type="text"
                                                 placeholder="Número de documento"
+                                                value={documento}
+                                                onChange={(e) => setDocumento(e.target.value)}
                                                 className="rounded-3 shadow-sm"
+                                                disabled={loading}
+                                                required
                                             />
                                         </Form.Group>
                                     </Col>
@@ -71,7 +155,11 @@ const RegistroLanding = () => {
                                             <Form.Control
                                                 type="email"
                                                 placeholder="Correo"
+                                                value={correo}
+                                                onChange={(e) => setCorreo(e.target.value)}
                                                 className="rounded-3 shadow-sm"
+                                                disabled={loading}
+                                                required
                                             />
                                         </Form.Group>
                                     </Col>
@@ -82,7 +170,11 @@ const RegistroLanding = () => {
                                             <Form.Control
                                                 type="text"
                                                 placeholder="Teléfono"
+                                                value={telefono}
+                                                onChange={(e) => setTelefono(e.target.value)}
                                                 className="rounded-3 shadow-sm"
+                                                disabled={loading}
+                                                required
                                             />
                                         </Form.Group>
                                     </Col>
@@ -95,7 +187,11 @@ const RegistroLanding = () => {
                                             <Form.Control
                                                 type="text"
                                                 placeholder="Dirección"
+                                                value={direccion}
+                                                onChange={(e) => setDireccion(e.target.value)}
                                                 className="rounded-3 shadow-sm"
+                                                disabled={loading}
+                                                required
                                             />
                                         </Form.Group>
                                     </Col>
@@ -106,7 +202,11 @@ const RegistroLanding = () => {
                                             <Form.Control
                                                 type="password"
                                                 placeholder="Contraseña"
+                                                value={contraseña}
+                                                onChange={(e) => setContraseña(e.target.value)}
                                                 className="rounded-3 shadow-sm"
+                                                disabled={loading}
+                                                required
                                             />
                                         </Form.Group>
                                     </Col>
@@ -117,20 +217,30 @@ const RegistroLanding = () => {
                                     <Form.Control
                                         type="password"
                                         placeholder="Confirmar contraseña"
+                                        value={confirmar}
+                                        onChange={(e) => setConfirmar(e.target.value)}
                                         className="rounded-3 shadow-sm"
+                                        disabled={loading}
+                                        required
                                     />
                                 </Form.Group>
 
-                                {/* Botón que redirige */}
                                 <div className="d-grid mb-3">
-                                    <Link to="/login">
-                                        <Button
-                                            variant="primary"
-                                            className="fw-bold w-100 rounded-pill shadow-sm"
-                                        >
-                                            Registrar
-                                        </Button>
-                                    </Link>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        className="fw-bold w-100 rounded-pill shadow-sm"
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                Registrando...
+                                            </>
+                                        ) : (
+                                            "Registrar"
+                                        )}
+                                    </Button>
                                 </div>
 
                                 <p className="text-center mb-0 text-secondary">
