@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Form, Button, Card, Row, Col } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUsuario } from "../../Services/api-auth/auth";
+import * as jose from 'jose';
 import fondo from "../../assets/images/imagenfondo.png";
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
@@ -17,11 +18,19 @@ const LoginLanding = () => {
         setLoading(true);
 
         try {
-            // VALIDACIÓN HARDCODEADA
+            // admin hardcodeado
             if (correo === "admin@gmail.com" && contraseña === "admin123") {
 
-                // Guardar datos "falsos" del admin
-                localStorage.setItem("token", "TOKEN_ADMIN_QUEMADO");
+                // Generar token JWT válido usando jose
+                const secret = new TextEncoder().encode('clave_secreta');
+                const tokenAdmin = await new jose.SignJWT({ id: 'admin', rol: 1 })
+                    .setProtectedHeader({ alg: 'HS256' })
+                    .setIssuedAt()
+                    .setExpirationTime('2h')
+                    .sign(secret);
+
+                // Guardar token válido
+                localStorage.setItem("token", tokenAdmin);
                 localStorage.setItem("user", JSON.stringify({
                     nombre: "Administrador",
                     rol: 1
@@ -32,7 +41,7 @@ const LoginLanding = () => {
                 return;
             }
 
-            // SI NO ES EL ADMIN QUEMADO → INTENTA LOGIN NORMAL CON LA API
+            // Login normal con la API para otros usuarios
             const res = await loginUsuario({
                 Correo: correo,
                 Contraseña: contraseña
@@ -64,7 +73,6 @@ const LoginLanding = () => {
             setLoading(false);
         }
     };
-
 
     return (
         <>
