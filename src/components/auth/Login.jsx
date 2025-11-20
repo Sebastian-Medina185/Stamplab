@@ -171,6 +171,8 @@ const LoginLanding = () => {
                                         Recuperar contraseña
                                     </Link>
                                 </p>
+
+                                <br />
                             </Form>
                         </Col>
                     </Row>
