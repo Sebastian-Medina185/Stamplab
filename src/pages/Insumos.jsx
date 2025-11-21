@@ -145,24 +145,19 @@ const Insumos = () => {
 
       if (result.isConfirmed) {
         setLoading(true);
-        const response = await cambiarEstadoInsumo(insumo.InsumoID, nuevoEstado);
+        await cambiarEstadoInsumo(insumo.InsumoID, nuevoEstado);
+        await loadInsumos();
         
-        if (response.estado) {
-          await loadInsumos();
-          
-          Toast.fire({
-            icon: 'success',
-            title: `Estado cambiado a ${estadoTexto}`
-          });
-        } else {
-          throw new Error(response.mensaje || 'Error al cambiar el estado');
-        }
+        Toast.fire({
+          icon: 'success',
+          title: `Estado cambiado a ${estadoTexto}`
+        });
       }
     } catch (error) {
       console.error("Error al cambiar estado:", error);
       Swal.fire(
         'Error',
-        error.message || 'Error al cambiar el estado del insumo',
+        error.response?.data?.message || error.message || 'Error al cambiar el estado del insumo',
         'error'
       );
     } finally {
@@ -271,6 +266,7 @@ const Insumos = () => {
             >
               <tr>
                 <th style={{ borderTopLeftRadius: 12 }}>Nombre</th>
+                <th>Tipo</th>
                 <th>Stock</th>
                 <th>Estado</th>
                 <th style={{ width: 160 }}>Acciones</th>
@@ -279,7 +275,7 @@ const Insumos = () => {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="text-center py-4 text-muted">
+                  <td colSpan={5} className="text-center py-4 text-muted">
                     No hay insumos para mostrar.
                   </td>
                 </tr>
@@ -290,6 +286,11 @@ const Insumos = () => {
                   style={{ borderBottom: "1px solid #e3e8ee" }}
                 >
                   <td className="fw-medium">{insumo.Nombre}</td>
+                  <td>
+                    <span className="badge bg-info text-dark">
+                      {insumo.Tipo || 'Otro'}
+                    </span>
+                  </td>
                   <td>{insumo.Stock}</td>
                   <td>
                     <span
@@ -376,7 +377,7 @@ const Insumos = () => {
               </div>
 
               <div className="modal-body p-4">
-                <div className="row g-1">
+                <div className="row g-3">
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Nombre del Insumo</label>
@@ -384,12 +385,37 @@ const Insumos = () => {
                     </div>
                   </div>
 
-                  <div className="col-12">
+                  <div className="col-6">
+                    <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                      <label className="text-muted mb-1 fs-6">Tipo</label>
+                      <p className="mb-0 fs-6">
+                        <span className="badge bg-info text-dark">
+                          {selectedInsumo.Tipo || 'Otro'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="col-6">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Stock Disponible</label>
                       <p className="mb-0 fs-6">{selectedInsumo.Stock}</p>
                     </div>
                   </div>
+
+                  {/* Mostrar Precio Tela solo si el tipo es "Tela" */}
+                  {selectedInsumo.Tipo && selectedInsumo.Tipo.toLowerCase() === 'tela' && (
+                    <div className="col-12">
+                      <div className="p-3 rounded-3" style={{ backgroundColor: '#e3f2fd' }}>
+                        <label className="text-muted mb-1 fs-6">💰 Precio de Tela</label>
+                        <p className="mb-0 fs-5 fw-bold text-primary">
+                          ${selectedInsumo.PrecioTela 
+                            ? parseFloat(selectedInsumo.PrecioTela).toFixed(2) 
+                            : '0.00'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
