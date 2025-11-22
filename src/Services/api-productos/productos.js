@@ -1,7 +1,6 @@
-// services/api-productos/productos.js
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/productos";
+const API_URL = "http://localhost:3000/api/productos"; 
 
 // Obtener todos los productos
 export const getProductos = async () => {
@@ -16,9 +15,7 @@ export const getProductos = async () => {
 
 // Crear un nuevo producto
 export const createProducto = async (productoData) => {
-  console.log("📦 Datos que se envían al backend:", productoData); 
   try {
-
     const response = await axios.post(API_URL, productoData);
     return response.data;
   } catch (error) {
@@ -59,3 +56,4 @@ export const deleteProducto = async (id) => {
     throw error;
   }
 };
+

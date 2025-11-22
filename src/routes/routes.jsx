@@ -80,6 +80,7 @@ const AppRoutes = () => {
                 <Route path="pedidos" element={<Pedidos />} />
                 <Route path="productos" element={<Productos />} />
                 <Route path="agregar-producto" element={<AgregarProducto />} />
+                <Route path="/dashboard/editar-producto/:id" element={<AgregarProducto />} />
                 <Route path="colores" element={<Colores />} />
                 <Route path="tallas" element={<Tallas />} />
                 <Route path="usuarios" element={<Usuarios />} />

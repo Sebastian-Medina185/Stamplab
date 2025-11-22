@@ -1,11 +1,4 @@
-import { useState } from "react";
-import producto1 from '../../assets/images/camisablanca.png';
-import producto2 from '../../assets/images/camisaverde.png';
-import producto3 from '../../assets/images/buzo.png';
-import producto4 from '../../assets/images/camisarosa.png';
-import producto5 from '../../assets/images/camisanegra.png';
-import producto6 from '../../assets/images/jeans.jpeg';
-
+import { useState, useEffect } from "react";
 import {
     Container,
     Row,
@@ -15,64 +8,112 @@ import {
     Badge,
     InputGroup,
     Form,
+    Spinner,
 } from "react-bootstrap";
 import NavbarComponent from "./NavBarLanding";
 import FooterComponent from "./footer";
 import { useNavigate } from "react-router-dom";
+import { getProductos } from "../../Services/api-productos/productos"; // Importar el servicio
+import { getTallas } from "../../Services/api-productos/atributos";
 
 const ProductosLanding = () => {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("Todos");
+    const [productos, setProductos] = useState([]);
+    const [tallas, setTallas] = useState([]);
+    const [cargando, setCargando] = useState(true);
     const navigate = useNavigate();
 
-    const productos = [
-        {
-            titulo: "Camiseta",
-            descripcion: "Camiseta blanca",
-            precio: 15000,
-            estado: "Disponible",
-            img: producto1,
-            tallas: ["S", "M", "L"],
-            colores: ["#FF0000", "#FF5555"],
-            tela: "Algodón"
-        },
-        {
-            titulo: "Camisa",
-            descripcion: "Camisa verde",
-            precio: 16000,
-            estado: "Disponible",
-            img: producto2,
-            tallas: ["M", "L", "XL"],
-            colores: ["#FFFFFF", "#FF0000"],
-            tela: "Lino"
-        },
-        {
-            titulo: "Buzo",
-            descripcion: "Buzo negro",
-            precio: 13000,
-            estado: "Disponible",
-            img: producto3,
-            tallas: ["S", "M", "L", "XL"],
-            colores: ["#000000", "#139bd1ff"],
-            tela: "Poliéster"
-        },
-        {
-            titulo: "Pantalón",
-            descripcion: "Pantalón azul",
-            precio: 20000,
-            estado: "Disponible",
-            img: producto6,
-            tallas: ["M", "L", "XL"],
-            colores: ["#000000"],
-            tela: "Algodón"
-        },
-    ];
+    // Cargar productos y tallas desde el backend
+    useEffect(() => {
+        cargarDatos();
+    }, []);
 
-    const filtered = productos.filter(
-        (p) =>
-            (filter === "Todos" || p.estado === filter) &&
-            p.titulo.toLowerCase().includes(search.toLowerCase())
-    );
+    const cargarDatos = async () => {
+        setCargando(true);
+        try {
+            const [productosRes, tallasRes] = await Promise.all([
+                getProductos(),
+                getTallas()
+            ]);
+
+            const productosData = productosRes.datos || productosRes;
+            setProductos(productosData);
+            setTallas(tallasRes.datos || tallasRes);
+        } catch (error) {
+            console.error("Error al cargar productos:", error);
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    // Función para obtener tallas únicas de un producto
+    const obtenerTallasProducto = (producto) => {
+        if (!producto.inventario || producto.inventario.length === 0) return [];
+        
+        const tallasUnicas = [...new Set(
+            producto.inventario.map(inv => inv.talla?.Nombre).filter(Boolean)
+        )];
+        return tallasUnicas;
+    };
+
+    // Función para obtener colores únicos de un producto
+    const obtenerColoresProducto = (producto) => {
+        if (!producto.inventario || producto.inventario.length === 0) return [];
+        
+        const coloresUnicos = [...new Set(
+            producto.inventario.map(inv => inv.color?.Nombre).filter(Boolean)
+        )];
+        return coloresUnicos;
+    };
+
+    // Función para obtener el precio del producto (basado en la talla más pequeña)
+    const obtenerPrecioProducto = (producto) => {
+        if (!producto.inventario || producto.inventario.length === 0) return 0;
+        
+        // Obtener el precio de la primera talla disponible
+        const tallaId = producto.inventario[0]?.TallaID;
+        const talla = tallas.find(t => t.TallaID === tallaId);
+        return talla?.Precio || 0;
+    };
+
+    // Función para determinar si el producto está disponible
+    const estaDisponible = (producto) => {
+        if (!producto.inventario || producto.inventario.length === 0) return false;
+        
+        // Verificar si hay al menos una variante con stock > 0 y Estado = 1
+        return producto.inventario.some(inv => inv.Stock > 0 && inv.Estado);
+    };
+
+    // Mapeo de colores a códigos hexadecimales
+    const coloresHex = {
+        "Rojo": "#FF0000",
+        "Azul": "#0000FF",
+        "Verde": "#00FF00",
+        "Amarillo": "#FFFF00",
+        "Negro": "#000000",
+        "Blanco": "#FFFFFF",
+        "Rosa": "#FFC0CB",
+        "Morado": "#800080",
+        "Naranja": "#FFA500",
+        "Gris": "#808080",
+        "Café": "#8B4513",
+    };
+
+    const obtenerColorHex = (nombreColor) => {
+        return coloresHex[nombreColor] || "#CCCCCC";
+    };
+
+    // Filtrar productos
+    const filtered = productos.filter((p) => {
+        const disponible = estaDisponible(p);
+        const estadoTexto = disponible ? "Disponible" : "No disponible";
+        
+        return (
+            (filter === "Todos" || estadoTexto === filter) &&
+            p.Nombre.toLowerCase().includes(search.toLowerCase())
+        );
+    });
 
     return (
         <>
@@ -115,79 +156,130 @@ const ProductosLanding = () => {
                         </div>
                     </div>
 
-                    <Row className="g-4">
-                        {filtered.map((p, i) => (
-                            <Col md={3} sm={6} xs={12} className="d-flex" key={i}>
-                                <Card className="shadow-lg flex-fill h-75 product-card">
-                                    <div className="card-img-container" style={{ position: "relative", height: 370, overflow: "hidden" }}>
-                                        <Card.Img
-                                            src={p.img}
-                                            alt={p.titulo}
-                                            className="w-100"
-                                            style={{
-                                                height: 182,        // altura fija
-                                                objectFit: "contain", // mantiene toda la imagen sin recortar
-                                                display: "block",
-                                                margin: "0 auto",    // centra horizontalmente
-                                            }}
-                                        />
+                    {cargando ? (
+                        <div className="text-center py-5">
+                            <Spinner animation="border" variant="primary" />
+                            <p className="mt-3">Cargando productos...</p>
+                        </div>
+                    ) : filtered.length === 0 ? (
+                        <div className="text-center py-5">
+                            <p className="text-muted">
+                                {search || filter !== "Todos"
+                                    ? "No se encontraron productos con ese criterio"
+                                    : "No hay productos disponibles"}
+                            </p>
+                        </div>
+                    ) : (
+                        <Row className="g-4">
+                            {filtered.map((p) => {
+                                const tallasProducto = obtenerTallasProducto(p);
+                                const coloresProducto = obtenerColoresProducto(p);
+                                const precio = obtenerPrecioProducto(p);
+                                const disponible = estaDisponible(p);
 
-
-                                        {/* Overlay */}
-                                        <div className="overlay-info">
-                                            {p.tallas && <p><strong>Tallas:</strong> {p.tallas.join(", ")}</p>}
-                                            {p.colores && (
-                                                <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
-                                                    <strong>Colores:</strong>
-                                                    <div className="d-flex gap-2">
-                                                        {p.colores.map((color, idx) => (
-                                                            <span
-                                                                key={idx}
-                                                                className="color-circle"
-                                                                style={{ backgroundColor: color }}
-                                                            ></span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {p.tela && <p><strong>Tela:</strong> {p.tela}</p>}
-                                        </div>
-                                    </div>
-
-                                    <Card.Body className="d-flex flex-column justify-content-between align-items-center text-center">
-                                        <div>
-                                            <div className="mb-2">
-                                                {p.estado === "Disponible" ? (
-                                                    <Badge bg="success">Disponible</Badge>
+                                return (
+                                    <Col md={3} sm={6} xs={12} className="d-flex" key={p.ProductoID}>
+                                        <Card className="shadow-lg flex-fill h-75 product-card">
+                                            <div
+                                                className="card-img-container"
+                                                style={{
+                                                    position: "relative",
+                                                    height: 370,
+                                                    overflow: "hidden",
+                                                }}
+                                            >
+                                                {p.ImagenProducto ? (
+                                                    <Card.Img
+                                                        src={p.ImagenProducto}
+                                                        alt={p.Nombre}
+                                                        className="w-100"
+                                                        style={{
+                                                            height: 182,
+                                                            objectFit: "contain",
+                                                            display: "block",
+                                                            margin: "0 auto",
+                                                        }}
+                                                        onError={(e) => {
+                                                            e.target.style.display = "none";
+                                                        }}
+                                                    />
                                                 ) : (
-                                                    <Badge bg="danger">No disponible</Badge>
+                                                    <div
+                                                        className="bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                        style={{ height: 182 }}
+                                                    >
+                                                        <span className="text-muted">Sin imagen</span>
+                                                    </div>
                                                 )}
+
+                                                {/* Overlay */}
+                                                <div className="overlay-info">
+                                                    {tallasProducto.length > 0 && (
+                                                        <p>
+                                                            <strong>Tallas:</strong>{" "}
+                                                            {tallasProducto.join(", ")}
+                                                        </p>
+                                                    )}
+                                                    {coloresProducto.length > 0 && (
+                                                        <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                                            <strong>Colores:</strong>
+                                                            <div className="d-flex gap-2">
+                                                                {coloresProducto.map((color, idx) => (
+                                                                    <span
+                                                                        key={idx}
+                                                                        className="color-circle"
+                                                                        style={{
+                                                                            backgroundColor:
+                                                                                obtenerColorHex(color),
+                                                                        }}
+                                                                    ></span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <Card.Title className="fw-bold">{p.titulo}</Card.Title>
-                                            <Card.Text className="text-muted">{p.descripcion}</Card.Text>
+                                            <Card.Body className="d-flex flex-column justify-content-between align-items-center text-center">
+                                                <div>
+                                                    <div className="mb-2">
+                                                        {disponible ? (
+                                                            <Badge bg="success">Disponible</Badge>
+                                                        ) : (
+                                                            <Badge bg="danger">No disponible</Badge>
+                                                        )}
+                                                    </div>
 
-                                            <Card.Text className="fw-bold mb-3">
-                                                Precio: ${p.precio.toLocaleString()}
-                                            </Card.Text>
-                                        </div>
+                                                    <Card.Title className="fw-bold">
+                                                        {p.Nombre}
+                                                    </Card.Title>
+                                                    <Card.Text className="text-muted">
+                                                        {p.Descripcion || "Sin descripción"}
+                                                    </Card.Text>
 
-                                        <Button
-                                            className="btn btn-primary mt-2"
-                                            disabled={p.estado !== "Disponible"}
-                                            onClick={() =>
-                                                navigate("/formularioCompra", {
-                                                    state: { producto: p },
-                                                })
-                                            }
-                                        >
-                                            Comprar Producto
-                                        </Button>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
+                                                    <Card.Text className="fw-bold mb-3">
+                                                        Precio: ${precio.toLocaleString()}
+                                                    </Card.Text>
+                                                </div>
+
+                                                <Button
+                                                    className="btn btn-primary mt-2"
+                                                    disabled={!disponible}
+                                                    onClick={() =>
+                                                        navigate("/formularioCompra", {
+                                                            state: { producto: p },
+                                                        })
+                                                    }
+                                                >
+                                                    Comprar Producto
+                                                </Button>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+                                );
+                            })}
+                        </Row>
+                    )}
                 </Container>
             </section>
 

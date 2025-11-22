@@ -1,18 +1,72 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3001";
+const API_URL = "http://localhost:3000/api"; 
 
-export const getTelas = async () => {
-  const res = await axios.get(`${API_URL}/telas`);
-  return res.data;
-};
-
+// Obtener todos los colores
 export const getColores = async () => {
-  const res = await axios.get(`${API_URL}/colores`);
-  return res.data;
+  try {
+    const res = await axios.get(`${API_URL}/colores`);
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener colores:", error);
+    throw error;
+  }
 };
 
+// Obtener todas las tallas
 export const getTallas = async () => {
-  const res = await axios.get(`${API_URL}/tallas`);
-  return res.data.datos;
+  try {
+    const res = await axios.get(`${API_URL}/tallas`);
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener tallas:", error);
+    throw error;
+  }
+};
+
+// Obtener todos los insumos
+export const getInsumos = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/insumos`);
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener insumos:", error);
+    throw error;
+  }
+};
+
+// Obtener solo las TELAS (insumos con Tipo = 'Tela')
+export const getTelas = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/insumos`);
+    const insumos = res.data;
+    
+    // Filtrar solo los insumos que son telas
+    const telas = insumos.filter(insumo => 
+      insumo.Tipo && insumo.Tipo.toLowerCase() === 'tela'
+    );
+    
+    return telas;
+  } catch (error) {
+    console.error("Error al obtener telas:", error);
+    throw error;
+  }
+};
+
+// Obtener insumos que NO son telas (Otro tipo)
+export const getInsumosNoTelas = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/insumos`);
+    const insumos = res.data;
+    
+    // Filtrar insumos que NO son telas
+    const noTelas = insumos.filter(insumo => 
+      !insumo.Tipo || insumo.Tipo.toLowerCase() !== 'tela'
+    );
+    
+    return noTelas;
+  } catch (error) {
+    console.error("Error al obtener insumos no telas:", error);
+    throw error;
+  }
 };

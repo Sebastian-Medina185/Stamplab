@@ -1,27 +1,89 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/productosVariantes"; 
+const API_URL = "http://localhost:3000/api/inventarioproducto"; 
 
-// Obtener variantes de un producto
+// Obtener todas las variantes (inventario completo)
+export const getAllVariantes = async () => {
+  try {
+    const res = await axios.get(API_URL);
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener todas las variantes:", error);
+    throw error;
+  }
+};
+
+// Obtener variantes de un producto específico
 export const getVariantesByProducto = async (productoId) => {
-  const res = await axios.get(`${API_URL}/producto/${productoId}`);
-  return res.data;
+  try {
+    const res = await axios.get(`${API_URL}/producto/${productoId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener variantes del producto:", error);
+    throw error;
+  }
 };
 
-// Crear variante
+// Obtener una variante por ID
+export const getVarianteById = async (id) => {
+  try {
+    const res = await axios.get(`${API_URL}/${id}`);
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener variante:", error);
+    throw error;
+  }
+};
+
+// Crear nueva variante
+// Campos esperados: ProductoID, ColorID, TallaID, Stock, Estado
 export const createVariante = async (data) => {
-  const res = await axios.post(API_URL, data);
-  return res.data;
+  try {
+    const varianteData = {
+      ProductoID: parseInt(data.ProductoID),
+      ColorID: parseInt(data.ColorID),
+      TallaID: parseInt(data.TallaID),
+      Stock: parseInt(data.Stock) || 0,
+      Estado: data.Estado !== undefined ? (data.Estado ? 1 : 0) : 1
+    };
+    
+    const res = await axios.post(API_URL, varianteData);
+    return res.data;
+  } catch (error) {
+    console.error("Error al crear variante:", error);
+    throw error;
+  }
 };
 
-// Actualizar variante
+// Actualizar variante existente
+// Solo se pueden actualizar: Stock y Estado
 export const updateVariante = async (id, data) => {
-  const res = await axios.put(`${API_URL}/${id}`, data);
-  return res.data;
+  try {
+    const updateData = {
+      Stock: data.Stock !== undefined ? parseInt(data.Stock) : undefined,
+      Estado: data.Estado !== undefined ? (data.Estado ? 1 : 0) : undefined
+    };
+    
+    // Eliminar campos undefined
+    Object.keys(updateData).forEach(key => 
+      updateData[key] === undefined && delete updateData[key]
+    );
+    
+    const res = await axios.put(`${API_URL}/${id}`, updateData);
+    return res.data;
+  } catch (error) {
+    console.error("Error al actualizar variante:", error);
+    throw error;
+  }
 };
 
 // Eliminar variante
 export const deleteVariante = async (id) => {
-  const res = await axios.delete(`${API_URL}/${id}`);
-  return res.data;
+  try {
+    const res = await axios.delete(`${API_URL}/${id}`);
+    return res.data;
+  } catch (error) {
+    console.error("Error al eliminar variante:", error);
+    throw error;
+  }
 };
