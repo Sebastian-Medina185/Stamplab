@@ -59,10 +59,11 @@ const Tecnicas = () => {
             setLoading(true);
             let response;
 
-            if (tecnicaEdit)
+            if (tecnicaEdit) {
                 response = await updateTecnica(tecnicaEdit.TecnicaID, tecnicaData);
-            else
+            } else {
                 response = await createTecnica(tecnicaData);
+            }
 
             if (response.estado) {
                 await loadTecnicas();
@@ -77,16 +78,23 @@ const Tecnicas = () => {
                     timer: 2500,
                     timerProgressBar: true,
                 });
-            } else throw new Error();
+            } else {
+                throw new Error(response.message || "Error desconocido");
+            }
         } catch (error) {
-            console.error("Error en createTecnica:", error);
-            Swal.fire(
-                "Error",
-                tecnicaEdit
-                    ? "No se pudo actualizar la técnica"
-                    : "Técnica no creada",
-                "error"
-            );
+            console.error("Error al guardar técnica:", error);
+            
+            // Mostrar error específico
+            const errorMsg = error.response?.data?.message || error.message || "Error desconocido";
+            
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: tecnicaEdit 
+                    ? `No se pudo actualizar: ${errorMsg}` 
+                    : `No se pudo crear: ${errorMsg}`,
+                footer: error.response?.data?.detalles || ""
+            });
         } finally {
             setLoading(false);
         }
@@ -142,12 +150,17 @@ const Tecnicas = () => {
             if (result.isConfirmed) {
                 setLoading(true);
                 const response = await updateTecnica(tecnica.TecnicaID, {
-                    ...tecnica,
+                    Nombre: tecnica.Nombre,
+                    Descripcion: tecnica.Descripcion,
+                    imagenTecnica: tecnica.imagenTecnica,
                     Estado: nuevoEstado,
                 });
 
-                if (response.estado) await loadTecnicas();
-                else throw new Error("Error al cambiar estado");
+                if (response.estado) {
+                    await loadTecnicas();
+                } else {
+                    throw new Error("Error al cambiar estado");
+                }
             }
         } catch (error) {
             console.error(error);
@@ -166,8 +179,8 @@ const Tecnicas = () => {
             />
         );
 
-    if (loading) return <div>Cargando...</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (loading) return <div className="text-center p-5">Cargando...</div>;
+    if (error) return <div className="alert alert-danger m-3">Error: {error}</div>;
 
     return (
         <div className="d-flex flex-column" style={{ minHeight: "100dvh", padding: "20px 30px" }}>
@@ -279,19 +292,22 @@ const Tecnicas = () => {
                 </table>
             </div>
 
-            {/* MODAL VER IMAGEN */}
+            {/* MODAL VER IMAGEN - CORREGIDO */}
             <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>{selectedTecnica?.Nombre}</Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body className="text-center">
-                    {selectedTecnica?.ImagenTecnica ? (
+                    {selectedTecnica?.imagenTecnica ? (
                         <img
-                            src={selectedTecnica.ImagenTecnica}
+                            src={selectedTecnica.imagenTecnica}
                             alt={selectedTecnica.Nombre}
                             className="img-fluid rounded shadow"
                             style={{ maxHeight: "400px", objectFit: "contain" }}
+                            onError={(e) => {
+                                e.target.src = "https://via.placeholder.com/400x300?text=Error+al+cargar";
+                            }}
                         />
                     ) : (
                         <p>No hay imagen disponible</p>
@@ -299,7 +315,7 @@ const Tecnicas = () => {
                 </Modal.Body>
             </Modal>
 
-            {/* MODAL DETALLES */}
+            {/* MODAL DETALLES - CORREGIDO */}
             <Modal show={showDetailModal} onHide={() => setShowDetailModal(false)} centered size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>Detalles de la Técnica</Modal.Title>
@@ -315,12 +331,15 @@ const Tecnicas = () => {
                             <hr />
 
                             <h5 className="mb-3">Imagen</h5>
-                            {selectedTecnica.ImagenTecnica ? (
+                            {selectedTecnica.imagenTecnica ? (
                                 <img
-                                    src={selectedTecnica.ImagenTecnica}
+                                    src={selectedTecnica.imagenTecnica}
                                     alt="imagen técnica"
                                     className="img-fluid rounded shadow"
                                     style={{ maxHeight: "350px", objectFit: "contain" }}
+                                    onError={(e) => {
+                                        e.target.src = "https://via.placeholder.com/350x250?text=Error+al+cargar";
+                                    }}
                                 />
                             ) : (
                                 <p className="text-muted">No hay imagen disponible</p>
