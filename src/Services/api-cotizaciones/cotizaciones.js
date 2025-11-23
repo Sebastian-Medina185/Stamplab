@@ -1,48 +1,65 @@
-import axios from 'axios';
+// Services/api-cotizaciones/cotizaciones.js
 
-const API_URL = 'http://localhost:3000/api/cotizaciones';
+import axios from "axios";
+const API_URL = "http://localhost:3000/api/cotizaciones";
 
+// Obtener todas las cotizaciones (admin)
 export const getCotizaciones = async () => {
     try {
         const response = await axios.get(API_URL);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.mensaje || 'Error al obtener las cotizaciones');
+        console.error("Error al obtener todas las cotizaciones:", error);
+        throw error;
     }
 };
 
-export const getCotizacionById = async (id) => {
+
+// Crear cotización
+export const crearCotizacion = async (dataCotizacion) => {
+    // dataCotizacion incluye:
+    // - DocumentoID (usuario logueado)
+    // - Detalles de producto, cantidad, trae prenda, etc.
+    // - Diseños (array)
     try {
-        const response = await axios.get(`${API_URL}/${id}`);
+        const response = await axios.post(API_URL, dataCotizacion);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.mensaje || 'Error al obtener la cotización');
+        console.error("Error al crear cotizacion:", error);
+        throw error;
     }
 };
 
-export const createCotizacion = async (cotizacionData) => {
+// Obtener cotizaciones de un usuario
+export const getCotizacionesByUsuario = async (documentoID) => {
     try {
-        const response = await axios.post(API_URL, cotizacionData);
+        const response = await axios.get(`${API_URL}/usuario/${documentoID}`);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.mensaje || 'Error al crear la cotización');
+        console.error("Error al obtener cotizaciones:", error);
+        throw error;
     }
 };
 
-export const updateCotizacion = async (id, cotizacionData) => {
+// Obtener detalle de cotización (admin)
+export const getCotizacionById = async (cotizacionID) => {
     try {
-        const response = await axios.put(`${API_URL}/${id}`, cotizacionData);
+        const response = await axios.get(`${API_URL}/${cotizacionID}`);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.mensaje || 'Error al actualizar la cotización');
+        console.error("Error al obtener cotizacion:", error);
+        throw error;
     }
 };
 
-export const deleteCotizacion = async (id) => {
+// Actualizar cotización (admin aprueba y pone precio)
+export const updateCotizacion = async (cotizacionID, data) => {
+    // data incluye: ValorTotal, EstadoID
     try {
-        const response = await axios.delete(`${API_URL}/${id}`);
+        const response = await axios.put(`${API_URL}/${cotizacionID}`, data);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.mensaje || 'Error al eliminar la cotización');
+        console.error("Error al actualizar cotizacion:", error);
+        throw error;
     }
 };

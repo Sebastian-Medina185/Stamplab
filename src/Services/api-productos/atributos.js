@@ -35,23 +35,6 @@ export const getInsumos = async () => {
   }
 };
 
-// Obtener solo las TELAS (insumos con Tipo = 'Tela')
-export const getTelas = async () => {
-  try {
-    const res = await axios.get(`${API_URL}/insumos`);
-    const insumos = res.data;
-    
-    // Filtrar solo los insumos que son telas
-    const telas = insumos.filter(insumo => 
-      insumo.Tipo && insumo.Tipo.toLowerCase() === 'tela'
-    );
-    
-    return telas;
-  } catch (error) {
-    console.error("Error al obtener telas:", error);
-    throw error;
-  }
-};
 
 // Obtener insumos que NO son telas (Otro tipo)
 export const getInsumosNoTelas = async () => {
@@ -67,6 +50,25 @@ export const getInsumosNoTelas = async () => {
     return noTelas;
   } catch (error) {
     console.error("Error al obtener insumos no telas:", error);
+    throw error;
+  }
+};
+
+
+// Obtener Telas
+export const getTelas = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/insumos`);
+    const insumos = res.data.datos || res.data;
+    
+    // Filtrar solo los insumos tipo "Tela"
+    const telas = insumos.filter(insumo => 
+      insumo.Tipo && insumo.Tipo.toLowerCase() === 'tela'
+    );
+    
+    return telas;
+  } catch (error) {
+    console.error("Error al obtener telas:", error);
     throw error;
   }
 };

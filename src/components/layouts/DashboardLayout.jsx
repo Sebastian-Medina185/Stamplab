@@ -2,7 +2,6 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../dashboard/layout/sidebar";
 import NavAdmin from "../dashboard/layout/NavAdmin";
 
-
 const DashboardLayout = () => {
     return (
         <div className="container-fluid vh-100">
@@ -23,8 +22,6 @@ const DashboardLayout = () => {
                     <main className="flex-grow-1 p-4 bg-light overflow-auto">
                         <Outlet />
                     </main>
-
-                   
                 </div>
             </div>
         </div>

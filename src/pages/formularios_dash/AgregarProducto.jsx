@@ -15,7 +15,7 @@ import {
     updateVariante,
     deleteVariante
 } from "../../Services/api-productos/variantes";
-import { getColores, getTallas } from "../../Services/api-productos/atributos";
+import { getColores, getTallas, getTelas } from "../../Services/api-productos/atributos";
 
 const AgregarProducto = () => {
     const navigate = useNavigate();
@@ -26,14 +26,16 @@ const AgregarProducto = () => {
     const [producto, setProducto] = useState({
         Nombre: "",
         Descripcion: "",
+        PrecioBase: "",
         ImagenProducto: ""
     });
 
-    const [productoOriginal, setProductoOriginal] = useState(null); // Para comparar cambios
+    const [productoOriginal, setProductoOriginal] = useState(null);
 
-    // Estados de variantes
+
     const [colores, setColores] = useState([]);
     const [tallas, setTallas] = useState([]);
+    const [telas, setTelas] = useState([]);
     const [variantes, setVariantes] = useState([]);
     const [variantesOriginales, setVariantesOriginales] = useState([]);
 
@@ -42,17 +44,39 @@ const AgregarProducto = () => {
     const [productoCreado, setProductoCreado] = useState(null);
     const [cargando, setCargando] = useState(false);
     const [cargandoDatos, setCargandoDatos] = useState(false);
-
-    // Nuevo estado para controlar si se están editando los datos del producto
     const [editandoDatosProducto, setEditandoDatosProducto] = useState(false);
 
-    // Nueva variante temporal
+
     const [nuevaVariante, setNuevaVariante] = useState({
         ColorID: "",
         TallaID: "",
+        TelaID: "",
         Stock: 0,
         Estado: true
     });
+
+    // 🆕 FUNCIONES AUXILIARES CORREGIDAS
+    const obtenerPrecioTalla = (tallaId) => {
+        const talla = tallas.find(t => t.TallaID === parseInt(tallaId));
+        return talla?.Precio ? parseFloat(talla.Precio) : 0;
+    };
+
+    const obtenerPrecioTela = (telaId) => {
+        if (!telaId) return 0;
+        const tela = telas.find(t => t.InsumoID === parseInt(telaId));
+        return tela?.PrecioTela ? parseFloat(tela.PrecioTela) : 0;
+    };
+    
+
+    // Usa productoCreado directamente
+    const calcularPrecioTotal = (tallaId, telaId = null) => {
+        const precioBase = parseFloat(productoCreado?.PrecioBase) || 0;
+        const precioTalla = parseFloat(obtenerPrecioTalla(tallaId)) || 0;
+        const precioTela = parseFloat(obtenerPrecioTela(telaId)) || 0;
+
+        return precioBase + precioTalla + precioTela; // 10000 + 2500 + 5000 = 17500
+    };
+
 
     // Cargar datos al montar
     useEffect(() => {
@@ -63,18 +87,21 @@ const AgregarProducto = () => {
         }
     }, [id]);
 
+
     const cargarAtributos = async () => {
         try {
-            const [coloresRes, tallasRes] = await Promise.all([
+            const [coloresRes, tallasRes, telasRes] = await Promise.all([
                 getColores(),
-                getTallas()
+                getTallas(),
+                getTelas() // 🆕
             ]);
 
             setColores(coloresRes.datos || coloresRes);
             setTallas(tallasRes.datos || tallasRes);
+            setTelas(telasRes || []);
         } catch (error) {
             console.error("Error al cargar atributos:", error);
-            Swal.fire("Error", "No se pudieron cargar colores y tallas", "error");
+            Swal.fire("Error", "No se pudieron cargar colores, tallas y telas", "error");
         }
     };
 
@@ -92,6 +119,7 @@ const AgregarProducto = () => {
             const productoInfo = {
                 Nombre: productoData.Nombre,
                 Descripcion: productoData.Descripcion || "",
+                PrecioBase: productoData.PrecioBase || "",
                 ImagenProducto: productoData.ImagenProducto || ""
             };
 
@@ -99,15 +127,19 @@ const AgregarProducto = () => {
             setProductoOriginal(JSON.parse(JSON.stringify(productoInfo)));
             setProductoCreado(productoData);
 
+
             const variantesFormateadas = variantesData.map(v => ({
                 InventarioID: v.InventarioID,
                 ColorID: v.ColorID,
                 TallaID: v.TallaID,
+                TelaID: v.TelaID || null, // 🆕
                 Stock: v.Stock,
                 Estado: v.Estado,
                 nombreColor: v.color?.Nombre,
                 nombreTalla: v.talla?.Nombre,
-                precioTalla: null,
+                nombreTela: v.tela?.Nombre || 'Sin tela', // 🆕
+                precioTalla: v.talla?.Precio || 0,
+                precioTela: v.tela?.PrecioTela || 0, // 🆕
                 esExistente: true
             }));
 
@@ -145,6 +177,17 @@ const AgregarProducto = () => {
             return;
         }
 
+        if (!producto.PrecioBase || producto.PrecioBase === "") {
+            Swal.fire("Error", "El precio base es obligatorio", "error");
+            return;
+        }
+
+        const precioBaseNum = parseFloat(producto.PrecioBase);
+        if (isNaN(precioBaseNum) || precioBaseNum < 0) {
+            Swal.fire("Error", "El precio base debe ser un número mayor o igual a 0", "error");
+            return;
+        }
+
         setCargando(true);
         try {
             let nuevoProducto;
@@ -161,7 +204,6 @@ const AgregarProducto = () => {
                     showConfirmButton: false
                 });
 
-                // Actualizar el producto original para futuras comparaciones
                 setProductoOriginal(JSON.parse(JSON.stringify(producto)));
                 setEditandoDatosProducto(false);
             } else {
@@ -170,7 +212,7 @@ const AgregarProducto = () => {
 
                 Swal.fire({
                     title: "¡Producto creado!",
-                    text: "Ahora puedes agregar variantes (colores y tallas)",
+                    text: "Ahora puedes agregar variantes (colores, tallas y telas)",
                     icon: "success",
                     timer: 2000,
                     showConfirmButton: false
@@ -192,33 +234,41 @@ const AgregarProducto = () => {
         }
     };
 
+
     const handleAgregarVariante = () => {
-        const { ColorID, TallaID, Stock } = nuevaVariante;
+        const { ColorID, TallaID, TelaID, Stock } = nuevaVariante;
 
         if (!ColorID || !TallaID) {
             Swal.fire("Error", "Selecciona color y talla", "warning");
             return;
         }
 
+
         const existe = variantes.some(
-            v => v.ColorID === parseInt(ColorID) && v.TallaID === parseInt(TallaID)
+            v => v.ColorID === parseInt(ColorID) &&
+                v.TallaID === parseInt(TallaID) &&
+                v.TelaID === (TelaID ? parseInt(TelaID) : null)
         );
 
         if (existe) {
-            Swal.fire("Error", "Ya existe una variante con ese color y talla", "warning");
+            Swal.fire("Error", "Ya existe una variante con esa combinación", "warning");
             return;
         }
 
         const talla = tallas.find(t => t.TallaID === parseInt(TallaID));
+        const tela = TelaID ? telas.find(t => t.InsumoID === parseInt(TelaID)) : null; // 🆕
 
         const varianteTemporal = {
             ColorID: parseInt(ColorID),
             TallaID: parseInt(TallaID),
+            TelaID: TelaID ? parseInt(TelaID) : null, // 🆕
             Stock: parseInt(Stock) || 0,
             Estado: nuevaVariante.Estado,
             nombreColor: colores.find(c => c.ColorID === parseInt(ColorID))?.Nombre,
             nombreTalla: talla?.Nombre,
-            precioTalla: talla?.Precio,
+            nombreTela: tela?.Nombre || 'Sin tela',
+            precioTalla: talla?.Precio || 0,
+            precioTela: tela?.PrecioTela || 0,
             esExistente: false
         };
 
@@ -227,18 +277,32 @@ const AgregarProducto = () => {
         setNuevaVariante({
             ColorID: "",
             TallaID: "",
+            TelaID: "",
             Stock: 0,
             Estado: true
         });
     };
 
+
     const handleEditarVariante = (index) => {
         const variante = variantes[index];
 
         Swal.fire({
-            title: `Editar Variante: ${variante.nombreColor} - ${variante.nombreTalla}`,
+            title: `Editar Variante`,
             html: `
                 <div class="text-start">
+                    <p class="mb-3"><strong>${variante.nombreColor} - ${variante.nombreTalla}</strong></p>
+                    
+                    <label class="form-label fw-medium">Tela</label>
+                    <select id="tela" class="form-select mb-3">
+                        <option value="">Sin tela</option>
+                        ${telas.map(t => `
+                            <option value="${t.InsumoID}" ${variante.TelaID === t.InsumoID ? 'selected' : ''}>
+                                ${t.Nombre} ($${parseFloat(t.PrecioTela || 0).toLocaleString()})
+                            </option>
+                        `).join('')}
+                    </select>
+                    
                     <label class="form-label fw-medium">Stock</label>
                     <input type="number" id="stock" class="form-control mb-3" value="${variante.Stock}" min="0">
                     
@@ -253,6 +317,7 @@ const AgregarProducto = () => {
             confirmButtonText: "Guardar",
             cancelButtonText: "Cancelar",
             preConfirm: () => {
+                const telaId = document.getElementById('tela').value;
                 const stock = parseInt(document.getElementById('stock').value);
                 const estado = document.getElementById('estado').value === 'true';
 
@@ -261,15 +326,23 @@ const AgregarProducto = () => {
                     return false;
                 }
 
-                return { stock, estado };
+                return { telaId: telaId || null, stock, estado };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                const { stock, estado } = result.value;
+                const { telaId, stock, estado } = result.value;
+                const telaSeleccionada = telaId ? telas.find(t => t.InsumoID === parseInt(telaId)) : null;
 
                 setVariantes(prev => prev.map((v, i) =>
                     i === index
-                        ? { ...v, Stock: stock, Estado: estado }
+                        ? {
+                            ...v,
+                            TelaID: telaId ? parseInt(telaId) : null,
+                            nombreTela: telaSeleccionada?.Nombre || 'Sin tela',
+                            precioTela: telaSeleccionada?.PrecioTela || 0,
+                            Stock: stock,
+                            Estado: estado
+                        }
                         : v
                 ));
 
@@ -288,7 +361,7 @@ const AgregarProducto = () => {
 
         const result = await Swal.fire({
             title: "¿Eliminar variante?",
-            text: `${variante.nombreColor} - ${variante.nombreTalla}`,
+            text: `${variante.nombreColor} - ${variante.nombreTalla} - ${variante.nombreTela}`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
@@ -322,6 +395,7 @@ const AgregarProducto = () => {
         setVariantes(prev => prev.filter((_, i) => i !== index));
     };
 
+    // 🆕 Guardar variantes CON TELA
     const handleGuardarVariantes = async () => {
         if (variantes.length === 0 && !modoEdicion) {
             const result = await Swal.fire({
@@ -343,11 +417,15 @@ const AgregarProducto = () => {
             for (const variante of variantes) {
                 if (variante.esExistente) {
                     const original = variantesOriginales.find(v => v.InventarioID === variante.InventarioID);
-                    if (!original || original.Stock !== variante.Stock || original.Estado !== variante.Estado) {
+                    if (!original ||
+                        original.Stock !== variante.Stock ||
+                        original.Estado !== variante.Estado ||
+                        original.TelaID !== variante.TelaID) { // 🆕 Comparar tela también
                         promesas.push(
                             updateVariante(variante.InventarioID, {
                                 Stock: variante.Stock,
-                                Estado: variante.Estado
+                                Estado: variante.Estado,
+                                TelaID: variante.TelaID // 🆕
                             })
                         );
                     }
@@ -357,6 +435,7 @@ const AgregarProducto = () => {
                             ProductoID: productoCreado.ProductoID,
                             ColorID: variante.ColorID,
                             TallaID: variante.TallaID,
+                            TelaID: variante.TelaID, // 🆕
                             Stock: variante.Stock,
                             Estado: variante.Estado
                         })
@@ -427,21 +506,15 @@ const AgregarProducto = () => {
         }
     };
 
-    // Función para editar datos del producto en modo edición
     const handleEditarDatosProducto = () => {
         setEditandoDatosProducto(true);
     };
 
     const handleCancelarEdicionProducto = () => {
-        // Restaurar datos originales
         setProducto(JSON.parse(JSON.stringify(productoOriginal)));
         setEditandoDatosProducto(false);
     };
 
-    const obtenerPrecioTalla = (tallaId) => {
-        const talla = tallas.find(t => t.TallaID === tallaId);
-        return talla?.Precio || 0;
-    };
 
     if (cargandoDatos) {
         return (
@@ -541,6 +614,26 @@ const AgregarProducto = () => {
                                 ></textarea>
                             </div>
 
+                            <div className="mb-3">
+                                <label className="form-label fw-medium">
+                                    Precio Base <span className="text-danger">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    name="PrecioBase"
+                                    value={producto.PrecioBase || ""}
+                                    onChange={handleProductoChange}
+                                    placeholder="Ej: 15000"
+                                    min="0"
+                                    step="100"
+                                    required
+                                />
+                                <small className="text-muted">
+                                    Precio base del producto sin adicionales de talla o tela
+                                </small>
+                            </div>
+
                             <div className="mb-4">
                                 <label className="form-label fw-medium">
                                     <FaImage className="me-2" />
@@ -598,11 +691,11 @@ const AgregarProducto = () => {
                 </div>
             )}
 
-            {/* PASO 2: Variantes CON tarjeta de info del producto editable */}
+            {/* PASO 2: Variantes CON TELA */}
             {paso === 2 && productoCreado && (
-                <div className="card shadow-sm mx-auto" style={{ maxWidth: 900 }}>
+                <div className="card shadow-sm mx-auto" style={{ maxWidth: 1100 }}>
                     <div className="card-body p-4">
-                        {/* Tarjeta de información del producto (EDITABLE en modo edición) */}
+                        {/* Tarjeta de información del producto */}
                         <div className="card mb-4" style={{ backgroundColor: '#f8f9fa' }}>
                             <div className="card-body">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
@@ -618,7 +711,6 @@ const AgregarProducto = () => {
                                 </div>
 
                                 {editandoDatosProducto ? (
-                                    // Formulario de edición
                                     <form onSubmit={handleGuardarProducto}>
                                         <div className="mb-3">
                                             <label className="form-label fw-medium">Nombre</label>
@@ -640,6 +732,19 @@ const AgregarProducto = () => {
                                                 onChange={handleProductoChange}
                                                 rows="2"
                                             ></textarea>
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label fw-medium">Precio Base</label>
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                name="PrecioBase"
+                                                value={producto.PrecioBase}
+                                                onChange={handleProductoChange}
+                                                min="0"
+                                                step="100"
+                                                required
+                                            />
                                         </div>
                                         <div className="mb-3">
                                             <label className="form-label fw-medium">URL de la Imagen</label>
@@ -680,7 +785,6 @@ const AgregarProducto = () => {
                                         </div>
                                     </form>
                                 ) : (
-                                    // Vista de solo lectura
                                     <div className="row">
                                         <div className="col-md-3">
                                             {producto.ImagenProducto ? (
@@ -702,6 +806,9 @@ const AgregarProducto = () => {
                                         <div className="col-md-9">
                                             <h6 className="fw-bold">{producto.Nombre}</h6>
                                             <p className="text-muted mb-2">{producto.Descripcion || "Sin descripción"}</p>
+                                            <div className="alert alert-success mb-2">
+                                                <strong>💰 Precio Base:</strong> ${(productoCreado.PrecioBase || 0).toLocaleString()}
+                                            </div>
                                             <small className="text-muted">ID: {productoCreado.ProductoID}</small>
                                         </div>
                                     </div>
@@ -713,12 +820,12 @@ const AgregarProducto = () => {
                             {modoEdicion ? "Gestionar Variantes" : "Agregar Variantes"}
                         </h5>
 
-                        {/* Formulario para agregar variante */}
+                        {/* 🆕 Formulario para agregar variante CON TELA */}
                         <div className="card bg-light mb-4">
                             <div className="card-body">
                                 <h6 className="fw-bold mb-3">Nueva Variante</h6>
                                 <div className="row g-3">
-                                    <div className="col-md-3">
+                                    <div className="col-md-2">
                                         <label className="form-label fw-medium">Color</label>
                                         <select
                                             className="form-select"
@@ -739,7 +846,7 @@ const AgregarProducto = () => {
                                         </select>
                                     </div>
 
-                                    <div className="col-md-3">
+                                    <div className="col-md-2">
                                         <label className="form-label fw-medium">Talla</label>
                                         <select
                                             className="form-select"
@@ -755,6 +862,28 @@ const AgregarProducto = () => {
                                             {tallas.map(talla => (
                                                 <option key={talla.TallaID} value={talla.TallaID}>
                                                     {talla.Nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* 🆕 Selector de Tela */}
+                                    <div className="col-md-3">
+                                        <label className="form-label fw-medium">Tela</label>
+                                        <select
+                                            className="form-select"
+                                            value={nuevaVariante.TelaID}
+                                            onChange={(e) =>
+                                                setNuevaVariante(prev => ({
+                                                    ...prev,
+                                                    TelaID: e.target.value
+                                                }))
+                                            }
+                                        >
+                                            <option value="">Sin tela</option>
+                                            {telas.map(tela => (
+                                                <option key={tela.InsumoID} value={tela.InsumoID}>
+                                                    {tela.Nombre} (${parseFloat(tela.PrecioTela || 0).toLocaleString()})
                                                 </option>
                                             ))}
                                         </select>
@@ -793,27 +922,27 @@ const AgregarProducto = () => {
                                         </select>
                                     </div>
 
-                                    <div className="col-md-2 d-flex align-items-end">
+                                    <div className="col-md-1 d-flex align-items-end">
                                         <button
                                             type="button"
                                             className="btn btn-success w-100"
                                             onClick={handleAgregarVariante}
                                         >
-                                            <FaPlus /> Agregar
+                                            <FaPlus />
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Tabla de variantes */}
+                        {/* 🆕 Tabla de variantes CON TELA */}
                         <h6 className="fw-bold mb-2">
                             Variantes ({variantes.length})
                         </h6>
 
                         {variantes.length === 0 ? (
                             <div className="alert alert-info">
-                                No hay variantes. Agrega al menos una combinación de color y talla.
+                                No hay variantes. Agrega al menos una combinación de color, talla y tela.
                             </div>
                         ) : (
                             <div className="table-responsive mb-4">
@@ -822,7 +951,8 @@ const AgregarProducto = () => {
                                         <tr>
                                             <th>Color</th>
                                             <th>Talla</th>
-                                            <th>Precio</th>
+                                            <th>Tela</th>
+                                            <th>Precio Total</th>
                                             <th className="text-center">Stock</th>
                                             <th className="text-center">Estado</th>
                                             <th className="text-center">Acciones</th>
@@ -833,9 +963,24 @@ const AgregarProducto = () => {
                                             <tr key={index}>
                                                 <td>{variante.nombreColor}</td>
                                                 <td>{variante.nombreTalla}</td>
-                                                <td className="text-success fw-medium">
-                                                    ${(variante.precioTalla || obtenerPrecioTalla(variante.TallaID))?.toLocaleString() || "—"}
+                                                <td>
+                                                    <span className={`badge ${variante.TelaID ? 'bg-info' : 'bg-secondary'}`}>
+                                                        {variante.nombreTela}
+                                                    </span>
                                                 </td>
+
+
+                                                <td className="text-success fw-medium">
+                                                    ${calcularPrecioTotal(variante.TallaID, variante.TelaID).toLocaleString()}
+                                                    <br />
+                                                    <small className="text-muted">
+                                                        (Base: ${parseFloat(productoCreado.PrecioBase || 0).toLocaleString()} +
+                                                        Talla: ${parseFloat(variante.precioTalla || obtenerPrecioTalla(variante.TallaID)).toLocaleString()} +
+                                                        Tela: ${parseFloat(variante.precioTela || obtenerPrecioTela(variante.TelaID)).toLocaleString()})
+                                                    </small>
+                                                </td>
+
+
                                                 <td className="text-center">
                                                     <span className={`badge ${variante.Stock > 10 ? 'bg-success' :
                                                         variante.Stock > 0 ? 'bg-warning text-dark' :
@@ -857,7 +1002,7 @@ const AgregarProducto = () => {
                                                             onClick={() => handleEditarVariante(index)}
                                                             title="Editar"
                                                         >
-                                                            <FaCheck size={12} />
+                                                            <FaEdit size={12} />
                                                         </button>
                                                         <button
                                                             className="btn btn-outline-danger btn-sm"

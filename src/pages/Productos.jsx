@@ -2,20 +2,10 @@ import React, { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
 import { FaPlusCircle, FaSearch, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { getProductos, updateProducto, deleteProducto } from "../Services/api-productos/productos";
+import { getVariantesByProducto, updateVariante, deleteVariante } from "../Services/api-productos/variantes";
+import { getTallas, getColores, getTelas } from "../Services/api-productos/atributos";
 
-import {
-  getProductos,
-  updateProducto,
-  deleteProducto,
-} from "../Services/api-productos/productos";
-
-import {
-  getVariantesByProducto,
-  updateVariante,
-  deleteVariante,
-} from "../Services/api-productos/variantes";
-
-import { getTallas, getColores } from "../Services/api-productos/atributos";
 
 const Productos = () => {
   const navigate = useNavigate();
@@ -24,6 +14,7 @@ const Productos = () => {
   const [productos, setProductos] = useState([]);
   const [colores, setColores] = useState([]);
   const [tallas, setTallas] = useState([]);
+  const [telas, setTelas] = useState([]); // 🆕 Estado para telas
 
   // Estados de búsqueda y UI
   const [busqueda, setBusqueda] = useState("");
@@ -33,6 +24,7 @@ const Productos = () => {
   const [showModal, setShowModal] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const [variantes, setVariantes] = useState([]);
+  const [imagenModal, setImagenModal] = useState(null);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -42,15 +34,17 @@ const Productos = () => {
   const cargarDatos = async () => {
     setCargando(true);
     try {
-      const [productosRes, coloresRes, tallasRes] = await Promise.all([
+      const [productosRes, coloresRes, tallasRes, telasRes] = await Promise.all([
         getProductos(),
         getColores(),
-        getTallas()
+        getTallas(),
+        getTelas() // 🆕 Importar getTelas desde atributos
       ]);
 
       setProductos(productosRes.datos || productosRes);
       setColores(coloresRes.datos || coloresRes);
       setTallas(tallasRes.datos || tallasRes);
+      setTelas(telasRes || []); // 🆕
     } catch (error) {
       console.error("Error al cargar datos:", error);
       Swal.fire("Error", "No se pudieron cargar los datos", "error");
@@ -143,7 +137,16 @@ const Productos = () => {
     setVariantes([]);
   };
 
-  // Funciones auxiliares
+  const handleVerImagenModal = (producto) => {
+    setImagenModal(producto.ImagenProducto);
+  };
+
+  const cerrarImagenModal = () => {
+    setImagenModal(null);
+  };
+
+
+  // 🔧 FUNCIONES AUXILIARES CORREGIDAS
   const obtenerNombreColor = (colorId) => {
     return colores.find(c => c.ColorID === colorId)?.Nombre || "—";
   };
@@ -153,20 +156,23 @@ const Productos = () => {
   };
 
   const obtenerPrecioTalla = (tallaId) => {
-    const talla = tallas.find(t => t.TallaID === tallaId);
-    return talla?.Precio ? `$${talla.Precio.toLocaleString()}` : "—";
+    const talla = tallas.find(t => t.TallaID === parseInt(tallaId));
+    return parseFloat(talla?.Precio) || 0; 
   };
 
-
-  // Agregar antes del return:
-  const [imagenModal, setImagenModal] = useState(null);
-
-  const handleVerImagenModal = (producto) => {
-    setImagenModal(producto.ImagenProducto);
+  const obtenerPrecioTela = (telaId) => {
+    if (!telaId) return 0;
+    const tela = telas.find(t => t.InsumoID === parseInt(telaId));
+    return parseFloat(tela?.PrecioTela) || 0; 
   };
 
-  const cerrarImagenModal = () => {
-    setImagenModal(null);
+  const calcularPrecioTotal = (productoId, tallaId, telaId = null) => {
+    const producto = productos.find(p => p.ProductoID === productoId);
+    const precioBase = parseFloat(producto?.PrecioBase) || 0; // ✅ parseFloat aquí
+    const precioTalla = obtenerPrecioTalla(tallaId);
+    const precioTela = obtenerPrecioTela(telaId);
+
+    return precioBase + precioTalla + precioTela; // Ahora sí suma correctamente
   };
 
 
@@ -221,13 +227,14 @@ const Productos = () => {
                 <th>Imagen</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
+                <th className="text-center">Precio Base</th>
                 <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {cargando ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-4">
+                  <td colSpan="6" className="text-center py-4">
                     <div className="spinner-border spinner-border-sm text-primary" role="status">
                       <span className="visually-hidden">Cargando...</span>
                     </div>
@@ -253,6 +260,11 @@ const Productos = () => {
                     </td>
                     <td className="fw-medium">{producto.Nombre}</td>
                     <td className="text-muted">{producto.Descripcion || "—"}</td>
+                    <td className="text-center">
+                      <span className="badge bg-success">
+                        ${(producto.PrecioBase || 0).toLocaleString()}
+                      </span>
+                    </td>
                     <td>
                       <div className="d-flex justify-content-center gap-1">
                         <button
@@ -282,7 +294,7 @@ const Productos = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center py-4 text-muted">
+                  <td colSpan="6" className="text-center py-4 text-muted">
                     {busqueda
                       ? "No se encontraron productos con ese criterio"
                       : "No hay productos registrados. Haz clic en 'Agregar Producto' para comenzar"}
@@ -336,7 +348,15 @@ const Productos = () => {
                       <div className="col-md-8">
                         <h5 className="fw-bold">{productoSeleccionado.Nombre}</h5>
                         <p className="text-muted">{productoSeleccionado.Descripcion || "Sin descripción"}</p>
-                        <div className="mt-3">
+
+                        {/* 🆕 Mostrar Precio Base */}
+                        <div className="alert alert-info mb-3">
+                          <strong>Precio Base:</strong> ${(productoSeleccionado.PrecioBase || 0).toLocaleString()}
+                          <br />
+                          <small className="text-muted">El precio final varía según la talla y la tela seleccionada</small>
+                        </div>
+
+                        <div className="mt-2">
                           <small className="text-muted">ID: {productoSeleccionado.ProductoID}</small>
                         </div>
                         <div className="mt-2">
@@ -368,7 +388,10 @@ const Productos = () => {
                             <tr>
                               <th>Color</th>
                               <th>Talla</th>
-                              <th>Precio</th>
+                              <th>Tela</th>
+                              <th>Precio Talla</th>
+                              <th>Precio Tela</th>
+                              <th>Precio Final</th>
                               <th className="text-center">Stock</th>
                               <th className="text-center">Estado</th>
                             </tr>
@@ -378,8 +401,23 @@ const Productos = () => {
                               <tr key={variante.InventarioID}>
                                 <td>{obtenerNombreColor(variante.ColorID)}</td>
                                 <td>{obtenerNombreTalla(variante.TallaID)}</td>
-                                <td className="text-success fw-medium">
-                                  {obtenerPrecioTalla(variante.TallaID)}
+                                <td>
+                                  <span className={`badge ${variante.TelaID ? 'bg-info' : 'bg-secondary'}`}>
+                                    {variante.tela?.Nombre || 'Sin tela'}
+                                  </span>
+                                </td>
+                                <td className="text-info">
+                                  +${obtenerPrecioTalla(variante.TallaID).toLocaleString()}
+                                </td>
+                                <td className="text-warning">
+                                  +${obtenerPrecioTela(variante.TelaID).toLocaleString()}
+                                </td>
+                                <td className="text-success fw-bold">
+                                  ${calcularPrecioTotal(
+                                    productoSeleccionado.ProductoID,
+                                    variante.TallaID,
+                                    variante.TelaID
+                                  ).toLocaleString()}
                                 </td>
                                 <td className="text-center">
                                   <span className={`badge ${variante.Stock > 10 ? 'bg-success' :
@@ -427,7 +465,6 @@ const Productos = () => {
         </div>
       )}
 
-
       {/* Imagen modal producto */}
       {imagenModal && (
         <div
@@ -442,7 +479,7 @@ const Productos = () => {
         >
           <div
             className="modal-dialog modal-lg modal-dialog-centered"
-            onClick={(e) => e.stopPropagation()} // Evita cerrar al hacer click dentro
+            onClick={(e) => e.stopPropagation()}
           >
             <div
               className="modal-content bg-transparent border-0"

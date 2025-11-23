@@ -16,7 +16,17 @@ export const getProductos = async () => {
 // Crear un nuevo producto
 export const createProducto = async (productoData) => {
   try {
-    const response = await axios.post(API_URL, productoData);
+    // Validar que tenga PrecioBase
+    if (productoData.PrecioBase === undefined || productoData.PrecioBase === null) {
+      throw new Error("El precio base es obligatorio");
+    }
+
+    const response = await axios.post(API_URL, {
+      Nombre: productoData.Nombre,
+      Descripcion: productoData.Descripcion || "",
+      PrecioBase: parseFloat(productoData.PrecioBase), 
+      ImagenProducto: productoData.ImagenProducto || ""
+    });
     return response.data;
   } catch (error) {
     console.error("Error al crear producto:", error);
@@ -38,7 +48,18 @@ export const getProductoById = async (id) => {
 // Actualizar producto
 export const updateProducto = async (id, productoData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, productoData);
+    const dataToSend = {
+      Nombre: productoData.Nombre,
+      Descripcion: productoData.Descripcion,
+      ImagenProducto: productoData.ImagenProducto
+    };
+
+    // Solo incluir PrecioBase si se envió
+    if (productoData.PrecioBase !== undefined && productoData.PrecioBase !== null) {
+      dataToSend.PrecioBase = parseFloat(productoData.PrecioBase);
+    }
+
+    const response = await axios.put(`${API_URL}/${id}`, dataToSend);
     return response.data;
   } catch (error) {
     console.error("Error al actualizar producto:", error);
@@ -56,4 +77,3 @@ export const deleteProducto = async (id) => {
     throw error;
   }
 };
-
