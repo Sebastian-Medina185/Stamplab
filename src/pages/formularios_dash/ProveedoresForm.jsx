@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
-import Swal from "sweetalert2";
 
 const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
+    // ==========================
+    // ESTADOS DEL FORMULARIO
+    // ==========================
     const [formData, setFormData] = useState({
-        nit: proveedor?.Nit || "",
-        nombre: proveedor?.Nombre || "",
-        correo: proveedor?.Correo || "",
-        telefono: proveedor?.Telefono || "",
-        direccion: proveedor?.Direccion || "",
-        estado: proveedor?.Estado ?? true
+        nit: "",
+        nombre: "",
+        correo: "",
+        telefono: "",
+        direccion: "",
+        estado: true
     });
 
-    const [errores, setErrores] = useState({
+    const [errors, setErrors] = useState({
         nit: "",
         nombre: "",
         correo: "",
@@ -20,104 +22,216 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
         direccion: ""
     });
 
-    // Validación de campos
-    const validarCampo = (name, value) => {
-        let error = "";
+    const [touched, setTouched] = useState({
+        nit: false,
+        nombre: false,
+        correo: false,
+        telefono: false,
+        direccion: false
+    });
 
-        switch (name) {
-            case "nit":
-                if (!value.trim()) error = "El NIT es obligatorio";
-                else if (!/^\d+$/.test(value)) error = "El NIT solo debe contener números";
-                break;
-            case "nombre":
-                if (!value.trim()) error = "El nombre es obligatorio";
-                else if (!/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) error = "Solo letras y espacios";
-                else if (value.length < 3 || value.length > 20) error = "Debe tener entre 3 y 20 caracteres";
-                break;
-            case "correo":
-                if (!value.trim()) error = "El correo es obligatorio";
-                else if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value)) error = "Formato inválido";
-                else if (value.length < 10 || value.length > 30) error = "Debe tener entre 10 y 30 caracteres";
-                break;
-            case "telefono":
-                if (!value.trim()) error = "El teléfono es obligatorio";
-                else if (!/^\+?\d+$/.test(value)) error = "Solo números (y opcionalmente '+')";
-                else if (value.length < 7 || value.length > 15) error = "Debe tener entre 7 y 15 caracteres";
-                break;
-            case "direccion":
-                if (!value.trim()) error = "La dirección es obligatoria";
-                else if (!/^[A-Za-z0-9\s\.\-#]+$/.test(value)) error = "Caracteres no permitidos";
-                else if (value.length < 10 || value.length > 20) error = "Debe tener entre 10 y 20 caracteres";
-                break;
-            default:
-                break;
+    // ==========================
+    //  CARGAR DATOS AL EDITAR
+    // ==========================
+    useEffect(() => {
+        if (proveedor) {
+            setFormData({
+                nit: proveedor.Nit || "",
+                nombre: proveedor.Nombre || "",
+                correo: proveedor.Correo || "",
+                telefono: proveedor.Telefono || "",
+                direccion: proveedor.Direccion || "",
+                estado: proveedor.Estado !== undefined ? proveedor.Estado : true
+            });
+        } else {
+            setFormData({
+                nit: "",
+                nombre: "",
+                correo: "",
+                telefono: "",
+                direccion: "",
+                estado: true
+            });
         }
 
-        setErrores((prev) => ({ ...prev, [name]: error }));
-        return error === "";
+        setErrors({ nit: "", nombre: "", correo: "", telefono: "", direccion: "" });
+        setTouched({ nit: false, nombre: false, correo: false, telefono: false, direccion: false });
+    }, [proveedor]);
+
+    // ==========================
+    //  VALIDACIONES
+    // ==========================
+    const validateNit = (value) => {
+    const nit = value.trim();
+
+    if (!nit) return "El NIT es obligatorio";
+    
+    // Permitir formatos: 123456789, 123-456-7, 123456789-7
+    // Permite dígitos con guiones opcionales y dígito verificador opcional
+    if (!/^[\d-]+$/.test(nit)) {
+        return "El NIT solo puede contener números y guiones";
+    }
+    
+    // Remover guiones para validar la longitud de solo dígitos
+    const soloDigitos = nit.replace(/-/g, '');
+    
+    if (soloDigitos.length < 6) {
+        return "El NIT debe tener al menos 6 dígitos";
+    }
+    
+    if (soloDigitos.length > 15) {
+        return "El NIT no puede tener más de 15 dígitos";
+    }
+    
+    if (/--/.test(nit) || nit.startsWith('-') || nit.endsWith('-')) {
+        return "Formato de NIT inválido";
+    }
+
+    return "";
+};
+    const validateNombre = (value) => {
+        const nombre = value.trim();
+
+        if (!nombre) return "El nombre es obligatorio";
+        if (nombre.length < 2) return "El nombre debe tener al menos 2 caracteres";
+        if (nombre.length > 100) return "El nombre no puede exceder 100 caracteres";
+        
+        // Permitir letras, números, espacios, acentos, ñ (para razones sociales)
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s&\.\-]+$/.test(nombre)) {
+            return "Solo se permiten letras, números, espacios y caracteres básicos (&.-)";
+        }
+
+        return "";
     };
 
+    const validateCorreo = (value) => {
+        const correo = value.trim().toLowerCase();
+
+        if (!correo) return "El correo es obligatorio";
+        
+        // Regex más estricta para email
+        if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(correo)) {
+            return "Formato de correo inválido";
+        }
+        
+        if (correo.length < 10) return "El correo debe tener al menos 10 caracteres";
+        if (correo.length > 254) return "El correo no puede exceder 254 caracteres";
+
+        return "";
+    };
+
+    const validateTelefono = (value) => {
+        const telefono = value.trim();
+
+        if (!telefono) return "El teléfono es obligatorio";
+        
+        // Permitir solo dígitos y opcionalmente + al inicio
+        if (!/^\+?\d{7,15}$/.test(telefono)) {
+            return "Formato inválido. Use solo números (ej: +573001234567 o 3001234567)";
+        }
+        
+        if (telefono.length < 7) return "El teléfono debe tener al menos 7 dígitos";
+        if (telefono.length > 15) return "El teléfono no puede exceder 15 caracteres";
+
+        return "";
+    };
+
+    const validateDireccion = (value) => {
+        const direccion = value.trim();
+
+        if (!direccion) return "La dirección es obligatoria";
+        if (direccion.length < 5) return "La dirección debe tener al menos 5 caracteres";
+        if (direccion.length > 200) return "La dirección no puede exceder 200 caracteres";
+        
+        // Permitir letras, números, espacios y símbolos básicos de dirección
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\.\-#,°]+$/.test(direccion)) {
+            return "Caracteres no permitidos en la dirección";
+        }
+
+        return "";
+    };
+
+    // ==========================
+    // MANEJADORES DE EVENTOS
+    // ==========================
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: name === "estado" ? value === "true" : value
-        }));
+        const newValue = name === "estado" ? value === "true" : value;
+
+        setFormData((prev) => ({ ...prev, [name]: newValue }));
+
+        // Validar en tiempo real si ya fue tocado
+        if (touched[name]) {
+            let error = "";
+            if (name === "nit") error = validateNit(value);
+            else if (name === "nombre") error = validateNombre(value);
+            else if (name === "correo") error = validateCorreo(value);
+            else if (name === "telefono") error = validateTelefono(value);
+            else if (name === "direccion") error = validateDireccion(value);
+            
+            setErrors((prev) => ({ ...prev, [name]: error }));
+        }
     };
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        validarCampo(name, value);
+        setTouched((prev) => ({ ...prev, [name]: true }));
+
+        let error = "";
+        if (name === "nit") error = validateNit(value);
+        else if (name === "nombre") error = validateNombre(value);
+        else if (name === "correo") error = validateCorreo(value);
+        else if (name === "telefono") error = validateTelefono(value);
+        else if (name === "direccion") error = validateDireccion(value);
+        
+        setErrors((prev) => ({ ...prev, [name]: error }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
 
-        let todoValido = true;
-        for (let key of ["nit", "nombre", "correo", "telefono", "direccion"]) {
-            const valido = validarCampo(key, formData[key]);
-            if (!valido) todoValido = false;
-        }
+        // Validar todos los campos antes de enviar
+        const nitError = validateNit(formData.nit);
+        const nombreError = validateNombre(formData.nombre);
+        const correoError = validateCorreo(formData.correo);
+        const telefonoError = validateTelefono(formData.telefono);
+        const direccionError = validateDireccion(formData.direccion);
 
-        if (!todoValido) {
-            Swal.fire({
-                icon: "error",
-                title: "Errores en el formulario",
-                text: "Por favor corrija los campos en rojo antes de enviar"
-            });
-            return;
-        }
+        setErrors({ 
+            nit: nitError,
+            nombre: nombreError, 
+            correo: correoError,
+            telefono: telefonoError,
+            direccion: direccionError
+        });
+        setTouched({ 
+            nit: true,
+            nombre: true, 
+            correo: true,
+            telefono: true,
+            direccion: true
+        });
 
-        try {
-            await onSave(formData);
+        if (nitError || nombreError || correoError || telefonoError || direccionError) return;
 
-            Swal.fire({
-                position: "top-end",
-                icon: "success",
-                title: proveedor
-                    ? "Proveedor actualizado exitosamente"
-                    : "Proveedor creado exitosamente",
-                showConfirmButton: false,
-                timer: 2000,
-                toast: true
-            });
+        // Preparar datos para guardar (normalizar y limpiar)
+        const proveedorData = {
+            Nit: formData.nit.trim(),
+            Nombre: formData.nombre.trim(),
+            Correo: formData.correo.trim().toLowerCase(),
+            Telefono: formData.telefono.trim(),
+            Direccion: formData.direccion.trim(),
+            Estado: formData.estado
+        };
 
-            onClose();
-        } catch (error) {
-            console.error("Error al guardar:", error);
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: error.response?.data?.mensaje || "Error al guardar el proveedor"
-            });
-        }
+        onSave(proveedorData);
     };
 
     return (
         <div className="container py-4">
             <div className="position-relative mb-4 text-center">
                 <p className="fw-bold fs-3 mb-0">
-                    {proveedor ? "Editar Proveedor" : "Nuevo Proveedor"}
+                    {proveedor ? "Editar Proveedor" : "Crear Proveedor"}
                 </p>
                 <button
                     type="button"
@@ -129,85 +243,166 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 rounded shadow bg-white">
+            <form
+                className="p-4 rounded shadow"
+                style={{ backgroundColor: "#f5f5fa", color: "#2a273a" }}
+                onSubmit={handleSubmit}
+            >
                 <div className="row g-3">
+                    {/* NIT */}
                     <div className="col-md-6">
-                        <label className="form-label">NIT</label>
+                        <label className="form-label fw-bold">
+                            NIT <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="text"
                             name="nit"
                             value={formData.nit}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={`form-control ${errores.nit ? "is-invalid" : ""}`}
-                            maxLength="20"
+                            placeholder="Ej: 900123456 o 900123456-7"
+                            maxLength="17"
+                            className={`form-control ${
+                                touched.nit && errors.nit
+                                    ? "is-invalid"
+                                    : touched.nit && !errors.nit
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
-                        <div className="invalid-feedback">{errores.nit}</div>
+                        {touched.nit && errors.nit && (
+                            <div className="invalid-feedback d-block">
+                                {errors.nit}
+                            </div>
+                        )}
+                        {/* ✅ AGREGADO: Advertencia al editar NIT */}
+                        {proveedor && (
+                            <small className="text-warning d-block mt-1">
+                                ⚠️ Tenga cuidado al modificar el NIT. Asegúrese de que sea correcto.
+                            </small>
+                        )}
                     </div>
 
+                    {/* Nombre */}
                     <div className="col-md-6">
-                        <label className="form-label">Nombre</label>
+                        <label className="form-label fw-bold">
+                            Nombre <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="text"
                             name="nombre"
                             value={formData.nombre}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={`form-control ${errores.nombre ? "is-invalid" : ""}`}
-                            maxLength="50"
+                            placeholder="Nombre o razón social del proveedor"
+                            maxLength="100"
+                            className={`form-control ${
+                                touched.nombre && errors.nombre
+                                    ? "is-invalid"
+                                    : touched.nombre && !errors.nombre
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
-                        <div className="invalid-feedback">{errores.nombre}</div>
+                        {touched.nombre && errors.nombre && (
+                            <div className="invalid-feedback d-block">
+                                {errors.nombre}
+                            </div>
+                        )}
                     </div>
 
+                    {/* Correo */}
                     <div className="col-md-6">
-                        <label className="form-label">Correo</label>
+                        <label className="form-label fw-bold">
+                            Correo Electrónico <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="email"
                             name="correo"
                             value={formData.correo}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={`form-control ${errores.correo ? "is-invalid" : ""}`}
-                            maxLength="100"
+                            placeholder="ejemplo@correo.com"
+                            maxLength="254"
+                            className={`form-control ${
+                                touched.correo && errors.correo
+                                    ? "is-invalid"
+                                    : touched.correo && !errors.correo
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
-                        <div className="invalid-feedback">{errores.correo}</div>
+                        {touched.correo && errors.correo && (
+                            <div className="invalid-feedback d-block">
+                                {errors.correo}
+                            </div>
+                        )}
                     </div>
 
+                    {/* Teléfono */}
                     <div className="col-md-6">
-                        <label className="form-label">Teléfono</label>
+                        <label className="form-label fw-bold">
+                            Teléfono <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="tel"
                             name="telefono"
                             value={formData.telefono}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={`form-control ${errores.telefono ? "is-invalid" : ""}`}
+                            placeholder="Ej: 3001234567 o +573001234567"
                             maxLength="15"
+                            className={`form-control ${
+                                touched.telefono && errors.telefono
+                                    ? "is-invalid"
+                                    : touched.telefono && !errors.telefono
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
-                        <div className="invalid-feedback">{errores.telefono}</div>
+                        {touched.telefono && errors.telefono && (
+                            <div className="invalid-feedback d-block">
+                                {errors.telefono}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="col-12">
-                        <label className="form-label">Dirección</label>
+                    {/* Dirección */}
+                    <div className="col-md-12">
+                        <label className="form-label fw-bold">
+                            Dirección <span className="text-danger">*</span>
+                        </label>
                         <input
                             type="text"
                             name="direccion"
                             value={formData.direccion}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={`form-control ${errores.direccion ? "is-invalid" : ""}`}
-                            maxLength="155"
+                            placeholder="Dirección completa del proveedor"
+                            maxLength="200"
+                            className={`form-control ${
+                                touched.direccion && errors.direccion
+                                    ? "is-invalid"
+                                    : touched.direccion && !errors.direccion
+                                    ? "is-valid"
+                                    : ""
+                            }`}
                         />
-                        <div className="invalid-feedback">{errores.direccion}</div>
+                        {touched.direccion && errors.direccion && (
+                            <div className="invalid-feedback d-block">
+                                {errors.direccion}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="col-md-6">
-                        <label className="form-label">Estado</label>
+                    {/* Estado */}
+                    <div className="col-md-12">
+                        <label className="form-label fw-bold">Estado</label>
                         <select
+                            className="form-select"
                             name="estado"
                             value={formData.estado.toString()}
                             onChange={handleChange}
-                            className="form-select"
                         >
                             <option value="true">Activo</option>
                             <option value="false">Inactivo</option>
@@ -215,11 +410,26 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
                     </div>
                 </div>
 
-                <div className="d-flex justify-content-end gap-2 mt-4">
-                    <button type="submit" className="btn btn-success">
-                        {proveedor ? "Actualizar" : "Guardar"}
+                {/* Botones */}
+                <div className="d-flex justify-content-center gap-3 mt-4">
+                    <button
+                        type="submit"
+                        className="btn btn-success px-4"
+                        disabled={
+                            !!errors.nit ||
+                            !!errors.nombre ||
+                            !!errors.correo ||
+                            !!errors.telefono ||
+                            !!errors.direccion
+                        }
+                    >
+                        {proveedor ? "Actualizar Proveedor" : "Crear Proveedor"}
                     </button>
-                    <button type="button" onClick={onClose} className="btn btn-secondary">
+                    <button
+                        type="button"
+                        className="btn btn-secondary px-4"
+                        onClick={onClose}
+                    >
                         Cancelar
                     </button>
                 </div>
