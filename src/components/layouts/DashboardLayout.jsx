@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "../dashboard/layout/sidebar";
 import NavAdmin from "../dashboard/layout/NavAdmin";
+import StockNotificationBanner from "../../pages/StockAlerts";
 
 const DashboardLayout = () => {
     return (
@@ -22,6 +23,9 @@ const DashboardLayout = () => {
                     <main className="flex-grow-1 p-4 bg-light overflow-auto">
                         <Outlet />
                     </main>
+
+                    {/* Componente de alertas flotante */}
+                    <StockNotificationBanner />
                 </div>
             </div>
         </div>

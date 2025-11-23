@@ -1,9 +1,49 @@
-import { Form, Button, Card } from "react-bootstrap";
+import { useState } from "react";
+import { Form, Button, Card, Alert, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
+import axios from "axios";
 
 const RecuperarContraseña = () => {
+    const [correo, setCorreo] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
+
+    const handleRecuperar = async (e) => {
+        e.preventDefault();
+        
+        if (!correo) {
+            setMensaje({ tipo: "danger", texto: "Por favor ingresa tu correo" });
+            return;
+        }
+
+        setLoading(true);
+        setMensaje({ tipo: "", texto: "" });
+
+        try {
+            const response = await axios.post("http://localhost:3000/api/recuperar-password", {
+                Correo: correo
+            });
+
+            setMensaje({ 
+                tipo: "success", 
+                texto: "¡Revisa tu correo! Te hemos enviado un enlace para restablecer tu contraseña." 
+            });
+            
+            setCorreo("");
+
+        } catch (error) {
+            console.error("Error:", error);
+            setMensaje({ 
+                tipo: "danger", 
+                texto: error.response?.data?.mensaje || "Error al procesar la solicitud" 
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <>
             <NavbarComponent />
@@ -11,31 +51,63 @@ const RecuperarContraseña = () => {
             <div className="d-flex justify-content-center align-items-center py-5 bg-light">
                 <Card
                     style={{
-                        width: "22rem",
-                        backgroundColor: "#fff", // Fondo blanco
-                        color: "#000", // Texto negro
+                        width: "28rem",
+                        backgroundColor: "#fff",
+                        color: "#000",
                     }}
                     className="p-4 shadow-lg rounded-4"
                 >
-                    <h5 className="text-center mb-4">Recuperar Contraseña</h5>
+                    <h5 className="text-center mb-4 fw-bold">Recuperar Contraseña</h5>
 
-                    <Form>
+                    {mensaje.texto && (
+                        <Alert variant={mensaje.tipo} className="mb-3">
+                            {mensaje.texto}
+                        </Alert>
+                    )}
+
+                    <Form onSubmit={handleRecuperar}>
                         <Form.Group className="mb-3">
-                            <Form.Label>
-                                Introduce tu correo electrónico asociado a tu cuenta para restablecer
-                            </Form.Label>
+                            <Form.Label>Correo electrónico</Form.Label>
                             <Form.Control
                                 type="email"
                                 placeholder="Ingresa tu correo electrónico"
+                                value={correo}
+                                onChange={(e) => setCorreo(e.target.value)}
+                                disabled={loading}
+                                required
                             />
+                            <Form.Text className="text-muted">
+                                Te enviaremos un enlace para restablecer tu contraseña
+                            </Form.Text>
                         </Form.Group>
 
-                        {/* Botón que redirige */}
                         <div className="d-grid mb-3">
-                            <Link to="/restablecercontraseña">
-                                <Button variant="primary" className="fw-bold w-100">
-                                    Enviar
-                                </Button>
+                            <Button 
+                                variant="primary" 
+                                type="submit" 
+                                className="fw-bold"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <Spinner
+                                            as="span"
+                                            animation="border"
+                                            size="sm"
+                                            role="status"
+                                            className="me-2"
+                                        />
+                                        Enviando...
+                                    </>
+                                ) : (
+                                    "Enviar enlace"
+                                )}
+                            </Button>
+                        </div>
+
+                        <div className="text-center">
+                            <Link to="/login" className="text-decoration-none">
+                                ← Volver al inicio de sesión
                             </Link>
                         </div>
                     </Form>
