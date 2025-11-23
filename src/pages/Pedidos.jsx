@@ -1,9 +1,231 @@
-import { useState } from "react";
-import Icon from "../components/Icon";
-import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaEdit, FaEye, FaPlusCircle, FaTrash, FaSyncAlt } from "react-icons/fa";
+import { getCompras, createCompra, updateCompra, deleteCompra } from "../Services/api-compras/compras";
+import Swal from 'sweetalert2';
+import { Modal } from 'react-bootstrap';
+import NuevaCompra from "./formularios_dash/CompraForm";
 
 const Pedidos = () => {
     const [search, setSearch] = useState("");
+    const [showForm, setShowForm] = useState(false);
+    const [selectedCompra, setSelectedCompra] = useState(null);
+    const [compras, setCompras] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+
+    useEffect(() => {
+        cargarCompras();
+    }, []);
+
+    const cargarCompras = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await getCompras();
+
+            if (response) {
+                setCompras(response);
+            } else {
+                setError('Error al cargar las compras');
+            }
+        } catch (err) {
+            console.error("Error cargando compras:", err);
+            setError('Error de conexión al cargar compras');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAgregar = () => {
+        setSelectedCompra(null);
+        setShowForm(true);
+    };
+
+    const handleEditar = (compra) => {
+        setSelectedCompra(compra);
+        setShowForm(true);
+    };
+
+    const handleCloseForm = () => {
+        setShowForm(false);
+        setSelectedCompra(null);
+    };
+
+    const handleEliminar = async (compraId) => {
+        try {
+            const result = await Swal.fire({
+                title: '¿Está seguro?',
+                text: "Eliminará la compra y todos sus detalles",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                const response = await deleteCompra(compraId);
+                if (response.estado) {
+                    await cargarCompras();
+                    Swal.fire('Eliminado', 'La compra ha sido eliminada', 'success');
+                }
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            Swal.fire('Error', error.message || 'Error al eliminar la compra', 'error');
+        }
+    };
+
+    const handleCambiarEstado = async (compra) => {
+        try {
+            const estadoActual = compra.EstadoID;
+            
+            // Modal para seleccionar nuevo estado
+            const { value: nuevoEstado } = await Swal.fire({
+                title: 'Cambiar Estado',
+                html: `
+                    <p>Estado actual: <strong>${getEstadoNombre(estadoActual)}</strong></p>
+                    <p>Seleccione el nuevo estado:</p>
+                `,
+                input: 'select',
+                inputOptions: {
+                    'Pendiente': 'Pendiente',
+                    'Aprobada': 'Aprobada',
+                    'Rechazada': 'Rechazada'
+                },
+                inputValue: estadoActual,
+                showCancelButton: true,
+                confirmButtonText: 'Cambiar',
+                cancelButtonText: 'Cancelar',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Debe seleccionar un estado';
+                    }
+                }
+            });
+
+            if (nuevoEstado && nuevoEstado !== estadoActual) {
+                setLoading(true);
+                
+                const compraActualizada = {
+                    EstadoID: nuevoEstado
+                };
+                
+                const response = await updateCompra(compra.CompraID, compraActualizada);
+                
+                if (response.estado) {
+                    await cargarCompras();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Estado actualizado!',
+                        text: `El estado cambió a: ${nuevoEstado}`,
+                        timer: 2000
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Error al cambiar estado:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Error al cambiar el estado'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async (compraData) => {
+        try {
+            setLoading(true);
+            
+            if (selectedCompra) {
+                // Actualizar compra existente
+                const response = await updateCompra(selectedCompra.CompraID, compraData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: response.mensaje || 'Compra actualizada correctamente'
+                });
+                setShowForm(false);
+                await cargarCompras();
+            } else {
+                // Crear nueva compra
+                const response = await createCompra(compraData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: response.mensaje || 'Compra creada correctamente'
+                });
+                setShowForm(false);
+                await cargarCompras();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Ocurrió un error al procesar la solicitud'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getEstadoNombre = (estadoId) => {
+        // ✅ Manejar tanto strings como números
+        if (typeof estadoId === 'string') {
+            return estadoId; // Ya es un string como "Pendiente"
+        }
+        const estados = {
+            1: "Pendiente",
+            2: "Aprobada",
+            3: "Rechazada"
+        };
+        return estados[estadoId] || "Desconocido";
+    };
+
+    const getEstadoColor = (estadoId) => {
+        // ✅ Normalizar el estado a string
+        const estadoStr = typeof estadoId === 'string' ? estadoId : getEstadoNombre(estadoId);
+        
+        const colores = {
+            "Pendiente": "warning",
+            "Aprobada": "success",
+            "Rechazada": "danger"
+        };
+        return colores[estadoStr] || "secondary";
+    };
+
+    const formatearFecha = (fecha) => {
+        if (!fecha) return "-";
+        const date = new Date(fecha);
+        return date.toLocaleDateString('es-CO');
+    };
+
+    // Filtrar compras
+    const comprasFiltradas = compras.filter(compra => {
+        const busqueda = search.toLowerCase();
+        return (
+            compra.CompraID?.toString().includes(busqueda) ||
+            compra.proveedor?.Nombre?.toLowerCase().includes(busqueda) ||
+            compra.proveedor?.Nit?.toLowerCase().includes(busqueda)
+        );
+    });
+
+    if (showForm) {
+        return (
+            <NuevaCompra
+                onClose={handleCloseForm}
+                onSave={handleSave}
+                compra={selectedCompra}
+            />
+        );
+    }
 
     return (
         <div
@@ -21,11 +243,14 @@ const Pedidos = () => {
                     className="fs-5 fw-bold mb-0 text-primary"
                     style={{ letterSpacing: 1 }}
                 >
-                    Gestión de Pedidos
+                    Gestión de Compras a Proveedores
                 </h1>
-                <button className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm">
+                <button 
+                    className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
+                    onClick={handleAgregar}
+                >
                     <FaPlusCircle size={18} />
-                    Agregar Pedido
+                    Agregar Compra
                 </button>
             </div>
 
@@ -36,7 +261,7 @@ const Pedidos = () => {
                     <input
                         type="text"
                         className="form-control border-start-0"
-                        placeholder="Buscar pedido..."
+                        placeholder="Buscar compra..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -58,96 +283,206 @@ const Pedidos = () => {
                             }}
                         >
                             <tr>
-                                <th style={{ borderTopLeftRadius: 12 }}>ID Pedido</th>
-                                <th>Cliente</th>
-                                <th>Producto</th>
-                                <th>Cantidad</th>
+                                <th style={{ borderTopLeftRadius: 12 }}>ID</th>
+                                <th>Proveedor</th>
+                                <th>NIT</th>
                                 <th>Fecha</th>
                                 <th>Estado</th>
+                                <th># Insumos</th>
                                 <th style={{ width: 160 }}>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr style={{ borderBottom: "1px solid #e3e8ee" }}>
-                                <td>
-                                    <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
-                                        001
-                                    </span>
-                                </td>
-                                <td className="fw-medium">Juan Pérez</td>
-                                <td>Camiseta</td>
-                                <td>3</td>
-                                <td>28/08/2025</td>
-                                <td>
-                                    <span className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm">
-                                        Activo
-                                    </span>
-                                </td>
-                                <td>
-                                    <div className="d-flex justify-content-center gap-1">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-4">
+                                        <div className="spinner-border text-primary" role="status">
+                                            <span className="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-4 text-danger">
+                                        {error}
+                                        <br />
                                         <button
-                                            className="btn btn-outline-primary btn-sm rounded-circle"
-                                            title="Ver"
+                                            className="btn btn-outline-primary btn-sm mt-2"
+                                            onClick={cargarCompras}
                                         >
-                                            <FaEye size={14} />
+                                            Reintentar
                                         </button>
-                                        <button
-                                            className="btn btn-outline-warning btn-sm rounded-circle"
-                                            title="Editar"
-                                        >
-                                            <FaEdit size={14} />
-                                        </button>
-                                        <button
-                                            className="btn btn-outline-danger btn-sm rounded-circle"
-                                            title="Eliminar"
-                                        >
-                                            <FaTrash size={14} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr style={{ borderBottom: "1px solid #e3e8ee" }}>
-                                <td>
-                                    <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
-                                        002
-                                    </span>
-                                </td>
-                                <td className="fw-medium">María López</td>
-                                <td>Pantalón</td>
-                                <td>2</td>
-                                <td>29/08/2025</td>
-                                <td>
-                                    <span className="badge text-success fw-bold fs-6 px-1 py-2 shadow-sm">
-                                        Activo
-                                    </span>
-                                </td>
-                                <td>
-                                    <div className="d-flex justify-content-center gap-1">
-                                        <button
-                                            className="btn btn-outline-primary btn-sm rounded-circle"
-                                            title="Ver"
-                                        >
-                                            <FaEye size={14} />
-                                        </button>
-                                        <button
-                                            className="btn btn-outline-warning btn-sm rounded-circle"
-                                            title="Editar"
-                                        >
-                                            <FaEdit size={14} />
-                                        </button>
-                                        <button
-                                            className="btn btn-outline-danger btn-sm rounded-circle"
-                                            title="Eliminar"
-                                        >
-                                            <FaTrash size={14} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            ) : comprasFiltradas.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-4 text-muted">
+                                        {compras.length === 0
+                                            ? "No hay compras registradas."
+                                            : "No se encontraron compras con los filtros aplicados."
+                                        }
+                                    </td>
+                                </tr>
+                            ) : (
+                                comprasFiltradas.map((compra) => (
+                                    <tr key={compra.CompraID} style={{ borderBottom: "1px solid #e3e8ee" }}>
+                                        <td>
+                                            <span className="badge bg-light text-dark px-2 py-1 shadow-sm">
+                                                {compra.CompraID}
+                                            </span>
+                                        </td>
+                                        <td className="fw-medium">{compra.proveedor?.Nombre || 'N/A'}</td>
+                                        <td>{compra.proveedor?.Nit || 'N/A'}</td>
+                                        <td>{formatearFecha(compra.FechaCompra)}</td>
+                                        <td>
+                                            <span className={`badge text-${getEstadoColor(compra.EstadoID)} fw-bold fs-6 px-2 py-1 shadow-sm`}>
+                                                {getEstadoNombre(compra.EstadoID)}
+                                            </span>
+                                        </td>
+                                        <td className="text-center">
+                                            <span className="badge bg-info">
+                                                {compra.detalles?.length || 0}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex justify-content-center gap-1">
+                                                <button
+                                                    className="btn btn-outline-primary btn-sm rounded-circle"
+                                                    title="Ver"
+                                                    onClick={() => {
+                                                        setSelectedCompra(compra);
+                                                        setShowDetailModal(true);
+                                                    }}
+                                                >
+                                                    <FaEye size={14} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-warning btn-sm rounded-circle"
+                                                    title="Editar"
+                                                    onClick={() => handleEditar(compra)}
+                                                >
+                                                    <FaEdit size={14} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm rounded-circle"
+                                                    title="Cambiar estado"
+                                                    onClick={() => handleCambiarEstado(compra)}
+                                                >
+                                                    <FaSyncAlt size={14} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-danger btn-sm rounded-circle"
+                                                    title="Eliminar"
+                                                    onClick={() => handleEliminar(compra.CompraID)}
+                                                >
+                                                    <FaTrash size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Modal de Detalles */}
+            <Modal
+                show={showDetailModal}
+                onHide={() => setShowDetailModal(false)}
+                centered
+                size="lg"
+            >
+                <div className="modal-content border-0 shadow">
+                    {selectedCompra && (
+                        <>
+                            <div className="modal-header border-0 text-white" 
+                                style={{ 
+                                    background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
+                                    padding: '20px'
+                                }}>
+                                <div>
+                                    <h5 className="modal-title fw-bold mb-1">Detalle de la Compra</h5>
+                                    <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
+                                        ID: {selectedCompra.CompraID}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={() => setShowDetailModal(false)}
+                                />
+                            </div>
+
+                            <div className="modal-body p-4">
+                                <div className="row g-3 mb-4">
+                                    <div className="col-md-6">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Proveedor</label>
+                                            <h5 className="mb-0">{selectedCompra.proveedor?.Nombre}</h5>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">NIT</label>
+                                            <h5 className="mb-0">{selectedCompra.proveedor?.Nit}</h5>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Fecha</label>
+                                            <p className="mb-0">{formatearFecha(selectedCompra.FechaCompra)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Estado</label>
+                                            <div>
+                                                <span className={`badge bg-${getEstadoColor(selectedCompra.EstadoID)} px-3 py-2`}>
+                                                    {getEstadoNombre(selectedCompra.EstadoID)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h6 className="mb-3">Insumos ({selectedCompra.detalles?.length || 0})</h6>
+                                <div className="table-responsive">
+                                    <table className="table table-sm table-striped">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Insumo</th>
+                                                <th>Cantidad</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedCompra.detalles?.map((detalle, index) => (
+                                                <tr key={detalle.DetalleCompraID}>
+                                                    <td>{index + 1}</td>
+                                                    <td>{detalle.insumo?.Nombre || 'N/A'}</td>
+                                                    <td className="fw-bold">{detalle.Cantidad}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="modal-footer border-0">
+                                <button
+                                    type="button"
+                                    className="btn btn-danger"
+                                    onClick={() => setShowDetailModal(false)}
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 };

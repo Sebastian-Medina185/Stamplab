@@ -59,7 +59,7 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
     }, [proveedor]);
 
     // ==========================
-    // ✅ VALIDACIONES
+    //  VALIDACIONES
     // ==========================
     const validateNit = (value) => {
     const nit = value.trim();
@@ -83,7 +83,6 @@ const ProveedoresForm = ({ onClose, onSave, proveedor = null }) => {
         return "El NIT no puede tener más de 15 dígitos";
     }
     
-    // Validar que no haya guiones consecutivos o al inicio/final
     if (/--/.test(nit) || nit.startsWith('-') || nit.endsWith('-')) {
         return "Formato de NIT inválido";
     }
