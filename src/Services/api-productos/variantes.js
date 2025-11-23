@@ -36,13 +36,14 @@ export const getVarianteById = async (id) => {
 };
 
 // Crear nueva variante
-// Campos esperados: ProductoID, ColorID, TallaID, Stock, Estado
+// Campos esperados: ProductoID, ColorID, TallaID, TelaID, Stock, Estado
 export const createVariante = async (data) => {
   try {
     const varianteData = {
       ProductoID: parseInt(data.ProductoID),
       ColorID: parseInt(data.ColorID),
       TallaID: parseInt(data.TallaID),
+      TelaID: data.TelaID ? parseInt(data.TelaID) : null, // 🆕
       Stock: parseInt(data.Stock) || 0,
       Estado: data.Estado !== undefined ? (data.Estado ? 1 : 0) : 1
     };
@@ -55,16 +56,16 @@ export const createVariante = async (data) => {
   }
 };
 
+
 // Actualizar variante existente
-// Solo se pueden actualizar: Stock y Estado
 export const updateVariante = async (id, data) => {
   try {
     const updateData = {
       Stock: data.Stock !== undefined ? parseInt(data.Stock) : undefined,
-      Estado: data.Estado !== undefined ? (data.Estado ? 1 : 0) : undefined
+      Estado: data.Estado !== undefined ? (data.Estado ? 1 : 0) : undefined,
+      TelaID: data.TelaID !== undefined ? (data.TelaID ? parseInt(data.TelaID) : null) : undefined // 🆕
     };
     
-    // Eliminar campos undefined
     Object.keys(updateData).forEach(key => 
       updateData[key] === undefined && delete updateData[key]
     );
@@ -76,6 +77,7 @@ export const updateVariante = async (id, data) => {
     throw error;
   }
 };
+
 
 // Eliminar variante
 export const deleteVariante = async (id) => {

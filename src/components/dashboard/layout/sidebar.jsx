@@ -46,7 +46,6 @@ const menuItems = [
         key: "caracteristicasproducto",
         icon: <FaTshirt className="me-2" />,
         items: [
-            { to: "/dashboard/telas", label: "Telas", icon: <FaTshirt className="me-2" /> },
             { to: "/dashboard/tallas", label: "Tallas", icon: <FaRuler className="me-2" /> },
             { to: "/dashboard/colores", label: "Colores", icon: <FaPalette className="me-2" /> }
         ]

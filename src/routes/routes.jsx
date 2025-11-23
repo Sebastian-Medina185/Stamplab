@@ -2,7 +2,6 @@ import { Routes, Route } from "react-router-dom";
 import DashboardLayout from "../components/layouts/DashboardLayout";
 import Cotizaciones from "../pages/Cotizaciones";
 import Roles from "../pages/Roles";
-import Telas from "../pages/Telas";
 import Insumos from "../pages/Insumos";
 import Pedidos from "../pages/Pedidos";
 import Productos from "../pages/Productos";
@@ -75,7 +74,6 @@ const AppRoutes = () => {
                 <Route path="cotizaciones" element={<Cotizaciones />} />
                 <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
                 <Route path="roles" element={<Roles />} />
-                <Route path="telas" element={<Telas />} />
                 <Route path="insumos" element={<Insumos />} />
                 <Route path="pedidos" element={<Pedidos />} />
                 <Route path="productos" element={<Productos />} />
