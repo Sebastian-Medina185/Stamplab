@@ -1,47 +1,29 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/tecnicas"; // Cambia el puerto si tu backend usa otro
+const API_URL = "http://localhost:3000/api/tecnicas";
 
-// Obtener todas las técnicas
-export const getTecnicas = async () => {
-    try {
-        const response = await axios.get(API_URL);
-        return response.data;
-    } catch (error) {
-        console.error("Error en getTecnicas:", error);
-        throw error;
-    }
+export const getAllTecnicas = async () => {
+  const response = await axios.get(API_URL);
+  return response.data;
 };
 
-// Crear una técnica
-export const createTecnica = async (nuevaTecnica) => {
-    try {
-        const response = await axios.post(API_URL, nuevaTecnica);
-        return response.data;
-    } catch (error) {
-        console.error("Error en createTecnica:", error);
-        throw error;
-    }
+export const createTecnica = async (data) => {
+  // ¡Asegurarnos que se envíe un objeto JSON correctamente!
+  const response = await axios.post(API_URL, {
+    Nombre: data.Nombre,
+    Descripcion: data.Descripcion || "",
+    ImagenTecnica: data.ImagenTecnica || "",
+    Estado: data.Estado !== undefined ? data.Estado : true
+  });
+  return response.data;
 };
 
-// Editar una técnica
-export const updateTecnica = async (id, tecnicaActualizada) => {
-    try {
-        const response = await axios.put(`${API_URL}/${id}`, tecnicaActualizada);
-        return response.data;
-    } catch (error) {
-        console.error("Error en updateTecnica:", error);
-        throw error;
-    }
+export const updateTecnica = async (id, data) => {
+  const response = await axios.put(`${API_URL}/${id}`, data);
+  return response.data;
 };
 
-// Eliminar una técnica
 export const deleteTecnica = async (id) => {
-    try {
-        const response = await axios.delete(`${API_URL}/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error en deleteTecnica:", error);
-        throw error;
-    }
+  const response = await axios.delete(`${API_URL}/${id}`);
+  return response.data;
 };
