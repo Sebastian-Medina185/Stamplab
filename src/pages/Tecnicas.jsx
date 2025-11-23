@@ -84,7 +84,6 @@ const Tecnicas = () => {
         } catch (error) {
             console.error("Error al guardar técnica:", error);
             
-            // Mostrar error específico
             const errorMsg = error.response?.data?.message || error.message || "Error desconocido";
             
             Swal.fire({
@@ -292,61 +291,171 @@ const Tecnicas = () => {
                 </table>
             </div>
 
-            {/* MODAL VER IMAGEN - CORREGIDO */}
-            <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered>
-                <Modal.Header closeButton>
+            {/* MODAL VER IMAGEN RÁPIDA */}
+            <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered size="lg">
+                <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title>{selectedTecnica?.Nombre}</Modal.Title>
                 </Modal.Header>
 
-                <Modal.Body className="text-center">
+                <Modal.Body className="text-center py-4">
                     {selectedTecnica?.imagenTecnica ? (
                         <img
                             src={selectedTecnica.imagenTecnica}
                             alt={selectedTecnica.Nombre}
                             className="img-fluid rounded shadow"
-                            style={{ maxHeight: "400px", objectFit: "contain" }}
+                            style={{ maxHeight: "500px", objectFit: "contain" }}
                             onError={(e) => {
-                                e.target.src = "https://via.placeholder.com/400x300?text=Error+al+cargar";
+                                e.target.src = "https://via.placeholder.com/500x400?text=Error+al+cargar+imagen";
                             }}
                         />
                     ) : (
-                        <p>No hay imagen disponible</p>
+                        <p className="text-muted">No hay imagen disponible</p>
                     )}
                 </Modal.Body>
             </Modal>
 
-            {/* MODAL DETALLES - CORREGIDO */}
-            <Modal show={showDetailModal} onHide={() => setShowDetailModal(false)} centered size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Detalles de la Técnica</Modal.Title>
-                </Modal.Header>
-
-                <Modal.Body>
+            {/* MODAL VER DETALLES */}
+            <Modal
+                show={showDetailModal}
+                onHide={() => setShowDetailModal(false)}
+                centered
+                size="lg"
+                className="fade"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            >
+                <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
                     {selectedTecnica && (
                         <>
-                            <p><strong>Nombre:</strong> {selectedTecnica.Nombre}</p>
-                            <p><strong>Descripción:</strong> {selectedTecnica.Descripcion}</p>
-                            <p><strong>Estado:</strong> {selectedTecnica.Estado ? "Activo" : "Inactivo"}</p>
-
-                            <hr />
-
-                            <h5 className="mb-3">Imagen</h5>
-                            {selectedTecnica.imagenTecnica ? (
-                                <img
-                                    src={selectedTecnica.imagenTecnica}
-                                    alt="imagen técnica"
-                                    className="img-fluid rounded shadow"
-                                    style={{ maxHeight: "350px", objectFit: "contain" }}
-                                    onError={(e) => {
-                                        e.target.src = "https://via.placeholder.com/350x250?text=Error+al+cargar";
-                                    }}
+                            {/* Encabezado del Modal */}
+                            <div 
+                                className="modal-header border-0 text-white"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
+                                    padding: '20px'
+                                }}
+                            >
+                                <div className="d-flex align-items-center">
+                                    <div>
+                                        <h5 className="modal-title fw-bold mb-1">Detalles de la Técnica</h5>
+                                        <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
+                                            ID: {selectedTecnica.TecnicaID}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={() => setShowDetailModal(false)}
+                                    aria-label="Close"
                                 />
-                            ) : (
-                                <p className="text-muted">No hay imagen disponible</p>
-                            )}
+                            </div>
+
+                            {/* Cuerpo del Modal */}
+                            <div className="modal-body p-4">
+                                <div className="row g-3">
+                                    {/* Nombre */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Nombre de la Técnica</label>
+                                            <h4 className="mb-0 fs-5 fw-bold text-primary">
+                                                {selectedTecnica.Nombre}
+                                            </h4>
+                                        </div>
+                                    </div>
+
+                                    {/* Descripción */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-1 fs-6">Descripción</label>
+                                            <p className="mb-0 fs-6 text-dark">
+                                                {selectedTecnica.Descripcion || "Sin descripción"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Estado */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-2 fs-6">Estado</label>
+                                            <div>
+                                                <span 
+                                                    className={`badge px-3 py-2 fs-6 ${
+                                                        selectedTecnica.Estado ? "bg-success" : "bg-danger"
+                                                    }`}
+                                                >
+                                                    {selectedTecnica.Estado ? "✓ Activo" : "✗ Inactivo"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Imagen */}
+                                    <div className="col-12">
+                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
+                                            <label className="text-muted mb-3 fs-6">Imagen de la Técnica</label>
+                                            <div className="text-center">
+                                                {selectedTecnica.imagenTecnica ? (
+                                                    <img
+                                                        src={selectedTecnica.imagenTecnica}
+                                                        alt={selectedTecnica.Nombre}
+                                                        className="img-fluid rounded shadow-sm"
+                                                        style={{ 
+                                                            maxHeight: "400px", 
+                                                            objectFit: "contain",
+                                                            border: "2px solid #dee2e6"
+                                                        }}
+                                                        onError={(e) => {
+                                                            e.target.src = "https://via.placeholder.com/400x300?text=Error+al+cargar+imagen";
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div 
+                                                        className="d-flex flex-column align-items-center justify-content-center text-muted"
+                                                        style={{ minHeight: "200px" }}
+                                                    >
+                                                        <svg 
+                                                            width="80" 
+                                                            height="80" 
+                                                            fill="currentColor" 
+                                                            className="mb-3 opacity-50"
+                                                            viewBox="0 0 16 16"
+                                                        >
+                                                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                                                        </svg>
+                                                        <p className="mb-0">No hay imagen disponible</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Pie del Modal */}
+                            <div className="modal-footer d-flex justify-content-between border-0 pt-0">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-primary px-4"
+                                    onClick={() => {
+                                        setShowDetailModal(false);
+                                        handleEditar(selectedTecnica);
+                                    }}
+                                >
+                                    <FaEdit className="me-2" />
+                                    Editar
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-danger px-4"
+                                    onClick={() => setShowDetailModal(false)}
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
                         </>
                     )}
-                </Modal.Body>
+                </div>
             </Modal>
         </div>
     );

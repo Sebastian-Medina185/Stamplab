@@ -284,7 +284,7 @@ const Proveedores = () => {
         style={{ overflow: "auto", minHeight: 0 }}
       >
         <div
-          className="table-responsive rounded-4 shadow"
+          className="table-responsive rounded-4 shadow text-center"
           style={{ background: "#fff" }}
         >
           <table className="table align-middle mb-0">
