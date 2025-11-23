@@ -68,7 +68,10 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const cargarProveedores = async () => {
         try {
             const data = await getProveedores();
-            const proveedoresActivos = data.filter(p => p.Estado === true || p.Estado === 1);
+            // Filtrar solo proveedores activos
+            const proveedoresActivos = data.filter(p => 
+                p.Estado === true || p.Estado === 1
+            );
             setProveedores(proveedoresActivos);
         } catch (error) {
             console.error("Error cargando proveedores:", error);
@@ -79,7 +82,10 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const cargarInsumos = async () => {
         try {
             const data = await getInsumos();
-            const insumosActivos = data.filter(i => i.Estado === true || i.Estado === 1);
+            // Filtrar solo insumos activos
+            const insumosActivos = data.filter(i => 
+                i.Estado === true || i.Estado === 1
+            );
             setInsumos(insumosActivos);
         } catch (error) {
             console.error("Error cargando insumos:", error);

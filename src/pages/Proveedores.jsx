@@ -63,31 +63,52 @@ const Proveedores = () => {
   };
 
   const handleEliminar = async (nit) => {
-    try {
-      const result = await Swal.fire({
-        title: '¿Está seguro?',
-        text: "No podrá revertir esta acción",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-      });
+  try {
+    const result = await Swal.fire({
+      title: '¿Está seguro?',
+      text: "Si el proveedor tiene compras asociadas, solo se desactivará",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, continuar',
+      cancelButtonText: 'Cancelar'
+    });
 
-      if (result.isConfirmed) {
-        const response = await deleteProveedor(nit);
-        if (response.estado) {
-          await cargarProveedores();
-          Swal.fire('Eliminado', 'El proveedor ha sido eliminado', 'success');
+    if (result.isConfirmed) {
+      const response = await deleteProveedor(nit);
+      
+      if (response.estado) {
+        await cargarProveedores();
+        
+        // ✅ CORRECCIÓN: Detectar si fue eliminado o desactivado
+        const accion = response.data?.accion || response.accion;
+        
+        if (accion === 'desactivado') {
+          // Mostrar mensaje de desactivación
+          Swal.fire({
+            icon: 'info',
+            title: 'Proveedor Desactivado',
+            html: `
+              <p class="mb-2">${response.mensaje || 'El proveedor tiene compras asociadas y ha sido desactivado.'}</p>
+              <small class="text-muted">No se puede eliminar porque tiene historial de compras.</small>
+            `,
+          });
+        } else {
+          // Mostrar mensaje de eliminación exitosa
+          Swal.fire({
+            icon: 'success',
+            title: 'Eliminado',
+            text: 'El proveedor ha sido eliminado correctamente'
+          });
         }
       }
-    } catch (error) {
-      console.error("Error:", error);
-      Swal.fire('Error', error.message || 'Error al eliminar el proveedor', 'error');
     }
-  };
-
+  } catch (error) {
+    console.error("Error:", error);
+    Swal.fire('Error', error.message || 'Error al eliminar el proveedor', 'error');
+  }
+};
   const handleCambiarEstado = async (proveedor) => {
     try {
       const estadoActual = proveedor.Estado === true || proveedor.Estado === "Activo";
