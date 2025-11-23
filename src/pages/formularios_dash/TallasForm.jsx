@@ -4,15 +4,23 @@ import Swal from "sweetalert2";
 import { createTalla, updateTalla, getTallas } from "../../Services/api-tallas/tallas";
 
 const TallasForm = ({ onClose, onSave, tallaEdit }) => {
-    const [formData, setFormData] = useState({ Nombre: "" });
+
+    const [formData, setFormData] = useState({
+        Nombre: "",
+        Precio: ""
+    });
+
     const [error, setError] = useState("");
     const [tallasExistentes, setTallasExistentes] = useState([]);
+
+    const tallasConPrecio = ["XXL", "XXXL"];
 
     useEffect(() => {
         const fetchTallas = async () => {
             try {
                 const response = await getTallas();
-                if (response.estado) setTallasExistentes(response.datos.map(t => t.Nombre.toLowerCase().trim()));
+                if (response.estado)
+                    setTallasExistentes(response.datos.map(t => t.Nombre.toLowerCase().trim()));
             } catch (err) {
                 console.error("Error cargando tallas:", err);
             }
@@ -21,7 +29,12 @@ const TallasForm = ({ onClose, onSave, tallaEdit }) => {
     }, []);
 
     useEffect(() => {
-        if (tallaEdit) setFormData({ Nombre: tallaEdit.Nombre || "" });
+        if (tallaEdit) {
+            setFormData({
+                Nombre: tallaEdit.Nombre || "",
+                Precio: tallaEdit.Precio ?? ""
+            });
+        }
     }, [tallaEdit]);
 
     const validarNombre = (nombre) => {
@@ -37,49 +50,60 @@ const TallasForm = ({ onClose, onSave, tallaEdit }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-        setError(validarNombre(value));
+
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+
+        if (name === "Nombre") {
+            setError(validarNombre(value));
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const mensajeError = validarNombre(formData.Nombre);
-        if (mensajeError) return setError(mensajeError);
+        const err = validarNombre(formData.Nombre);
+        if (err) return setError(err);
+
+        // Preparar datos finales
+        const dataEnviar = {
+    Nombre: formData.Nombre.trim(),
+    Precio:
+        tallasConPrecio.includes(formData.Nombre.toUpperCase())
+            ? formData.Precio === "" 
+                ? null 
+                : Number(formData.Precio)
+            : null
+};
 
         try {
             let result;
             if (tallaEdit) {
-                result = await updateTalla(tallaEdit.TallaID, formData);
+                result = await updateTalla(tallaEdit.TallaID, dataEnviar);
             } else {
-                result = await createTalla(formData);
+                result = await createTalla(dataEnviar);
             }
 
             if (result.estado) {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.addEventListener('mouseenter', Swal.stopTimer);
-                        toast.addEventListener('mouseleave', Swal.resumeTimer);
-                    }
+                Swal.fire({
+                    icon: "success",
+                    title: tallaEdit ? "Talla actualizada" : "Talla creada",
+                    timer: 1500,
+                    showConfirmButton: false
                 });
-
-                Toast.fire({
-                    icon: 'success',
-                    title: tallaEdit ? 'Talla actualizada correctamente' : 'Talla creada correctamente'
-                });
-
                 onSave();
             } else {
                 throw new Error(result.mensaje);
             }
+
         } catch (error) {
-            Swal.fire("Error", error.message || "Error al guardar la talla", "error");
+            Swal.fire("Error", error.message || "No se pudo guardar", "error");
         }
     };
+
+    const mostrarPrecio =
+        tallasConPrecio.includes(formData.Nombre.toUpperCase());
 
     return (
         <div className="card shadow-sm border-0 p-4 mx-4">
@@ -97,6 +121,8 @@ const TallasForm = ({ onClose, onSave, tallaEdit }) => {
             </div>
 
             <form className="row g-3" onSubmit={handleSubmit}>
+                
+                {/* Nombre */}
                 <div className="col-12">
                     <label className="form-label fw-bold">Nombre de la Talla</label>
                     <input
@@ -105,23 +131,39 @@ const TallasForm = ({ onClose, onSave, tallaEdit }) => {
                         value={formData.Nombre}
                         onChange={handleChange}
                         className={`form-control ${error ? "is-invalid" : ""}`}
-                        placeholder="Ej: S, M, L, XL"
-                        required
+                        placeholder="Ej: S, M, L, XL, XXL"
                     />
                     {error && <div className="invalid-feedback">{error}</div>}
-                    <small className="form-text text-muted">
-                        Máximo 4 caracteres. Solo letras y espacios.
-                    </small>
                 </div>
 
+                {/* Precio (solo XXL o XXXL) */}
+                {mostrarPrecio && (
+                    <div className="col-12">
+                        <label className="form-label fw-bold">Precio</label>
+                        <input
+                            type="number"
+                            name="Precio"
+                            value={formData.Precio}
+                            onChange={handleChange}
+                            className="form-control"
+                            placeholder="Ingresa el precio"
+                            required={mostrarPrecio}
+                        />
+                        <small className="text-muted">
+                            Este campo solo aparece para tallas XXL y XXXL.
+                        </small>
+                    </div>
+                )}
+
                 <div className="col-12 d-flex justify-content-end gap-2">
-                    <button type="button" onClick={onClose} className="btn btn-secondary shadow-sm">
+                    <button type="button" onClick={onClose} className="btn btn-secondary">
                         Cancelar
                     </button>
-                    <button type="submit" className="btn btn-primary shadow-sm" disabled={!!error}>
+                    <button type="submit" className="btn btn-primary" disabled={!!error}>
                         {tallaEdit ? "Actualizar" : "Guardar"}
                     </button>
                 </div>
+
             </form>
         </div>
     );
