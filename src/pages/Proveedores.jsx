@@ -5,7 +5,8 @@ import {
     getProveedores, 
     createProveedor, 
     updateProveedor, 
-    deleteProveedor
+    deleteProveedor,
+    cambiarEstadoProveedor
 } from "../Services/api-proveedores/proveedores.js";
 import Swal from 'sweetalert2';
 import { Modal } from 'react-bootstrap';
@@ -62,31 +63,52 @@ const Proveedores = () => {
   };
 
   const handleEliminar = async (nit) => {
-    try {
-      const result = await Swal.fire({
-        title: '¿Está seguro?',
-        text: "No podrá revertir esta acción",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-      });
+  try {
+    const result = await Swal.fire({
+      title: '¿Está seguro?',
+      text: "Si el proveedor tiene compras asociadas, solo se desactivará",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, continuar',
+      cancelButtonText: 'Cancelar'
+    });
 
-      if (result.isConfirmed) {
-        const response = await deleteProveedor(nit);
-        if (response.estado) {
-          await cargarProveedores();
-          Swal.fire('Eliminado', 'El proveedor ha sido eliminado', 'success');
+    if (result.isConfirmed) {
+      const response = await deleteProveedor(nit);
+      
+      if (response.estado) {
+        await cargarProveedores();
+        
+        // ✅ CORRECCIÓN: Detectar si fue eliminado o desactivado
+        const accion = response.data?.accion || response.accion;
+        
+        if (accion === 'desactivado') {
+          // Mostrar mensaje de desactivación
+          Swal.fire({
+            icon: 'info',
+            title: 'Proveedor Desactivado',
+            html: `
+              <p class="mb-2">${response.mensaje || 'El proveedor tiene compras asociadas y ha sido desactivado.'}</p>
+              <small class="text-muted">No se puede eliminar porque tiene historial de compras.</small>
+            `,
+          });
+        } else {
+          // Mostrar mensaje de eliminación exitosa
+          Swal.fire({
+            icon: 'success',
+            title: 'Eliminado',
+            text: 'El proveedor ha sido eliminado correctamente'
+          });
         }
       }
-    } catch (error) {
-      console.error("Error:", error);
-      Swal.fire('Error', error.response?.data?.mensaje || 'Error al eliminar el proveedor', 'error');
     }
-  };
-
+  } catch (error) {
+    console.error("Error:", error);
+    Swal.fire('Error', error.message || 'Error al eliminar el proveedor', 'error');
+  }
+};
   const handleCambiarEstado = async (proveedor) => {
     try {
       const estadoActual = proveedor.Estado === true || proveedor.Estado === "Activo";
@@ -153,44 +175,41 @@ const Proveedores = () => {
   const handleSave = async (proveedorData) => {
     try {
         setLoading(true);
+        
         if (selectedProveedor) {
+            // Actualizar proveedor existente
             const response = await updateProveedor(selectedProveedor.Nit, proveedorData);
-            if (response.estado) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Éxito!',
-                    text: 'Proveedor actualizado correctamente'
-                });
-                setShowForm(false);
-                await cargarProveedores();
-            } else {
-                throw new Error(response.mensaje || 'Error al actualizar el proveedor');
-            }
+            
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: response.mensaje || 'Proveedor actualizado correctamente'
+            });
+            setShowForm(false);
+            await cargarProveedores();
         } else {
+            // Crear nuevo proveedor
             const response = await createProveedor(proveedorData);
-            if (response.estado) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Éxito!',
-                    text: 'Proveedor creado correctamente'
-                });
-                setShowForm(false);
-                await cargarProveedores();
-            } else {
-                throw new Error(response.mensaje || 'Error al crear el proveedor');
-            }
+            
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: response.mensaje || 'Proveedor creado correctamente'
+            });
+            setShowForm(false);
+            await cargarProveedores();
         }
     } catch (error) {
         console.error('Error:', error);
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: error.response?.data?.mensaje || error.message
+            text: error.message || 'Ocurrió un error al procesar la solicitud'
         });
     } finally {
         setLoading(false);
     }
-};
+  };
 
   const filtered = proveedores.filter(
     (proveedor) =>
