@@ -26,7 +26,7 @@ import FormularioCompra from "../components/landing/FormularioCompra";
 import AgregarProducto from "../pages/formularios_dash/AgregarProducto";
 import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
 import Ventas from "../pages/Ventas";
-import PrivateRoute from "./privateRoute";
+import PrivateRoute from "./PrivateRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 const AppRoutes = () => {
