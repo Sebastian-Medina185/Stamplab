@@ -8,7 +8,7 @@ import { getTallas, deleteTalla } from "../Services/api-tallas/tallas.js";
 const Tallas = () => {
     const [search, setSearch] = useState("");
     const [tallas, setTallas] = useState([]);
-    const [showForm, setShowForm] = useState(false);
+       const [showForm, setShowForm] = useState(false);
     const [tallaEdit, setTallaEdit] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -45,14 +45,14 @@ const Tallas = () => {
 
     const handleDelete = async (id) => {
         const result = await Swal.fire({
-            title: '¿Estás seguro?',
+            title: "¿Estás seguro?",
             text: "Esta acción no se puede revertir",
-            icon: 'warning',
+            icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar",
         });
 
         if (result.isConfirmed) {
@@ -60,26 +60,12 @@ const Tallas = () => {
                 const response = await deleteTalla(id);
                 if (response.estado) {
                     await fetchTallas();
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true,
-                        didOpen: (toast) => {
-                            toast.addEventListener('mouseenter', Swal.stopTimer);
-                            toast.addEventListener('mouseleave', Swal.resumeTimer);
-                        }
-                    });
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'Talla eliminada correctamente'
-                    });
+                    Swal.fire("Eliminada", "La talla se eliminó correctamente", "success");
                 } else {
                     throw new Error(response.mensaje);
                 }
             } catch (error) {
-                Swal.fire('Error', error.message || 'No se pudo eliminar la talla', 'error');
+                Swal.fire("Error", error.message || "No se pudo eliminar la talla", "error");
             }
         }
     };
@@ -155,19 +141,21 @@ const Tallas = () => {
                             <tr>
                                 <th style={{ borderTopLeftRadius: 12 }}>ID</th>
                                 <th>Nombre</th>
+                                <th>Precio Talla</th> {/* ← NUEVA CELDA */}
                                 <th style={{ width: 140 }}>Acciones</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={3} className="text-center py-4">
+                                    <td colSpan={4} className="text-center py-4">
                                         <div className="spinner-border text-primary" role="status"></div>
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={3} className="text-center py-4 text-muted">
+                                    <td colSpan={4} className="text-center py-4 text-muted">
                                         No hay tallas para mostrar.
                                     </td>
                                 </tr>
@@ -180,6 +168,14 @@ const Tallas = () => {
                                             </span>
                                         </td>
                                         <td className="fw-medium">{t.Nombre}</td>
+
+                                        {/* NUEVA COLUMNA DE PRECIO */}
+                                        <td className="fw-medium">
+                                            {t.Precio !== null && t.Precio !== undefined
+                                                ? `$ ${t.Precio}`
+                                                : "No tiene precio"}
+                                        </td>
+
                                         <td>
                                             <div className="d-flex justify-content-center gap-1">
                                                 <button

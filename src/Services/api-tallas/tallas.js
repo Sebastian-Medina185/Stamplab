@@ -1,7 +1,6 @@
 import axios from "axios";
 
-
-const API_URL = "http://localhost:3001/tallas";
+const API_URL = "http://localhost:3000/api/tallas";
 
 export const getTallas = async () => {
   const res = await axios.get(API_URL);
@@ -9,7 +8,7 @@ export const getTallas = async () => {
 };
 
 export const createTalla = async (talla) => {
-  console.log(" Enviando al backend:", talla); //  debug
+  console.log(" Enviando al backend:", talla);
   const res = await axios.post(API_URL, talla);
   console.log(" Respuesta backend:", res.data);
   return res.data;
