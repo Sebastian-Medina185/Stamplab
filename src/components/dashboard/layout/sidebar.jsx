@@ -1,7 +1,7 @@
 import {
     FaUsers, FaClipboardList, FaBox, FaTshirt, FaPalette,
     FaRuler, FaChartBar, FaCogs, FaUserCog, FaTools,
-    FaShoppingCart, FaWarehouse, FaChartLine, FaBars
+    FaShoppingCart, FaWarehouse, FaChartLine, FaBars, FaClock
 } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -36,6 +36,7 @@ const menuItems = [
         key: "ventas",
         icon: <FaShoppingCart className="me-2" />,
         items: [
+            { to: "/dashboard/ventas-pendientes", label: "Ventas Pendientes", icon: <FaClock className="me-2" /> },
             { to: "/dashboard/ventas", label: "Ventas", icon: <FaBox className="me-2" /> },
             { to: "/dashboard/cotizaciones", label: "Cotizaciones", icon: <FaClipboardList className="me-2" /> },
             { to: "/dashboard/productos", label: "Productos", icon: <FaBox className="me-2" /> },
@@ -79,7 +80,7 @@ const menuItems = [
 
 const Sidebar = () => {
     const location = useLocation();
-    const [open, setOpen] = useState("usuarios");
+    const [open, setOpen] = useState("ventas"); // Cambié el default a "ventas" para que se vea abierto
     const [collapsed, setCollapsed] = useState(false);
 
     const handleToggle = (key) => {
@@ -93,7 +94,6 @@ const Sidebar = () => {
                 width: collapsed ? "80px" : "250px",
                 transition: "width 0.3s ease",
                 height: "160vh",
-                // background: "linear-gradient(180deg, #1976d2 0%, #64b5f6 100%)",
                 boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
                 color: "#fff",
                 overflow: "hidden"
@@ -137,8 +137,6 @@ const Sidebar = () => {
                     </button>
                 </div>
             </div>
-
-
 
             {/* Menú */}
             <nav className="flex-grow-1" style={{ overflowY: "auto" }}>
@@ -188,11 +186,11 @@ const Sidebar = () => {
                                                 }`}
                                             style={{
                                                 background: location.pathname === item.to
-                                                    ? "rgba(255,255,255,0.2)"   // Fondo semitransparente en el activo
-                                                    : "transparent",            // Sin fondo en el inactivo
+                                                    ? "rgba(255,255,255,0.2)"
+                                                    : "transparent",
                                                 color: location.pathname === item.to
-                                                    ? "#fff"                    // Texto blanco para activo
-                                                    : "rgba(255,255,255,0.85)", // Blanco suave para inactivo
+                                                    ? "#fff"
+                                                    : "rgba(255,255,255,0.85)",
                                                 borderRadius: 8,
                                                 fontWeight: location.pathname === item.to ? 700 : 500,
                                                 boxShadow: location.pathname === item.to

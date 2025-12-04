@@ -26,6 +26,7 @@ import AgregarProducto from "../pages/formularios_dash/AgregarProducto";
 import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
 import Ventas from "../pages/Ventas";
 import { ProtectedRoute } from "./ProtectedRoute";
+import VentasPendientes from "../pages/VentasPendientes";
 
 const AppRoutes = () => {
 
@@ -63,6 +64,7 @@ const AppRoutes = () => {
                 {/* Rutas del Dashboard */}
                 <Route index element={<DashboardMedicionesempeño />} />
                 <Route path="ventas" element={<Ventas></Ventas>} />
+                <Route path="/dashboard/ventas-pendientes" element={<VentasPendientes/>} />
                 <Route path="cotizaciones" element={<Cotizaciones />} />
                 <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
                 <Route path="roles" element={<Roles />} />
