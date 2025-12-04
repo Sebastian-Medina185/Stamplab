@@ -807,7 +807,7 @@ const AgregarProducto = () => {
                                             <h6 className="fw-bold">{producto.Nombre}</h6>
                                             <p className="text-muted mb-2">{producto.Descripcion || "Sin descripción"}</p>
                                             <div className="alert alert-success mb-2">
-                                                <strong>💰 Precio Base:</strong> ${(productoCreado.PrecioBase || 0).toLocaleString()}
+                                                <strong>Precio Base:</strong> ${(productoCreado.PrecioBase || 0).toLocaleString()}
                                             </div>
                                             <small className="text-muted">ID: {productoCreado.ProductoID}</small>
                                         </div>
@@ -820,7 +820,7 @@ const AgregarProducto = () => {
                             {modoEdicion ? "Gestionar Variantes" : "Agregar Variantes"}
                         </h5>
 
-                        {/* 🆕 Formulario para agregar variante CON TELA */}
+                        {/* Formulario para agregar variante CON TELA */}
                         <div className="card bg-light mb-4">
                             <div className="card-body">
                                 <h6 className="fw-bold mb-3">Nueva Variante</h6>

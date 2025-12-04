@@ -11,7 +11,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     // ==========================
     const [formData, setFormData] = useState({
         proveedorRefId: "",
-        estadoId: "Pendiente",
+        estadoId: 1,  // ✅ CAMBIO: Ahora es número (1 = Pendiente)
         fechaCompra: new Date().toISOString().split('T')[0]
     });
 
@@ -27,11 +27,11 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const [showModalInsumo, setShowModalInsumo] = useState(false);
     const [busquedaInsumo, setBusquedaInsumo] = useState("");
 
-    // Estados
+    // ✅ CAMBIO: Estados con IDs numéricos
     const estados = [
-        { id: "Pendiente", nombre: "Pendiente" },
-        { id: "Aprobada", nombre: "Aprobada" },
-        { id: "Rechazada", nombre: "Rechazada" }
+        { id: 1, nombre: "Pendiente" },
+        { id: 2, nombre: "Aprobada" },
+        { id: 3, nombre: "Rechazada" }
     ];
 
     // ==========================
@@ -45,7 +45,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
         if (compra) {
             setFormData({
                 proveedorRefId: compra.ProveedorRefId?.toString() || "",
-                estadoId: compra.EstadoID || "Pendiente",
+                estadoId: compra.EstadoID || 1,  // ✅ CAMBIO: Valor numérico
                 fechaCompra: compra.FechaCompra 
                     ? new Date(compra.FechaCompra).toISOString().split('T')[0]
                     : new Date().toISOString().split('T')[0]
@@ -68,7 +68,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const cargarProveedores = async () => {
         try {
             const data = await getProveedores();
-            // Filtrar solo proveedores activos
             const proveedoresActivos = data.filter(p => 
                 p.Estado === true || p.Estado === 1
             );
@@ -82,7 +81,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const cargarInsumos = async () => {
         try {
             const data = await getInsumos();
-            // Filtrar solo insumos activos
             const insumosActivos = data.filter(i => 
                 i.Estado === true || i.Estado === 1
             );
@@ -98,7 +96,9 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     // ==========================
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        // ✅ CAMBIO: Convertir estadoId a número
+        const processedValue = name === 'estadoId' ? parseInt(value) : value;
+        setFormData(prev => ({ ...prev, [name]: processedValue }));
     };
 
     const handleSeleccionarInsumo = (insumo) => {
@@ -122,10 +122,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // ✅ NOTA: En pedidos NO validamos contra stock porque estás COMPRANDO para AUMENTAR el inventario
-        // Si tienes 20 y pides 22, terminarás con 42 total (correcto ✓)
-
-        // Verificar si el insumo ya está en la lista
         const yaExiste = detalles.find(d => d.InsumoID === insumoSeleccionado.InsumoID);
         if (yaExiste) {
             Swal.fire("Atención", "Este insumo ya fue agregado. Puede editar la cantidad en la tabla.", "warning");
@@ -165,7 +161,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // ✅ VALIDACIONES REQUERIDAS
+        // VALIDACIONES
         if (!formData.proveedorRefId) {
             Swal.fire("Error", "Debe seleccionar un proveedor", "error");
             return;
@@ -186,7 +182,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // ✅ Validar que todos los detalles tengan cantidad válida
         const detalleInvalido = detalles.find(d => !d.Cantidad || d.Cantidad <= 0);
         if (detalleInvalido) {
             Swal.fire({
@@ -197,7 +192,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // ✅ Validar fecha del pedido (debe ser hoy o futura)
         const fechaSeleccionada = new Date(formData.fechaCompra);
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
@@ -211,16 +205,19 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // Preparar datos para enviar
+        // ✅ CAMBIO: Asegurar que EstadoID sea número
         const compraData = {
             ProveedorRefId: parseInt(formData.proveedorRefId),
-            EstadoID: formData.estadoId,
+            EstadoID: parseInt(formData.estadoId),  // ✅ IMPORTANTE: Convertir a número
             FechaCompra: formData.fechaCompra,
             detalles: detalles.map(d => ({
                 InsumoID: d.InsumoID,
-                Cantidad: d.Cantidad
+                Cantidad: d.Cantidad,
+                PrecioUnitario: 0
             }))
         };
+
+        console.log("📦 Datos finales a enviar:", JSON.stringify(compraData, null, 2));
 
         onSave(compraData);
     };
@@ -362,11 +359,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
                                         const valor = parseInt(e.target.value) || 0;
                                         if (valor >= 0) {
                                             setCantidadInsumo(valor);
-                                        }
-                                    }}
-                                    onKeyPress={(e) => {
-                                        if (!/[0-9]/.test(e.key)) {
-                                            e.preventDefault();
                                         }
                                     }}
                                     min="1"

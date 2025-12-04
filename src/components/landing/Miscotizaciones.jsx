@@ -1,83 +1,91 @@
 import React, { useState, useEffect } from "react";
 import { Table, Badge, Button, Modal, Row, Col, Spinner, Alert } from "react-bootstrap";
 import { FaEye, FaCheckCircle, FaClock, FaTimesCircle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import NavbarComponent from "./NavBarLanding";
 import FooterComponent from "./footer";
+import { getCotizaciones } from "../../Services/api-cotizaciones/cotizaciones";
 
 const MisCotizaciones = () => {
+    const navigate = useNavigate();
+    const [usuario, setUsuario] = useState(null);
     const [cotizaciones, setCotizaciones] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState(null);
 
     useEffect(() => {
+        verificarAutenticacion();
         cargarCotizaciones();
     }, []);
+
+    const verificarAutenticacion = () => {
+        const usuarioStorage = localStorage.getItem("usuario");
+        if (!usuarioStorage) {
+            Swal.fire({
+                icon: "warning",
+                title: "Autenticación requerida",
+                text: "Debes iniciar sesión para ver tus cotizaciones",
+            }).then(() => {
+                navigate("/login");
+            });
+            return;
+        }
+        setUsuario(JSON.parse(usuarioStorage));
+    };
+
+    // En MisCotizaciones.jsx - Corregir el mapeo de cotizaciones
 
     const cargarCotizaciones = async () => {
         setCargando(true);
         try {
-            // Aquí llamarías a tu servicio real
-            // const usuario = getUser(); // obtener usuario logueado
-            // const response = await getCotizacionesByUsuario(usuario.DocumentoID);
-            
-            // Datos de ejemplo (simulación)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const datosMock = [
-                {
-                    CotizacionID: 1,
-                    FechaCotizacion: "2025-01-15",
-                    EstadoID: 1,
-                    Estado: "Pendiente",
-                    ValorTotal: null,
-                    Producto: {
-                        Nombre: "Camiseta Básica",
-                        ImagenProducto: "https://via.placeholder.com/100"
-                    },
-                    Cantidad: 10,
-                    TraePrenda: false,
-                    Disenos: [
-                        { TecnicaNombre: "Sublimación", ParteNombre: "Frente" },
-                        { TecnicaNombre: "Bordado", ParteNombre: "Espalda" }
-                    ]
-                },
-                {
-                    CotizacionID: 2,
-                    FechaCotizacion: "2025-01-10",
-                    EstadoID: 2,
-                    Estado: "Aprobada",
-                    ValorTotal: 250000,
-                    Producto: {
-                        Nombre: "Hoodie Premium",
-                        ImagenProducto: "https://via.placeholder.com/100"
-                    },
-                    Cantidad: 5,
-                    TraePrenda: true,
-                    PrendaDescripcion: "Hoodies negros talla L",
-                    Disenos: [
-                        { TecnicaNombre: "Vinilo", ParteNombre: "Frente" }
-                    ]
-                },
-                {
-                    CotizacionID: 3,
-                    FechaCotizacion: "2025-01-05",
-                    EstadoID: 3,
-                    Estado: "Rechazada",
-                    ValorTotal: null,
-                    Producto: {
-                        Nombre: "Polo Deportivo",
-                        ImagenProducto: "https://via.placeholder.com/100"
-                    },
-                    Cantidad: 20,
-                    TraePrenda: false,
-                    Disenos: []
-                }
-            ];
+            const usuarioStorage = localStorage.getItem("usuario");
+            if (!usuarioStorage) return;
 
-            setCotizaciones(datosMock);
+            const usuarioData = JSON.parse(usuarioStorage);
+            const response = await getCotizaciones();
+            const data = Array.isArray(response) ? response : (response?.datos || []);
+
+            // Filtrar correctamente por DocumentoID del usuario
+            const misCotizaciones = data.filter(c => {
+                const docID = c.usuario?.DocumentoID || c.DocumentoID;
+                return docID === usuarioData.DocumentoID;
+            });
+
+            const cotizacionesMapeadas = misCotizaciones.map(c => {
+                // Obtener el primer detalle correctamente
+                const primerDetalle = c.detalles?.[0] || {};
+                const producto = primerDetalle.producto || {};
+
+                return {
+                    CotizacionID: c.CotizacionID,
+                    FechaCotizacion: c.FechaCotizacion,
+                    EstadoID: c.EstadoID || c.estado?.EstadoID || 1,
+                    // Solo el nombre del estado, no el objeto completo
+                    Estado: c.estado?.Nombre || "Pendiente",
+                    ValorTotal: c.ValorTotal || 0,
+                    Producto: {
+                        Nombre: producto.Nombre || "Sin producto",
+                        // Usar imagen local en lugar de placeholder
+                        ImagenProducto: producto.ImagenProducto || "/placeholder-product.png"
+                    },
+                    Cantidad: primerDetalle.Cantidad || 0,
+                    TraePrenda: primerDetalle.TraePrenda || false,
+                    PrendaDescripcion: primerDetalle.PrendaDescripcion || "",
+                    // Mapear diseños correctamente
+                    Disenos: (primerDetalle.tecnicas || []).map(t => ({
+                        TecnicaNombre: t.tecnica?.Nombre || "N/A",
+                        ParteNombre: t.parte?.Nombre || "N/A"
+                    })),
+                    Detalles: c.detalles || []
+                };
+            });
+
+            setCotizaciones(cotizacionesMapeadas);
         } catch (error) {
             console.error("Error al cargar cotizaciones:", error);
+            Swal.fire("Error", "No se pudieron cargar tus cotizaciones", "error");
         } finally {
             setCargando(false);
         }
@@ -121,7 +129,14 @@ const MisCotizaciones = () => {
 
             <div className="container my-5">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 className="fw-bold mb-0">📋 Mis Cotizaciones</h3>
+                    <div>
+                        <h3 className="fw-bold mb-0">Mis Cotizaciones</h3>
+                        {usuario && (
+                            <p className="text-muted mb-0">
+                                Bienvenido, {usuario.Nombre}
+                            </p>
+                        )}
+                    </div>
                     <Button variant="primary" href="/productosLanding">
                         + Nueva Cotización
                     </Button>
@@ -250,7 +265,7 @@ const MisCotizaciones = () => {
                                                 <strong>Cantidad:</strong> {cotizacionSeleccionada.Cantidad} unidades
                                             </p>
                                             {cotizacionSeleccionada.TraePrenda && (
-                                                <Badge bg="info">Cliente trae prenda</Badge>
+                                                <Badge bg="info">Traes tu propia prenda</Badge>
                                             )}
                                         </div>
                                     </div>
@@ -260,7 +275,7 @@ const MisCotizaciones = () => {
                             {/* Prenda Propia */}
                             {cotizacionSeleccionada.TraePrenda && cotizacionSeleccionada.PrendaDescripcion && (
                                 <Alert variant="info" className="mb-3">
-                                    <strong>Descripción de la prenda:</strong>
+                                    <strong>Descripción de tu prenda:</strong>
                                     <p className="mb-0 mt-2">{cotizacionSeleccionada.PrendaDescripcion}</p>
                                 </Alert>
                             )}
@@ -280,8 +295,8 @@ const MisCotizaciones = () => {
                                             <tbody>
                                                 {cotizacionSeleccionada.Disenos.map((d, i) => (
                                                     <tr key={i}>
-                                                        <td>{d.TecnicaNombre}</td>
-                                                        <td>{d.ParteNombre}</td>
+                                                        <td>{d.TecnicaNombre || d.tecnica?.Nombre || "N/A"}</td>
+                                                        <td>{d.ParteNombre || d.parte?.Nombre || "N/A"}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -309,6 +324,7 @@ const MisCotizaciones = () => {
                                     {cotizacionSeleccionada.Estado === "Pendiente" && (
                                         <Alert variant="warning" className="mt-3 mb-0">
                                             <small>
+                                                <FaClock className="me-2" />
                                                 Tu cotización está siendo revisada. Te contactaremos pronto con el precio final.
                                             </small>
                                         </Alert>
@@ -317,7 +333,8 @@ const MisCotizaciones = () => {
                                     {cotizacionSeleccionada.Estado === "Aprobada" && (
                                         <Alert variant="success" className="mt-3 mb-0">
                                             <small>
-                                                ✅ Cotización aprobada. Puedes proceder con la compra.
+                                                <FaCheckCircle className="me-2" />
+                                                Cotización aprobada. Contáctanos para proceder con la compra.
                                             </small>
                                         </Alert>
                                     )}
@@ -325,6 +342,7 @@ const MisCotizaciones = () => {
                                     {cotizacionSeleccionada.Estado === "Rechazada" && (
                                         <Alert variant="danger" className="mt-3 mb-0">
                                             <small>
+                                                <FaTimesCircle className="me-2" />
                                                 Esta cotización fue rechazada. Contáctanos para más información.
                                             </small>
                                         </Alert>
@@ -339,8 +357,14 @@ const MisCotizaciones = () => {
                         Cerrar
                     </Button>
                     {cotizacionSeleccionada?.Estado === "Aprobada" && (
-                        <Button variant="success">
-                            Proceder con la Compra
+                        <Button variant="success" onClick={() => {
+                            Swal.fire({
+                                icon: "info",
+                                title: "Próximamente",
+                                text: "La funcionalidad de compra estará disponible pronto. Por favor contáctanos para finalizar tu pedido."
+                            });
+                        }}>
+                            Contactar para Comprar
                         </Button>
                     )}
                 </Modal.Footer>

@@ -62,53 +62,62 @@ const Proveedores = () => {
     }
   };
 
+  // ✅ MEJORADO: Manejo de eliminación/desactivación
   const handleEliminar = async (nit) => {
-  try {
-    const result = await Swal.fire({
-      title: '¿Está seguro?',
-      text: "Si el proveedor tiene compras asociadas, solo se desactivará",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar'
-    });
+    try {
+      const result = await Swal.fire({
+        title: '¿Está seguro?',
+        html: `
+          <p>Esta acción intentará eliminar el proveedor.</p>
+          <small class="text-muted">Si tiene compras asociadas, solo se desactivará.</small>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, continuar',
+        cancelButtonText: 'Cancelar'
+      });
 
-    if (result.isConfirmed) {
-      const response = await deleteProveedor(nit);
-      
-      if (response.estado) {
+      if (result.isConfirmed) {
+        setLoading(true);
+        const response = await deleteProveedor(nit);
+        
         await cargarProveedores();
         
-        // ✅ CORRECCIÓN: Detectar si fue eliminado o desactivado
-        const accion = response.data?.accion || response.accion;
-        
-        if (accion === 'desactivado') {
-          // Mostrar mensaje de desactivación
+        // ✅ Mostrar mensaje según la acción realizada
+        if (response.accion === 'desactivado') {
           Swal.fire({
             icon: 'info',
             title: 'Proveedor Desactivado',
             html: `
-              <p class="mb-2">${response.mensaje || 'El proveedor tiene compras asociadas y ha sido desactivado.'}</p>
-              <small class="text-muted">No se puede eliminar porque tiene historial de compras.</small>
+              <p class="mb-2">${response.mensaje}</p>
+              <small class="text-muted">El proveedor no se eliminó porque tiene compras registradas.</small>
             `,
+            confirmButtonColor: '#3085d6'
           });
-        } else {
-          // Mostrar mensaje de eliminación exitosa
+        } else if (response.accion === 'eliminado') {
           Swal.fire({
             icon: 'success',
-            title: 'Eliminado',
-            text: 'El proveedor ha sido eliminado correctamente'
+            title: '¡Eliminado!',
+            text: 'El proveedor ha sido eliminado correctamente',
+            timer: 2000,
+            showConfirmButton: false
           });
         }
       }
+    } catch (error) {
+      console.error("Error:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Error al procesar la solicitud'
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error:", error);
-    Swal.fire('Error', error.message || 'Error al eliminar el proveedor', 'error');
-  }
-};
+  };
+
   const handleCambiarEstado = async (proveedor) => {
     try {
       const estadoActual = proveedor.Estado === true || proveedor.Estado === "Activo";
@@ -133,13 +142,13 @@ const Proveedores = () => {
           const response = await cambiarEstadoProveedor(proveedor.Nit, nuevoEstado);
           if (response.estado) {
             await cargarProveedores();
-            Swal.fire(
-              '¡Actualizado!',
-              `El estado del proveedor ha sido cambiado a ${estadoTexto}`,
-              'success'
-            );
-          } else {
-            throw new Error(response.mensaje || 'Error al cambiar el estado');
+            Swal.fire({
+              icon: 'success',
+              title: '¡Actualizado!',
+              text: `El estado del proveedor ha sido cambiado a ${estadoTexto}`,
+              timer: 2000,
+              showConfirmButton: false
+            });
           }
         } catch (patchError) {
           console.warn("PATCH falló, intentando actualización completa:", patchError);
@@ -150,23 +159,23 @@ const Proveedores = () => {
           const response = await updateProveedor(proveedor.Nit, updatedData);
           if (response.estado) {
             await cargarProveedores();
-            Swal.fire(
-              '¡Actualizado!',
-              `El estado del proveedor ha sido cambiado a ${estadoTexto}`,
-              'success'
-            );
-          } else {
-            throw new Error(response.mensaje || 'Error al cambiar el estado');
+            Swal.fire({
+              icon: 'success',
+              title: '¡Actualizado!',
+              text: `El estado del proveedor ha sido cambiado a ${estadoTexto}`,
+              timer: 2000,
+              showConfirmButton: false
+            });
           }
         }
       }
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      Swal.fire(
-        'Error',
-        error.message || 'Error al cambiar el estado del proveedor',
-        'error'
-      );
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Error al cambiar el estado del proveedor'
+      });
     } finally {
       setLoading(false);
     }
@@ -177,28 +186,29 @@ const Proveedores = () => {
         setLoading(true);
         
         if (selectedProveedor) {
-            // Actualizar proveedor existente
             const response = await updateProveedor(selectedProveedor.Nit, proveedorData);
             
             Swal.fire({
                 icon: 'success',
                 title: '¡Éxito!',
-                text: response.mensaje || 'Proveedor actualizado correctamente'
+                text: response.mensaje || 'Proveedor actualizado correctamente',
+                timer: 2000,
+                showConfirmButton: false
             });
-            setShowForm(false);
-            await cargarProveedores();
         } else {
-            // Crear nuevo proveedor
             const response = await createProveedor(proveedorData);
             
             Swal.fire({
                 icon: 'success',
                 title: '¡Éxito!',
-                text: response.mensaje || 'Proveedor creado correctamente'
+                text: response.mensaje || 'Proveedor creado correctamente',
+                timer: 2000,
+                showConfirmButton: false
             });
-            setShowForm(false);
-            await cargarProveedores();
         }
+        
+        setShowForm(false);
+        await cargarProveedores();
     } catch (error) {
         console.error('Error:', error);
         Swal.fire({
@@ -236,7 +246,6 @@ const Proveedores = () => {
         background: "linear-gradient(135deg, #ffffffff 0%, #fafcff 100%)",
       }}
     >
-      {/* Encabezado y botón agregar */}
       <div className="d-flex justify-content-between align-items-center mb-4 mt-3 px-4">
         <h1
           className="fs-4 fw-bold mb-0 text-primary"
@@ -253,10 +262,9 @@ const Proveedores = () => {
         </button>
       </div>
 
-      {/* Filtros */}
       <div className="d-flex justify-content-around mb-3 px-4 gap-3 flex-wrap">
         <div className="input-group" style={{ maxWidth: 300 }}>
-          <span className="input-group-text bg-white border-end-0">🔍</span>
+          <span className="input-group-text bg-white border-end-0"></span>
           <input
             type="text"
             className="form-control border-start-0"
@@ -267,7 +275,7 @@ const Proveedores = () => {
         </div>
 
         <div className="input-group" style={{ maxWidth: 300 }}>
-          <span className="input-group-text bg-white border-end-0">🔍</span>
+          <span className="input-group-text bg-white border-end-0"></span>
           <input
             type="text"
             className="form-control border-start-0"
@@ -278,7 +286,6 @@ const Proveedores = () => {
         </div>
       </div>
 
-      {/* Tabla con estilo */}
       <div
         className="flex-grow-1 px-4 pb-4"
         style={{ overflow: "auto", minHeight: 0 }}
@@ -409,10 +416,8 @@ const Proveedores = () => {
         show={showDetailModal}
         onHide={() => setShowDetailModal(false)}
         centered
-        className="fade"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       >
-        <div className="modal-content border-0 shadow" style={{ overflow: 'hidden' }}>
+        <div className="modal-content border-0 shadow">
           {selectedProveedor && (
             <>
               <div className="modal-header border-0 text-white" 
@@ -420,19 +425,16 @@ const Proveedores = () => {
                   background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
                   padding: '20px'
                 }}>
-                <div className="d-flex align-items-center">
-                  <div>
-                    <h5 className="modal-title fw-bold mb-1">Detalles del Proveedor</h5>
-                    <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
-                      NIT: {selectedProveedor.Nit}
-                    </p>
-                  </div>
+                <div>
+                  <h5 className="modal-title fw-bold mb-1">Detalles del Proveedor</h5>
+                  <p className="mb-0 opacity-75" style={{ fontSize: '0.9rem' }}>
+                    NIT: {selectedProveedor.Nit}
+                  </p>
                 </div>
                 <button
                   type="button"
                   className="btn-close btn-close-white"
                   onClick={() => setShowDetailModal(false)}
-                  aria-label="Close"
                 />
               </div>
 
@@ -447,21 +449,21 @@ const Proveedores = () => {
 
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
-                      <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Correo Electrónico</label>
+                      <label className="text-muted mb-1 fs-6">Correo Electrónico</label>
                       <p className="mb-0 fs-6">{selectedProveedor.Correo}</p>
                     </div>
                   </div>
 
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
-                      <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Teléfono</label>
+                      <label className="text-muted mb-1 fs-6">Teléfono</label>
                       <p className="mb-0 fs-6">{selectedProveedor.Telefono}</p>
                     </div>
                   </div>
 
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
-                      <label className="text-muted mb-1 fs-6" style={{ fontSize: '0.85rem' }}>Dirección</label>
+                      <label className="text-muted mb-1 fs-6">Dirección</label>
                       <p className="mb-0 fs-6">{selectedProveedor.Direccion}</p>
                     </div>
                   </div>
@@ -469,10 +471,9 @@ const Proveedores = () => {
                   <div className="col-12">
                     <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                       <label className="text-muted mb-1 fs-6">Estado</label>
-                      <div className="d-flex align-items-center">
+                      <div>
                         <span 
                           className={`badge px-3 py-2 ${selectedProveedor.Estado ? 'bg-success' : 'bg-danger'}`}
-                          style={{ fontSize: '0.9rem' }}
                         >
                           {selectedProveedor.Estado ? 'Activo' : 'Inactivo'}
                         </span>

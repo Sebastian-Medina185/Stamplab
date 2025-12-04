@@ -83,14 +83,14 @@ const Tecnicas = () => {
             }
         } catch (error) {
             console.error("Error al guardar técnica:", error);
-            
+
             const errorMsg = error.response?.data?.message || error.message || "Error desconocido";
-            
+
             Swal.fire({
                 icon: "error",
                 title: "Error",
-                text: tecnicaEdit 
-                    ? `No se pudo actualizar: ${errorMsg}` 
+                text: tecnicaEdit
+                    ? `No se pudo actualizar: ${errorMsg}`
                     : `No se pudo crear: ${errorMsg}`,
                 footer: error.response?.data?.detalles || ""
             });
@@ -134,40 +134,65 @@ const Tecnicas = () => {
         }
     };
 
+    
     const handleCambiarEstado = async (tecnica) => {
         const nuevoEstado = !tecnica.Estado;
+
         try {
             const result = await Swal.fire({
                 title: "¿Cambiar estado?",
                 text: `¿Seguro que desea cambiar a ${nuevoEstado ? "Activo" : "Inactivo"}?`,
-                icon: "warning",
+                icon: "question",
                 showCancelButton: true,
-                confirmButtonText: "Confirmar",
+                confirmButtonText: "Sí, cambiar",
                 cancelButtonText: "Cancelar",
+                confirmButtonColor: "#1976d2",
+                cancelButtonColor: "#d33",
             });
 
-            if (result.isConfirmed) {
-                setLoading(true);
-                const response = await updateTecnica(tecnica.TecnicaID, {
-                    Nombre: tecnica.Nombre,
-                    Descripcion: tecnica.Descripcion,
-                    imagenTecnica: tecnica.imagenTecnica,
-                    Estado: nuevoEstado,
+            if (!result.isConfirmed) return;
+
+            const response = await updateTecnica(tecnica.TecnicaID, {
+                Nombre: tecnica.Nombre,
+                Descripcion: tecnica.Descripcion,
+                imagenTecnica: tecnica.imagenTecnica,
+                Estado: nuevoEstado,
+            });
+
+            if (response.estado) {
+                await loadTecnicas();
+
+                Swal.fire({
+                    toast: true,
+                    icon: "success",
+                    title: `Estado cambiado a ${nuevoEstado ? "Activo" : "Inactivo"}`,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true,
                 });
 
-                if (response.estado) {
-                    await loadTecnicas();
-                } else {
-                    throw new Error("Error al cambiar estado");
-                }
+            } else {
+                throw new Error(response.message || "Error desconocido");
             }
+
         } catch (error) {
             console.error(error);
-            Swal.fire("Error", error.message || "No se pudo cambiar estado", "error");
-        } finally {
-            setLoading(false);
+
+            const errorMsg =
+                error.response?.data?.message ||
+                error.message ||
+                "Error al cambiar estado";
+
+            Swal.fire({
+                icon: "error",
+                title: "Error al cambiar estado",
+                text: errorMsg,
+                footer: error.response?.data?.detalles || "",
+            });
         }
     };
+
 
     if (showForm)
         return (
@@ -251,38 +276,37 @@ const Tecnicas = () => {
 
                                 <td className="d-flex gap-1">
                                     <button
-                                        className="btn btn-outline-warning btn-sm"
-                                        onClick={() => handleEditar(t)}
-                                        title="Editar"
-                                    >
-                                        <FaEdit />
-                                    </button>
-
-                                    <button
-                                        className="btn btn-outline-danger btn-sm"
-                                        onClick={() => handleEliminar(t.TecnicaID)}
-                                        title="Eliminar"
-                                    >
-                                        <FaTrash />
-                                    </button>
-
-                                    <button
-                                        className="btn btn-outline-secondary btn-sm"
-                                        onClick={() => handleCambiarEstado(t)}
-                                        title="Cambiar estado"
-                                    >
-                                        <FaSyncAlt />
-                                    </button>
-
-                                    <button
-                                        className="btn btn-outline-info btn-sm"
+                                        className="btn btn-outline-primary btn-sm rounded-circle"
                                         onClick={() => {
                                             setSelectedTecnica(t);
                                             setShowDetailModal(true);
                                         }}
                                         title="Ver detalle"
                                     >
-                                        <FaEye />
+                                        <FaEye size={14} />
+                                    </button>
+                                    <button
+                                        className="btn btn-outline-warning btn-sm rounded-circle"
+                                        onClick={() => handleEditar(t)}
+                                        title="Editar"
+                                    >
+                                        <FaEdit size={14} />
+                                    </button>
+
+                                    <button
+                                        className="btn btn-outline-danger btn-sm rounded-circle"
+                                        onClick={() => handleEliminar(t.TecnicaID)}
+                                        title="Eliminar"
+                                    >
+                                        <FaTrash size={14} />
+                                    </button>
+
+                                    <button
+                                        className="btn btn-outline-secondary btn-sm rounded-circle"
+                                        onClick={() => handleCambiarEstado(t)}
+                                        title="Cambiar estado"
+                                    >
+                                        <FaSyncAlt size={14} />
                                     </button>
                                 </td>
                             </tr>
@@ -327,7 +351,7 @@ const Tecnicas = () => {
                     {selectedTecnica && (
                         <>
                             {/* Encabezado del Modal */}
-                            <div 
+                            <div
                                 className="modal-header border-0 text-white"
                                 style={{
                                     background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
@@ -378,10 +402,9 @@ const Tecnicas = () => {
                                         <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                                             <label className="text-muted mb-2 fs-6">Estado</label>
                                             <div>
-                                                <span 
-                                                    className={`badge px-3 py-2 fs-6 ${
-                                                        selectedTecnica.Estado ? "bg-success" : "bg-danger"
-                                                    }`}
+                                                <span
+                                                    className={`badge px-3 py-2 fs-6 ${selectedTecnica.Estado ? "bg-success" : "bg-danger"
+                                                        }`}
                                                 >
                                                     {selectedTecnica.Estado ? "✓ Activo" : "✗ Inactivo"}
                                                 </span>
@@ -399,8 +422,8 @@ const Tecnicas = () => {
                                                         src={selectedTecnica.imagenTecnica}
                                                         alt={selectedTecnica.Nombre}
                                                         className="img-fluid rounded shadow-sm"
-                                                        style={{ 
-                                                            maxHeight: "400px", 
+                                                        style={{
+                                                            maxHeight: "400px",
                                                             objectFit: "contain",
                                                             border: "2px solid #dee2e6"
                                                         }}
@@ -409,19 +432,19 @@ const Tecnicas = () => {
                                                         }}
                                                     />
                                                 ) : (
-                                                    <div 
+                                                    <div
                                                         className="d-flex flex-column align-items-center justify-content-center text-muted"
                                                         style={{ minHeight: "200px" }}
                                                     >
-                                                        <svg 
-                                                            width="80" 
-                                                            height="80" 
-                                                            fill="currentColor" 
+                                                        <svg
+                                                            width="80"
+                                                            height="80"
+                                                            fill="currentColor"
                                                             className="mb-3 opacity-50"
                                                             viewBox="0 0 16 16"
                                                         >
-                                                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                                                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                                                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
                                                         </svg>
                                                         <p className="mb-0">No hay imagen disponible</p>
                                                     </div>

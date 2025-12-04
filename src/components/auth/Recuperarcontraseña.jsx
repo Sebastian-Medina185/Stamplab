@@ -10,11 +10,22 @@ const RecuperarContraseña = () => {
     const [loading, setLoading] = useState(false);
     const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
 
+    const validarCorreo = (correo) => {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(correo);
+    };
+
+
     const handleRecuperar = async (e) => {
         e.preventDefault();
-        
+
         if (!correo) {
             setMensaje({ tipo: "danger", texto: "Por favor ingresa tu correo" });
+            return;
+        }
+
+        if (!validarCorreo(correo)) {
+            setMensaje({ tipo: "danger", texto: "Por favor ingresa un correo válido" });
             return;
         }
 
@@ -26,23 +37,24 @@ const RecuperarContraseña = () => {
                 Correo: correo
             });
 
-            setMensaje({ 
-                tipo: "success", 
-                texto: "¡Revisa tu correo! Te hemos enviado un enlace para restablecer tu contraseña." 
+            setMensaje({
+                tipo: "success",
+                texto: "Si el correo está registrado, te enviaremos un enlace de recuperación."
             });
-            
+
             setCorreo("");
 
         } catch (error) {
             console.error("Error:", error);
-            setMensaje({ 
-                tipo: "danger", 
-                texto: error.response?.data?.mensaje || "Error al procesar la solicitud" 
+            setMensaje({
+                tipo: "danger",
+                texto: error.response?.data?.mensaje || "Error al procesar la solicitud"
             });
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <>
@@ -72,7 +84,10 @@ const RecuperarContraseña = () => {
                                 type="email"
                                 placeholder="Ingresa tu correo electrónico"
                                 value={correo}
-                                onChange={(e) => setCorreo(e.target.value)}
+                                onChange={(e) => {
+                                    setCorreo(e.target.value);
+                                    if (mensaje.texto) setMensaje({ tipo: "", texto: "" });
+                                }}
                                 disabled={loading}
                                 required
                             />
@@ -82,9 +97,9 @@ const RecuperarContraseña = () => {
                         </Form.Group>
 
                         <div className="d-grid mb-3">
-                            <Button 
-                                variant="primary" 
-                                type="submit" 
+                            <Button
+                                variant="primary"
+                                type="submit"
                                 className="fw-bold"
                                 disabled={loading}
                             >

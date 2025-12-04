@@ -18,23 +18,171 @@ const RegistroLanding = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    // Estados para errores de validación
+    const [errores, setErrores] = useState({
+        nombre: "",
+        documento: "",
+        correo: "",
+        telefono: "",
+        direccion: "",
+        contraseña: "",
+        confirmar: ""
+    });
+
+    // Validación de nombre
+    const validarNombre = (valor) => {
+        if (!valor.trim()) {
+            return "El nombre es requerido";
+        }
+        if (valor.trim().length < 3) {
+            return "El nombre debe tener al menos 3 caracteres";
+        }
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(valor)) {
+            return "El nombre solo debe contener letras";
+        }
+        return "";
+    };
+
+    // Validación de documento
+    const validarDocumento = (valor) => {
+        if (!valor.trim()) {
+            return "El documento es requerido";
+        }
+        if (!/^\d+$/.test(valor)) {
+            return "El documento solo debe contener números";
+        }
+        if (valor.length < 6 || valor.length > 10) {
+            return "El documento debe tener entre 6 y 10 dígitos";
+        }
+        return "";
+    };
+
+    // Validación de correo
+    const validarCorreo = (valor) => {
+        if (!valor.trim()) {
+            return "El correo es requerido";
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(valor)) {
+            return "El correo no es válido";
+        }
+        return "";
+    };
+
+    // Validación de teléfono
+    const validarTelefono = (valor) => {
+        if (!valor.trim()) {
+            return "El teléfono es requerido";
+        }
+        if (!/^\d+$/.test(valor)) {
+            return "El teléfono solo debe contener números";
+        }
+        if (valor.length < 7 || valor.length > 10) {
+            return "El teléfono debe tener entre 7 y 10 dígitos";
+        }
+        return "";
+    };
+
+    // Validación de dirección
+    const validarDireccion = (valor) => {
+        if (!valor.trim()) {
+            return "La dirección es requerida";
+        }
+        if (valor.trim().length < 5) {
+            return "La dirección debe tener al menos 5 caracteres";
+        }
+        return "";
+    };
+
+    // Validación de contraseña
+    const validarContraseña = (valor) => {
+        if (!valor) {
+            return "La contraseña es requerida";
+        }
+        if (valor.length < 4) {
+            return "La contraseña debe tener al menos 4 caracteres";
+        }
+        if (valor.length > 20) {
+            return "La contraseña no debe exceder 20 caracteres";
+        }
+        return "";
+    };
+
+    // Validación de confirmación de contraseña
+    const validarConfirmar = (valor) => {
+        if (!valor) {
+            return "Debes confirmar tu contraseña";
+        }
+        if (valor !== contraseña) {
+            return "Las contraseñas no coinciden";
+        }
+        return "";
+    };
+
+    // Manejadores onBlur
+    const handleBlurNombre = () => {
+        const error = validarNombre(nombre);
+        setErrores(prev => ({ ...prev, nombre: error }));
+    };
+
+    const handleBlurDocumento = () => {
+        const error = validarDocumento(documento);
+        setErrores(prev => ({ ...prev, documento: error }));
+    };
+
+    const handleBlurCorreo = () => {
+        const error = validarCorreo(correo);
+        setErrores(prev => ({ ...prev, correo: error }));
+    };
+
+    const handleBlurTelefono = () => {
+        const error = validarTelefono(telefono);
+        setErrores(prev => ({ ...prev, telefono: error }));
+    };
+
+    const handleBlurDireccion = () => {
+        const error = validarDireccion(direccion);
+        setErrores(prev => ({ ...prev, direccion: error }));
+    };
+
+    const handleBlurContraseña = () => {
+        const error = validarContraseña(contraseña);
+        setErrores(prev => ({ ...prev, contraseña: error }));
+        // Re-validar confirmar si ya tiene valor
+        if (confirmar) {
+            const errorConfirmar = validarConfirmar(confirmar);
+            setErrores(prev => ({ ...prev, confirmar: errorConfirmar }));
+        }
+    };
+
+    const handleBlurConfirmar = () => {
+        const error = validarConfirmar(confirmar);
+        setErrores(prev => ({ ...prev, confirmar: error }));
+    };
+
     const handleRegistro = async (e) => {
         e.preventDefault();
 
-        if (contraseña !== confirmar) {
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "Las contraseñas no coinciden",
-            });
-            return;
-        }
+        // Validar todos los campos antes de enviar
+        const nuevosErrores = {
+            nombre: validarNombre(nombre),
+            documento: validarDocumento(documento),
+            correo: validarCorreo(correo),
+            telefono: validarTelefono(telefono),
+            direccion: validarDireccion(direccion),
+            contraseña: validarContraseña(contraseña),
+            confirmar: validarConfirmar(confirmar)
+        };
 
-        if (contraseña.length < 4) {
+        setErrores(nuevosErrores);
+
+        // Verificar si hay errores
+        const hayErrores = Object.values(nuevosErrores).some(error => error !== "");
+        if (hayErrores) {
             Swal.fire({
                 icon: "error",
-                title: "Contraseña débil",
-                text: "La contraseña debe tener al menos 4 caracteres",
+                title: "Errores en el formulario",
+                text: "Por favor corrige los errores antes de continuar",
             });
             return;
         }
@@ -49,12 +197,10 @@ const RegistroLanding = () => {
                 Telefono: telefono.trim(),
                 Direccion: direccion.trim(),
                 Contraseña: contraseña,
-                RolID: 2, // Cliente
+                RolID: 2,
             };
 
             const response = await registrarUsuario(datos);
-
-            // El backend puede devolver estado o no, manejamos ambos casos
             const registroExitoso = response.data?.estado !== false;
 
             if (registroExitoso) {
@@ -96,7 +242,6 @@ const RegistroLanding = () => {
                     className="shadow-lg rounded-4 overflow-hidden"
                 >
                     <Row className="g-0">
-                        {/* Columna Izquierda - Imagen */}
                         <Col md={6} className="d-none d-md-block">
                             <div
                                 style={{
@@ -109,7 +254,6 @@ const RegistroLanding = () => {
                             ></div>
                         </Col>
 
-                        {/* Columna Derecha - Formulario */}
                         <Col md={6} className="p-5 d-flex flex-column justify-content-center">
                             <h4 className="text-center mb-4 fw-bold text-dark">
                                 Formulario de Registro
@@ -125,10 +269,15 @@ const RegistroLanding = () => {
                                                 placeholder="Ingresa tu nombre"
                                                 value={nombre}
                                                 onChange={(e) => setNombre(e.target.value)}
+                                                onBlur={handleBlurNombre}
                                                 className="rounded-3 shadow-sm"
                                                 disabled={loading}
+                                                isInvalid={!!errores.nombre}
                                                 required
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errores.nombre}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
 
@@ -140,10 +289,15 @@ const RegistroLanding = () => {
                                                 placeholder="Número de documento"
                                                 value={documento}
                                                 onChange={(e) => setDocumento(e.target.value)}
+                                                onBlur={handleBlurDocumento}
                                                 className="rounded-3 shadow-sm"
                                                 disabled={loading}
+                                                isInvalid={!!errores.documento}
                                                 required
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errores.documento}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
                                 </Row>
@@ -157,10 +311,15 @@ const RegistroLanding = () => {
                                                 placeholder="Correo"
                                                 value={correo}
                                                 onChange={(e) => setCorreo(e.target.value)}
+                                                onBlur={handleBlurCorreo}
                                                 className="rounded-3 shadow-sm"
                                                 disabled={loading}
+                                                isInvalid={!!errores.correo}
                                                 required
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errores.correo}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
 
@@ -172,10 +331,15 @@ const RegistroLanding = () => {
                                                 placeholder="Teléfono"
                                                 value={telefono}
                                                 onChange={(e) => setTelefono(e.target.value)}
+                                                onBlur={handleBlurTelefono}
                                                 className="rounded-3 shadow-sm"
                                                 disabled={loading}
+                                                isInvalid={!!errores.telefono}
                                                 required
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errores.telefono}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
                                 </Row>
@@ -189,10 +353,15 @@ const RegistroLanding = () => {
                                                 placeholder="Dirección"
                                                 value={direccion}
                                                 onChange={(e) => setDireccion(e.target.value)}
+                                                onBlur={handleBlurDireccion}
                                                 className="rounded-3 shadow-sm"
                                                 disabled={loading}
+                                                isInvalid={!!errores.direccion}
                                                 required
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errores.direccion}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
 
@@ -204,10 +373,15 @@ const RegistroLanding = () => {
                                                 placeholder="Contraseña"
                                                 value={contraseña}
                                                 onChange={(e) => setContraseña(e.target.value)}
+                                                onBlur={handleBlurContraseña}
                                                 className="rounded-3 shadow-sm"
                                                 disabled={loading}
+                                                isInvalid={!!errores.contraseña}
                                                 required
                                             />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errores.contraseña}
+                                            </Form.Control.Feedback>
                                         </Form.Group>
                                     </Col>
                                 </Row>
@@ -219,10 +393,15 @@ const RegistroLanding = () => {
                                         placeholder="Confirmar contraseña"
                                         value={confirmar}
                                         onChange={(e) => setConfirmar(e.target.value)}
+                                        onBlur={handleBlurConfirmar}
                                         className="rounded-3 shadow-sm"
                                         disabled={loading}
+                                        isInvalid={!!errores.confirmar}
                                         required
                                     />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errores.confirmar}
+                                    </Form.Control.Feedback>
                                 </Form.Group>
 
                                 <div className="d-grid mb-3">

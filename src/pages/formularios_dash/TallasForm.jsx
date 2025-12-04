@@ -68,14 +68,16 @@ const TallasForm = ({ onClose, onSave, tallaEdit }) => {
 
         // Preparar datos finales
         const dataEnviar = {
-    Nombre: formData.Nombre.trim(),
-    Precio:
-        tallasConPrecio.includes(formData.Nombre.toUpperCase())
-            ? formData.Precio === "" 
-                ? null 
-                : Number(formData.Precio)
-            : null
-};
+            Nombre: formData.Nombre.trim(),
+            Precio:
+                tallasConPrecio.includes(formData.Nombre.toUpperCase())
+                    ? (formData.Precio && !isNaN(formData.Precio) ? Number(formData.Precio) : null)
+                    : null
+        };
+
+        if (mostrarPrecio && (formData.Precio === "" || isNaN(formData.Precio))) {
+            return Swal.fire("Error", "Debes ingresar un precio válido", "error");
+        }
 
         try {
             let result;
@@ -121,7 +123,7 @@ const TallasForm = ({ onClose, onSave, tallaEdit }) => {
             </div>
 
             <form className="row g-3" onSubmit={handleSubmit}>
-                
+
                 {/* Nombre */}
                 <div className="col-12">
                     <label className="form-label fw-bold">Nombre de la Talla</label>

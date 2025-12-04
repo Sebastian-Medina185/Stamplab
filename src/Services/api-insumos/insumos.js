@@ -1,80 +1,89 @@
-// src/services/insumos/insumosService.js
-
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/insumos"; // Cambia el puerto si tu backend usa otro
+const API_URL = "http://localhost:3000/api/insumos";
 
 // Obtener todos los insumos
 export const getInsumos = async () => {
-  try {
-    const response = await axios.get(API_URL);
-    return response.data; // { estado: true/false, datos: [...] }
-  } catch (error) {
-    console.error("Error en getInsumos:", error);
-    throw error;
-  }
+    try {
+        const response = await axios.get(API_URL);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener insumos:", error);
+        throw new Error(
+            error.response?.data?.message || "Error al obtener los insumos"
+        );
+    }
 };
 
 // Obtener un insumo por ID
 export const getInsumoById = async (id) => {
-  try {
-    const response = await axios.get(`${API_URL}/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error en getInsumoById:", error);
-    throw error;
-  }
+    try {
+        const response = await axios.get(`${API_URL}/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener insumo:", error);
+        throw new Error(
+            error.response?.data?.message || "Error al obtener el insumo"
+        );
+    }
 };
 
-// Crear un insumo
-export const createInsumo = async (nuevoInsumo) => {
-  try {
-    const response = await axios.post(API_URL, nuevoInsumo);
-    return response.data;
-  } catch (error) {
-    console.error("Error en createInsumo:", error);
-    throw error;
-  }
+// Crear un nuevo insumo
+export const createInsumo = async (insumo) => {
+    try {
+        const response = await axios.post(API_URL, insumo);
+        return response.data;
+    } catch (error) {
+        console.error("Error al crear insumo:", error);
+        throw new Error(
+            error.response?.data?.message || "Error al crear el insumo"
+        );
+    }
 };
 
-// Editar un insumo
-export const updateInsumo = async (id, insumoActualizado) => {
-  try {
-    const response = await axios.put(`${API_URL}/${id}`, insumoActualizado);
-    return response.data;
-  } catch (error) {
-    console.error("Error en updateInsumo:", error);
-    throw error;
-  }
+// Actualizar un insumo
+export const updateInsumo = async (id, insumo) => {
+    try {
+        const response = await axios.put(`${API_URL}/${id}`, insumo);
+        return response.data;
+    } catch (error) {
+        console.error("Error al actualizar insumo:", error);
+        throw new Error(
+            error.response?.data?.message || "Error al actualizar el insumo"
+        );
+    }
+};
+
+// ✅ NUEVO: Cambiar estado del insumo
+export const cambiarEstadoInsumo = async (id, nuevoEstado) => {
+    try {
+        const response = await axios.patch(`${API_URL}/${id}/estado`, {
+            Estado: nuevoEstado
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error al cambiar estado del insumo:", error);
+        // Si hay un error de validación (compras asociadas), lanzarlo tal cual
+        if (error.response?.status === 400) {
+            throw new Error(
+                error.response.data.message || "No se puede cambiar el estado del insumo"
+            );
+        }
+        throw new Error(
+            error.response?.data?.message || "Error al cambiar el estado del insumo"
+        );
+    }
 };
 
 // Eliminar un insumo
 export const deleteInsumo = async (id) => {
-  try {
-    const response = await axios.delete(`${API_URL}/${id}`);
-    return response.data;
-  } catch (error) {
-    if (error.response) {
-      // Error del backend
-      console.error("Respuesta del servidor:", error.response.data);
-    } else if (error.request) {
-      // No hay respuesta (problema de conexión con el backend)
-      console.error("No se recibió respuesta del servidor:", error.request);
-    } else {
-      // Otro error
-      console.error("Error al configurar la petición:", error.message);
+    try {
+        const response = await axios.delete(`${API_URL}/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al eliminar insumo:", error);
+        throw new Error(
+            error.response?.data?.message || "Error al eliminar el insumo"
+        );
     }
-    throw error;
-  }
-};
-
-// Cambiar estado de un insumo
-export const cambiarEstadoInsumo = async (id, nuevoEstado) => {
-  try {
-    const response = await axios.put(`${API_URL}/${id}`, { Estado: nuevoEstado });
-    return response.data;
-  } catch (error) {
-    console.error("Error en cambiarEstadoInsumo:", error);
-    throw error;
-  }
 };

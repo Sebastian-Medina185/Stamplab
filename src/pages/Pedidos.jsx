@@ -81,19 +81,20 @@ const Pedidos = () => {
     const handleCambiarEstado = async (compra) => {
         try {
             const estadoActual = compra.EstadoID;
-            
+
             // Modal para seleccionar nuevo estado
             const { value: nuevoEstado } = await Swal.fire({
                 title: 'Cambiar Estado',
                 html: `
-                    <p>Estado actual: <strong>${getEstadoNombre(estadoActual)}</strong></p>
-                    <p>Seleccione el nuevo estado:</p>
-                `,
+                <p>Estado actual: <strong>${getEstadoNombre(estadoActual)}</strong></p>
+                <p>Seleccione el nuevo estado:</p>
+            `,
                 input: 'select',
                 inputOptions: {
-                    'Pendiente': 'Pendiente',
-                    'Aprobada': 'Aprobada',
-                    'Rechazada': 'Rechazada'
+                    '4': 'Solicitada',
+                    '5': 'En Tránsito',
+                    '6': 'Recibida',
+                    '7': 'Cancelada'
                 },
                 inputValue: estadoActual,
                 showCancelButton: true,
@@ -106,21 +107,21 @@ const Pedidos = () => {
                 }
             });
 
-            if (nuevoEstado && nuevoEstado !== estadoActual) {
+            if (nuevoEstado && nuevoEstado !== estadoActual.toString()) {
                 setLoading(true);
-                
+
                 const compraActualizada = {
-                    EstadoID: nuevoEstado
+                    EstadoID: parseInt(nuevoEstado)  // ✅ Convertir a número
                 };
-                
+
                 const response = await updateCompra(compra.CompraID, compraActualizada);
-                
+
                 if (response.estado) {
                     await cargarCompras();
                     Swal.fire({
                         icon: 'success',
                         title: '¡Estado actualizado!',
-                        text: `El estado cambió a: ${nuevoEstado}`,
+                        text: `El estado cambió correctamente`,
                         timer: 2000
                     });
                 }
@@ -140,11 +141,11 @@ const Pedidos = () => {
     const handleSave = async (compraData) => {
         try {
             setLoading(true);
-            
+
             if (selectedCompra) {
                 // Actualizar compra existente
                 const response = await updateCompra(selectedCompra.CompraID, compraData);
-                
+
                 Swal.fire({
                     icon: 'success',
                     title: '¡Éxito!',
@@ -155,7 +156,7 @@ const Pedidos = () => {
             } else {
                 // Crear nueva compra
                 const response = await createCompra(compraData);
-                
+
                 Swal.fire({
                     icon: 'success',
                     title: '¡Éxito!',
@@ -176,30 +177,27 @@ const Pedidos = () => {
         }
     };
 
+
     const getEstadoNombre = (estadoId) => {
-        // ✅ Manejar tanto strings como números
-        if (typeof estadoId === 'string') {
-            return estadoId; // Ya es un string como "Pendiente"
-        }
         const estados = {
-            1: "Pendiente",
-            2: "Aprobada",
-            3: "Rechazada"
+            4: "Solicitada",
+            5: "En Tránsito",
+            6: "Recibida",
+            7: "Cancelada"
         };
         return estados[estadoId] || "Desconocido";
     };
 
     const getEstadoColor = (estadoId) => {
-        // ✅ Normalizar el estado a string
-        const estadoStr = typeof estadoId === 'string' ? estadoId : getEstadoNombre(estadoId);
-        
         const colores = {
-            "Pendiente": "warning",
-            "Aprobada": "success",
-            "Rechazada": "danger"
+            4: "warning",      // Solicitada
+            5: "info",         // En Tránsito
+            6: "success",      // Recibida
+            7: "danger"        // Cancelada
         };
-        return colores[estadoStr] || "secondary";
+        return colores[estadoId] || "secondary";
     };
+
 
     const formatearFecha = (fecha) => {
         if (!fecha) return "-";
@@ -245,7 +243,7 @@ const Pedidos = () => {
                 >
                     Gestión de Compras a Proveedores
                 </h1>
-                <button 
+                <button
                     className="btn btn-sm btn-primary d-flex align-items-center gap-2 shadow-sm"
                     onClick={handleAgregar}
                 >
@@ -257,7 +255,7 @@ const Pedidos = () => {
             {/* Buscador */}
             <div className="d-flex justify-content-end mb-3">
                 <div className="input-group input-group-sm" style={{ maxWidth: 260 }}>
-                    <span className="input-group-text bg-white border-end-0">🔍</span>
+                    <span className="input-group-text bg-white border-end-0"></span>
                     <input
                         type="text"
                         className="form-control border-start-0"
@@ -397,8 +395,8 @@ const Pedidos = () => {
                 <div className="modal-content border-0 shadow">
                     {selectedCompra && (
                         <>
-                            <div className="modal-header border-0 text-white" 
-                                style={{ 
+                            <div className="modal-header border-0 text-white"
+                                style={{
                                     background: 'linear-gradient(135deg, #1976d2 0%, #64b5f6 100%)',
                                     padding: '20px'
                                 }}>

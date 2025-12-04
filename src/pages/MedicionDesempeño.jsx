@@ -10,8 +10,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { FaFilePdf } from "react-icons/fa";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+
 
 const DashboardMedicionDesempeño = () => {
     // Estados

@@ -31,8 +31,9 @@ const LoginLanding = () => {
 
                 // Guardar token válido
                 localStorage.setItem("token", tokenAdmin);
-                localStorage.setItem("user", JSON.stringify({
-                    nombre: "Administrador",
+                localStorage.setItem("usuario", JSON.stringify({
+                    Nombre: "Administrador",
+                    DocumentoID: "admin",
                     rol: 1
                 }));
 
@@ -47,9 +48,12 @@ const LoginLanding = () => {
                 Contraseña: contraseña
             });
 
+            // CORRECCIÓN: Guardar con claves en MAYÚSCULA para consistencia
             localStorage.setItem("token", res.data.token);
-            localStorage.setItem("user", JSON.stringify({
-                nombre: res.data.nombre,
+            localStorage.setItem("usuario", JSON.stringify({
+                Nombre: res.data.nombre,
+                Correo: res.data.correo || res.data.Correo,
+                DocumentoID: res.data.DocumentoID || res.data.documentoID,
                 rol: res.data.rol
             }));
 

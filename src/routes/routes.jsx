@@ -25,7 +25,6 @@ import FormularioCompra from "../components/landing/FormularioCompra";
 import AgregarProducto from "../pages/formularios_dash/AgregarProducto";
 import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
 import Ventas from "../pages/Ventas";
-import PrivateRoute from "./PrivateRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 
 const AppRoutes = () => {
@@ -35,7 +34,8 @@ const AppRoutes = () => {
 
         <Routes>
             {/* Ruta raíz redirige al registro */}
-            <Route path="/" element={<RegistroLanding />} />
+            <Route path="/" element={<Home />} />
+            
 
             {/* Rutas del Landing */}
             <Route path="/landing" element={<Home />} />
@@ -44,14 +44,6 @@ const AppRoutes = () => {
             <Route path="/productosLanding" element={<ProductosLanding />} />
             <Route path="/signup" element={<RegistroLanding />} />
             <Route path="/login" element={<LoginLanding />} />
-            <Route
-                path="/dashboard"
-                element={
-                    <ProtectedRoute>
-                        <DashboardLayout />
-                    </ProtectedRoute>
-                }
-            />
             <Route path="/recuperarcontraseña" element={<RecuperarContraseña />} />
             <Route path="/restablecercontraseña" element={<RestablecerContraseña />} />
             <Route path="/editarperfil" element={<EditarPerfil />} />
@@ -62,9 +54,9 @@ const AppRoutes = () => {
             <Route
                 path="/dashboard"
                 element={
-                    <PrivateRoute>
+                    <ProtectedRoute>
                         <DashboardLayout />
-                    </PrivateRoute>
+                    </ProtectedRoute>
                 }
             >
 

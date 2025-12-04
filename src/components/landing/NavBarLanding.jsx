@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Navbar, Nav, Container, Button, Modal } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 
 const NavbarComponent = () => {
@@ -8,15 +8,17 @@ const NavbarComponent = () => {
     const [userData, setUserData] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // Verificar si hay sesión activa al cargar el componente
+
+    // Verificar autenticación cada vez que cambie la ruta
     useEffect(() => {
         checkAuth();
-    }, []);
+    }, [location]); // Agregar location como dependencia
 
     const checkAuth = () => {
         const token = localStorage.getItem("token");
-        const user = localStorage.getItem("user");
+        const user = localStorage.getItem("usuario");
 
         if (token && user) {
             try {
@@ -204,8 +206,8 @@ const NavbarComponent = () => {
                     </Modal.Header>
                     <Modal.Body className="text-center">
                         <FaUserCircle size={60} className="mb-3 text-secondary" />
-                        <h6 className="fw-normal fst-italic">{userData.nombre || "Usuario"}</h6>
-                        <p className="text-muted small">{userData.correo || "Sin correo"}</p>
+                        <h6 className="fw-normal fst-italic">{userData.Nombre || "Usuario"}</h6>
+                        <p className="text-muted small">{userData.Correo || "Sin correo"}</p>
 
                         {/* Botones del modal */}
                         <div className="d-flex justify-content-center gap-2 mt-3">

@@ -66,7 +66,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
         const doc = String(documento || "").trim();
         if (!doc) return "El documento es obligatorio";
         if (!/^\d+$/.test(doc)) return "Solo números";
-        if (doc.length < 4 || doc.length > 10) return "Entre 4 y 10 dígitos";
+        if (doc.length < 7 || doc.length > 10) return "Entre 7 y 10 dígitos";
         return "";
     };
 
@@ -268,7 +268,7 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                 <button
                     type="button"
                     onClick={onClose}
-                    className="btn btn-warning btn-sm shadow-sm position-absolute top-0 end-0"
+                    className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
                     disabled={loading}
                 >
                     <FaTimes />
@@ -401,18 +401,10 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                     )}
                 </div>
 
-                <div className="col-12 d-flex justify-content-end gap-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="btn btn-secondary shadow-sm"
-                        disabled={loading}
-                    >
-                        Cancelar
-                    </button>
+                <div className="col-12 d-flex justify-content-center gap-2">
                     <button
                         type="submit"
-                        className="btn btn-primary shadow-sm"
+                        className="btn btn-success shadow-sm"
                         disabled={loading || loadingRoles || tieneErrores}
                     >
                         {loading ? (
@@ -423,6 +415,14 @@ const UsuariosForm = ({ onClose, onSave, usuario = null }) => {
                         ) : (
                             usuario ? 'Actualizar' : 'Guardar'
                         )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="btn btn-secondary shadow-sm"
+                        disabled={loading}
+                    >
+                        Cancelar
                     </button>
                 </div>
             </form>

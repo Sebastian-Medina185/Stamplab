@@ -1,15 +1,26 @@
 import { useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Modal, Button, Form } from "react-bootstrap";
 
 const NavAdmin = () => {
+
+    const token = localStorage.getItem("token");
+
+    // Si no hay token, NO renderizar nada
+    if (!token) {
+        return null;
+    }
+
+
     const [showPerfil, setShowPerfil] = useState(false);
     const [showEditar, setShowEditar] = useState(false);
+    const navigate = useNavigate();
 
     // Abrir modal de perfil
     const handlePerfilOpen = () => setShowPerfil(true);
     const handlePerfilClose = () => setShowPerfil(false);
+
 
     // Abrir modal de editar
     const handleEditarOpen = () => {
@@ -17,6 +28,17 @@ const NavAdmin = () => {
         setShowEditar(true);
     };
     const handleEditarClose = () => setShowEditar(false);
+
+
+    // Función para cerrar sesión correctamente
+    const handleLogout = () => {
+        // Limpiar localStorage
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        // Navegar a login
+        navigate("/login");
+    };
 
     return (
         <>
@@ -41,9 +63,13 @@ const NavAdmin = () => {
                         style={{ cursor: "pointer" }}
                         onClick={handlePerfilOpen}
                     />
-                    <Link to="/login" className="btn btn-dark px-3 py-1 me-2">
+                    <Button
+                        variant="dark"
+                        className="px-3 py-1 me-2"
+                        onClick={handleLogout}
+                    >
                         Cerrar Sesión
-                    </Link>
+                    </Button>
                 </div>
             </header>
 
@@ -73,7 +99,7 @@ const NavAdmin = () => {
                     <Modal.Title className="w-100 text-center">Editar Perfil</Modal.Title>
                 </Modal.Header>
 
-                
+
                 <Modal.Body style={{}}>
                     <Form>
                         <div className="row">

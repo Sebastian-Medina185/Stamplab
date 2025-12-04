@@ -1,402 +1,273 @@
 import { useState, useEffect } from "react";
-import Icon from "../../components/Icon";
 import { FaTimes } from "react-icons/fa";
-import { createCotizacion, updateCotizacion } from "../../Services/api-cotizaciones/cotizaciones";
-import { createDetalleCotizacion, updateDetalleCotizacion } from "../../Services/api-cotizaciones/detalleCotizacion";
 import Swal from "sweetalert2";
+import { getUsuarios } from "../../Services/api-usuarios/usuarios";
+import { getCotizaciones, updateCotizacion } from "../../Services/api-cotizaciones/cotizaciones";
+import axios from "axios";
 
 const CotizacionesForm = ({ onClose, cotizacionToEdit }) => {
   const [loading, setLoading] = useState(false);
-  const [traePrenda, setTraePrenda] = useState("no");
-  const [showDiseno, setShowDiseno] = useState(false);
-  const [detalles, setDetalles] = useState([]);
-  const [formData, setFormData] = useState({
-    DocumentoID: "",
-    ValorTotal: 0,
-    Estado: "pendiente"
-  });
-
-  return (
-    <>
-      <div className="container py-4">
-        {/* Título */}
-        <div className="position-relative mb-4 text-center">
-          <p className="fw-bold fs-3 mb-0">Formulario de cotización</p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
-            title="Cerrar"
-          >
-            <FaTimes />
-          </button>
-        </div>
-
-        {/* Formulario */}
-        <form
-          className="p-4 rounded shadow"
-          style={{ backgroundColor: "#f5f5fa", color: "#2a273a" }}
-        >
-          {/* ¿Traes la prenda? */}
-          <div className="mb-3 text-center">
-            <label className="form-label me-3 fw-bold">¿Traes la prenda?</label>
-            <div className="form-check form-check-inline">
-              <input
-                className="form-check-input"
-                type="radio"
-                name="traePrenda"
-                id="si"
-                value="si"
-                checked={traePrenda === "si"}
-                onChange={(e) => setTraePrenda(e.target.value)}
-              />
-              <label className="form-check-label" htmlFor="si">
-                Sí
-              </label>
-            </div>
-            <div className="form-check form-check-inline">
-              <input
-                className="form-check-input"
-                type="radio"
-                name="traePrenda"
-                id="no"
-                value="no"
-                checked={traePrenda === "no"}
-                onChange={(e) => setTraePrenda(e.target.value)}
-              />
-              <label className="form-check-label" htmlFor="no">
-                No
-              </label>
-            </div>
-          </div>
-
-          {/* Campos dinámicos */}
-          {traePrenda === "si" ? (
-            <div className="mb-3">
-              <label className="form-label">Descripción de la prenda:</label>
-              <textarea className="form-control" />
-            </div>
-          ) : (
-            <div className="row g-3">
-              <div className="col-md-4">
-                <label className="form-label">Tipo Prenda:</label>
-                <select className="form-select">
-                  <option>Camiseta</option>
-                  <option>Pantalón</option>
-                  <option>Chaqueta</option>
-                </select>
-              </div>
-              <div className="col-md-4">
-                <label className="form-label">Tipo Tela:</label>
-                <select className="form-select">
-                  <option>Poliester</option>
-                  <option>Algodón</option>
-                  <option>Lino</option>
-                </select>
-              </div>
-              <div className="col-md-4">
-                <label className="form-label">Cantidad:</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  defaultValue="1"
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Color:</label>
-                <input type="text" className="form-control" />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Talla:</label>
-                <select className="form-select">
-                  <option>S</option>
-                  <option>M</option>
-                  <option>L</option>
-                  <option>XL</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Aplicar diseño */}
-          <div className="form-check mt-3">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              id="diseno"
-              checked={showDiseno}
-              onChange={(e) => setShowDiseno(e.target.checked)}
-            />
-            <label className="form-check-label fw-bold" htmlFor="diseno">
-              Aplicar diseño
-            </label>
-          </div>
-
-          {/* Sección desplegable de diseño */}
-          {showDiseno && (
-            <div
-              className="p-3 mt-3 rounded"
-              style={{
-                backgroundColor: "#e9e6f3",
-                border: "1px solid #d0cde1",
-              }}
-            >
-              <h5 className="text-center mb-3 text-dark">Diseños</h5>
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label className="form-label">Técnica:</label>
-                  <select className="form-select">
-                    <option>Seleccione opción</option>
-                    <option>Sublimación</option>
-                    <option>Bordado</option>
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Parte:</label>
-                  <select className="form-select">
-                    <option>Superior</option>
-                    <option>Inferior</option>
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subparte Descripción:</label>
-                  <input type="text" className="form-control" />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Diseño:</label>
-                  <input type="file" className="form-control" />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">Observación:</label>
-                  <textarea className="form-control"></textarea>
-                </div>
-              </div>
-
-              {/* Botones de diseño */}
-              <div className="d-flex justify-content-between mt-3">
-                <button type="button" className="btn btn-outline-primary">
-                  + Agregar parte
-                </button>
-                <button type="button" className="btn btn-outline-success">
-                  + Agregar diseño
-                </button>
-              </div>
-
-              {/* Tabla de diseños */}
-              <div className="table-responsive mt-4">
-                <table className="table table-bordered table-striped text-center align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Técnica</th>
-                      <th>Parte</th>
-                      <th>Subparte</th>
-                      <th>Diseño</th>
-                      <th>Observación</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Sublimación</td>
-                      <td>Superior</td>
-                      <td>Abajo</td>
-                      <td>dragon.png</td>
-                      <td>Diseño rosado</td>
-                      <td>
-                        <div className="d-flex justify-content-center gap-2">
-                          <button className="btn btn-outline-primary btn-sm">
-                            <Icon name="ver" />
-                          </button>
-                          <button className="btn btn-outline-warning btn-sm">
-                            <Icon name="editar" />
-                          </button>
-                          <button className="btn btn-outline-danger btn-sm">
-                            <Icon name="eliminar" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Botones */}
-          <div className="d-flex gap-3 mt-4">
-            <button 
-              type="button" 
-              className="btn btn-success"
-              onClick={handleSubmitCotizacion}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  Procesando...
-                </>
-              ) : (
-                `+ ${cotizacionToEdit ? 'Actualizar' : 'Agregar'} Cotización`
-              )}
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-primary"
-              onClick={handleAddProducto}
-              disabled={loading}
-            >
-              + Agregar Producto
-            </button>
-          </div>
-
-          {/* Tabla de productos */}
-          <div className="table-responsive mt-4">
-            <table className="table table-bordered text-center align-middle table-light">
-              <thead>
-                <tr>
-                  <th>Tipo de prenda</th>
-                  <th>Tipo Tela</th>
-                  <th>Cantidad</th>
-                  <th>Color</th>
-                  <th>Talla</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Camiseta</td>
-                  <td>Poliester</td>
-                  <td>3</td>
-                  <td>Negro</td>
-                  <td>XL</td>
-                  <td className="d-flex justify-content-center gap-2">
-                    <button className="btn btn-outline-primary btn-sm">
-                      <Icon name="ver" size={20} alt="Ver" />
-                    </button>
-                    <button className="btn btn-outline-warning btn-sm">
-                      <Icon name="editar" size={20} alt="Editar" />
-                    </button>
-                    <button className="btn btn-outline-danger btn-sm">
-                      <Icon name="eliminar" size={20} alt="Eliminar" />
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Generar / Cancelar */}
-          <div className="d-flex justify-content-center gap-3 mt-4">
-            <button 
-              type="button" 
-              className="btn btn-success px-4"
-              onClick={handleSubmitCotizacion}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  Procesando...
-                </>
-              ) : (
-                `Generar cotización`
-              )}
-            </button>
-            <button 
-              type="button" 
-              className="btn btn-danger px-4"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
-    </>
-  );
+  const [usuarios, setUsuarios] = useState([]);
+  
+  // Datos del formulario
+  const [documentoID, setDocumentoID] = useState("");
+  const [valorTotal, setValorTotal] = useState(0);
+  const [estadoID, setEstadoID] = useState(1);
+  const [observaciones, setObservaciones] = useState("");
 
   useEffect(() => {
+    cargarUsuarios();
     if (cotizacionToEdit) {
-      setFormData({
-        DocumentoID: cotizacionToEdit.DocumentoID,
-        ValorTotal: cotizacionToEdit.ValorTotal,
-        Estado: cotizacionToEdit.Estado
-      });
-      // Aquí podrías cargar los detalles de la cotización si es necesario
+      console.log('Editando cotización:', cotizacionToEdit);
+      setDocumentoID(cotizacionToEdit.Usuario?.DocumentoID || cotizacionToEdit.DocumentoID || "");
+      setValorTotal(cotizacionToEdit.ValorTotal || 0);
+      
+      // Mapear estado correctamente
+      let estadoId = 1;
+      if (cotizacionToEdit.EstadoID) {
+        estadoId = cotizacionToEdit.EstadoID;
+      } else if (cotizacionToEdit.Estado) {
+        const estadoNombre = typeof cotizacionToEdit.Estado === 'object' 
+          ? cotizacionToEdit.Estado.Nombre 
+          : cotizacionToEdit.Estado;
+        
+        if (estadoNombre === "Aprobada") estadoId = 2;
+        else if (estadoNombre === "Rechazada") estadoId = 3;
+      }
+      setEstadoID(estadoId);
     }
   }, [cotizacionToEdit]);
 
-  const handleSubmitCotizacion = async () => {
+  const cargarUsuarios = async () => {
     try {
-      setLoading(true);
+      console.log('Cargando usuarios...');
+      const response = await getUsuarios();
+      console.log('Response usuarios:', response);
+      
+      // El endpoint devuelve { estado, datos: [...] }
+      const data = response?.datos || response || [];
+      console.log('Usuarios procesados:', data);
+      
+      setUsuarios(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error cargando usuarios:", error);
+      Swal.fire("Error", "No se pudieron cargar los usuarios", "error");
+    }
+  };
 
-      // Validar datos
-      if (!formData.DocumentoID || detalles.length === 0) {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!documentoID) {
+      Swal.fire("Atención", "Selecciona un cliente", "warning");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (cotizacionToEdit) {
+        // ACTUALIZAR cotización existente
+        console.log('Actualizando cotización:', cotizacionToEdit.CotizacionID);
+        
+        const dataActualizar = {
+          ValorTotal: parseFloat(valorTotal) || 0,
+          EstadoID: parseInt(estadoID)
+        };
+        
+        console.log('Datos a enviar:', dataActualizar);
+        
+        const response = await updateCotizacion(cotizacionToEdit.CotizacionID, dataActualizar);
+        console.log('Response actualización:', response);
+        
         Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Por favor, complete todos los campos requeridos y agregue al menos un producto'
+          icon: "success",
+          title: "Cotización actualizada",
+          timer: 1500,
+          showConfirmButton: false
         });
-        return;
+      } else {
+        // CREAR nueva cotización (solo cabecera)
+        console.log('Creando nueva cotización');
+        
+        const cotizacionData = {
+          DocumentoID: parseInt(documentoID),
+          FechaCotizacion: new Date().toISOString(),
+          ValorTotal: parseFloat(valorTotal) || 0,
+          EstadoID: parseInt(estadoID)
+        };
+        
+        console.log('Datos a enviar:', cotizacionData);
+        
+        // Usar el endpoint correcto: POST /api/cotizaciones (sin /completa)
+        const response = await axios.post('http://localhost:3000/api/cotizaciones', cotizacionData);
+        console.log('Response creación:', response.data);
+        
+        Swal.fire({
+          icon: "success",
+          title: "Cotización creada",
+          text: `ID: ${response.data.cotizacion?.CotizacionID}`,
+          timer: 2000,
+          showConfirmButton: false
+        });
       }
-
-      // Crear o actualizar la cotización
-      const cotizacionResponse = cotizacionToEdit
-        ? await updateCotizacion(cotizacionToEdit.CotizacionID, formData)
-        : await createCotizacion(formData);
-
-      // Procesar los detalles
-      for (const detalle of detalles) {
-        if (detalle.id) {
-          await updateDetalleCotizacion(detalle.id, {
-            ...detalle,
-            CotizacionID: cotizacionResponse.datos.CotizacionID
-          });
-        } else {
-          await createDetalleCotizacion({
-            ...detalle,
-            CotizacionID: cotizacionResponse.datos.CotizacionID
-          });
-        }
-      }
-
-      Swal.fire({
-        icon: 'success',
-        title: '¡Éxito!',
-        text: cotizacionToEdit 
-          ? 'Cotización actualizada correctamente'
-          : 'Cotización creada correctamente'
-      });
-
+      
       onClose();
     } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message
-      });
+      console.error("Error:", error);
+      console.error("Error response:", error.response?.data);
+      
+      const mensaje = error.response?.data?.message || error?.message || "Error al procesar la cotización";
+      Swal.fire("Error", mensaje, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddProducto = () => {
-    setDetalles([
-      ...detalles,
-      {
-        VarianteID: "",
-        Cantidad: 1,
-        TraePrenda: traePrenda === "si",
-        PrendaDescripcion: ""
-      }
-    ]);
-  };
+  return (
+    <div className="container py-4" style={{
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      maxWidth: '800px',
+      margin: '40px auto',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+    }}>
+      {/* Título */}
+      <div className="position-relative mb-4 text-center">
+        <h3 className="fw-bold mb-0">
+          {cotizacionToEdit ? "Editar Cotización" : "Nueva Cotización"}
+        </h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn btn-danger btn-sm shadow-sm position-absolute top-0 end-0"
+          style={{ borderRadius: '50%', width: '36px', height: '36px' }}
+          title="Cerrar"
+        >
+          <FaTimes />
+        </button>
+      </div>
 
-  const handleRemoveProducto = (index) => {
-    const newDetalles = detalles.filter((_, i) => i !== index);
-    setDetalles(newDetalles);
-  };
+      {/* Formulario */}
+      <form onSubmit={handleSubmit} className="p-4 rounded" style={{ backgroundColor: "#f8f9fa" }}>
+        
+        {/* Cliente */}
+        <div className="mb-3">
+          <label className="form-label fw-bold">
+            Cliente <span className="text-danger">*</span>
+          </label>
+          <select
+            className="form-select"
+            value={documentoID}
+            onChange={(e) => setDocumentoID(e.target.value)}
+            required
+            disabled={loading || cotizacionToEdit} // No permitir cambiar cliente al editar
+          >
+            <option value="">Seleccionar cliente...</option>
+            {usuarios.map(u => (
+              <option key={u.DocumentoID} value={u.DocumentoID}>
+                {u.Nombre} - CC: {u.DocumentoID}
+              </option>
+            ))}
+          </select>
+          <small className="text-muted">
+            {cotizacionToEdit 
+              ? "No se puede cambiar el cliente de una cotización existente"
+              : "El cliente debe estar registrado en el sistema"}
+          </small>
+        </div>
+
+        {/* Estado */}
+        <div className="mb-3">
+          <label className="form-label fw-bold">Estado</label>
+          <select
+            className="form-select"
+            value={estadoID}
+            onChange={(e) => setEstadoID(e.target.value)}
+            disabled={loading}
+          >
+            <option value="1">Pendiente</option>
+            <option value="2">Aprobada</option>
+            <option value="3">Rechazada</option>
+          </select>
+        </div>
+
+        {/* Valor Total */}
+        <div className="mb-3">
+          <label className="form-label fw-bold">Valor Total (COP)</label>
+          <input
+            type="number"
+            className="form-control"
+            value={valorTotal}
+            onChange={(e) => setValorTotal(e.target.value)}
+            placeholder="0"
+            min="0"
+            step="1000"
+            disabled={loading}
+          />
+          <small className="text-muted">
+            Puedes asignar el valor ahora o después desde la lista
+          </small>
+        </div>
+
+        {/* Observaciones */}
+        <div className="mb-4">
+          <label className="form-label fw-bold">Observaciones</label>
+          <textarea
+            className="form-control"
+            rows="3"
+            value={observaciones}
+            onChange={(e) => setObservaciones(e.target.value)}
+            placeholder="Notas adicionales sobre la cotización..."
+            disabled={loading}
+          />
+        </div>
+
+        {/* Info adicional */}
+        <div className="alert alert-info">
+          <small>
+            <strong>Nota:</strong> Esta es una cotización simplificada desde el panel de administración. 
+            Solo se crea la cabecera de la cotización. Para cotizaciones detalladas con productos y diseños 
+            específicos, el cliente debe solicitarla desde el landing.
+          </small>
+        </div>
+
+        {cotizacionToEdit && (
+          <div className="alert alert-warning">
+            <small>
+              <strong>Editando:</strong> Solo puedes modificar el valor total y el estado. 
+              Los detalles de productos y diseños no se pueden editar desde aquí.
+            </small>
+          </div>
+        )}
+
+        {/* Botones */}
+        <div className="d-flex justify-content-end gap-3">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="btn btn-success"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                Procesando...
+              </>
+            ) : (
+              cotizacionToEdit ? "Actualizar Cotización" : "Crear Cotización"
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 };
 
 export default CotizacionesForm;

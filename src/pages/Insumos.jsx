@@ -238,7 +238,7 @@ const Insumos = () => {
       {/* Buscador */}
       <div className="d-flex justify-content-end mb-3">
         <div className="input-group input-group-sm" style={{ maxWidth: 260 }}>
-          <span className="input-group-text bg-white border-end-0">🔍</span>
+          <span className="input-group-text bg-white border-end-0"></span>
           <input
             type="text"
             className="form-control border-start-0"
@@ -407,7 +407,7 @@ const Insumos = () => {
                   {selectedInsumo.Tipo && selectedInsumo.Tipo.toLowerCase() === 'tela' && (
                     <div className="col-12">
                       <div className="p-3 rounded-3" style={{ backgroundColor: '#e3f2fd' }}>
-                        <label className="text-muted mb-1 fs-6">💰 Precio de Tela</label>
+                        <label className="text-muted mb-1 fs-6">Precio de Tela</label>
                         <p className="mb-0 fs-5 fw-bold text-primary">
                           ${selectedInsumo.PrecioTela 
                             ? parseFloat(selectedInsumo.PrecioTela).toFixed(2) 

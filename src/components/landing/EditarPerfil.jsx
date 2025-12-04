@@ -25,7 +25,7 @@ const EditarPerfil = () => {
 
     const cargarDatosUsuario = async () => {
         try {
-            const user = localStorage.getItem("user");
+            const user = localStorage.getItem("usuario");
             if (!user) {
                 Swal.fire({
                     icon: "warning",
@@ -48,7 +48,7 @@ const EditarPerfil = () => {
             }
 
             // Verificar que exista documentoID
-            if (!userData.documentoID) {
+            if (!userData.DocumentoID) {
                 console.error("No se encontró documentoID en localStorage");
                 Swal.fire({
                     icon: "error",
@@ -61,10 +61,10 @@ const EditarPerfil = () => {
                 return;
             }
 
-            console.log("Cargando usuario con ID:", userData.documentoID); // Para depurar
+            console.log("Cargando usuario con ID:", userData.DocumentoID); // Para depurar
 
             // Obtener datos completos del usuario desde la API
-            const response = await getUsuarioById(userData.documentoID);
+            const response = await getUsuarioById(userData.DocumentoID);
 
             console.log("Respuesta de la API:", response); // Para depurar
 
