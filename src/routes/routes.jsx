@@ -3,7 +3,6 @@ import DashboardLayout from "../components/layouts/DashboardLayout";
 import Cotizaciones from "../pages/Cotizaciones";
 import Roles from "../pages/Roles";
 import Insumos from "../pages/Insumos";
-import Pedidos from "../pages/Pedidos";
 import Productos from "../pages/Productos";
 import Colores from "../pages/Colores";
 import Tallas from "../pages/Tallas";
@@ -28,6 +27,7 @@ import Ventas from "../pages/Ventas";
 import PrivateRoute from "./PrivateRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import VentasPendientes from "../pages/VentasPendientes";
+import Compras from "../pages/Pedidos";
 
 const AppRoutes = () => {
 
@@ -77,7 +77,7 @@ const AppRoutes = () => {
                 <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
                 <Route path="roles" element={<Roles />} />
                 <Route path="insumos" element={<Insumos />} />
-                <Route path="pedidos" element={<Pedidos />} />
+                <Route path="pedidos" element={<Compras/>} />
                 <Route path="productos" element={<Productos />} />
                 <Route path="agregar-producto" element={<AgregarProducto />} />
                 <Route path="/dashboard/editar-producto/:id" element={<AgregarProducto />} />

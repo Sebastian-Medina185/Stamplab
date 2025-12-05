@@ -11,7 +11,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     // ==========================
     const [formData, setFormData] = useState({
         proveedorRefId: "",
-        estadoId: "Pendiente",
         fechaCompra: new Date().toISOString().split('T')[0]
     });
 
@@ -27,13 +26,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const [showModalInsumo, setShowModalInsumo] = useState(false);
     const [busquedaInsumo, setBusquedaInsumo] = useState("");
 
-    // Estados
-    const estados = [
-        { id: "Pendiente", nombre: "Pendiente" },
-        { id: "Aprobada", nombre: "Aprobada" },
-        { id: "Rechazada", nombre: "Rechazada" }
-    ];
-
     // ==========================
     // CARGAR DATOS INICIALES
     // ==========================
@@ -41,11 +33,10 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
         cargarProveedores();
         cargarInsumos();
         
-        // ✅ Cargar datos si estamos editando
+        // Cargar datos si estamos editando
         if (compra) {
             setFormData({
                 proveedorRefId: compra.ProveedorRefId?.toString() || "",
-                estadoId: compra.EstadoID || "Pendiente",
                 fechaCompra: compra.FechaCompra 
                     ? new Date(compra.FechaCompra).toISOString().split('T')[0]
                     : new Date().toISOString().split('T')[0]
@@ -122,9 +113,6 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // ✅ NOTA: En pedidos NO validamos contra stock porque estás COMPRANDO para AUMENTAR el inventario
-        // Si tienes 20 y pides 22, terminarás con 42 total (correcto ✓)
-
         // Verificar si el insumo ya está en la lista
         const yaExiste = detalles.find(d => d.InsumoID === insumoSeleccionado.InsumoID);
         if (yaExiste) {
@@ -165,19 +153,14 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // ✅ VALIDACIONES REQUERIDAS
+        // VALIDACIONES REQUERIDAS
         if (!formData.proveedorRefId) {
             Swal.fire("Error", "Debe seleccionar un proveedor", "error");
             return;
         }
 
-        if (!formData.estadoId) {
-            Swal.fire("Error", "Debe seleccionar un estado", "error");
-            return;
-        }
-
         if (!formData.fechaCompra) {
-            Swal.fire("Error", "Debe seleccionar una fecha para el pedido", "error");
+            Swal.fire("Error", "Debe seleccionar una fecha para la compra", "error");
             return;
         }
 
@@ -186,7 +169,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // ✅ Validar que todos los detalles tengan cantidad válida
+        // Validar que todos los detalles tengan cantidad válida
         const detalleInvalido = detalles.find(d => !d.Cantidad || d.Cantidad <= 0);
         if (detalleInvalido) {
             Swal.fire({
@@ -197,24 +180,9 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
             return;
         }
 
-        // ✅ Validar fecha del pedido (debe ser hoy o futura)
-        const fechaSeleccionada = new Date(formData.fechaCompra);
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        
-        if (fechaSeleccionada < hoy) {
-            Swal.fire({
-                icon: "warning",
-                title: "Fecha inválida",
-                text: "La fecha del pedido no puede ser anterior a hoy. Debe ser hoy o una fecha futura."
-            });
-            return;
-        }
-
         // Preparar datos para enviar
         const compraData = {
             ProveedorRefId: parseInt(formData.proveedorRefId),
-            EstadoID: formData.estadoId,
             FechaCompra: formData.fechaCompra,
             detalles: detalles.map(d => ({
                 InsumoID: d.InsumoID,
@@ -234,7 +202,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
         <div className="container py-4">
             <div className="position-relative mb-4 text-center">
                 <p className="fw-bold fs-3 mb-0">
-                    {compra ? "Editar Pedido" : "Nuevo Pedido a Proveedor"}
+                    {compra ? "Editar Compra" : "Nueva Compra a Proveedor"}
                 </p>
                 <button
                     type="button"
@@ -251,9 +219,9 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
                 style={{ backgroundColor: "#f5f5fa", color: "#2a273a" }}
                 onSubmit={handleSubmit}
             >
-                {/* Sección 1: Datos del pedido */}
+                {/* Sección 1: Datos de la compra */}
                 <div className="row g-3 mb-4">
-                    <div className="col-md-5">
+                    <div className="col-md-8">
                         <label className="form-label fw-bold">
                             Proveedor <span className="text-danger">*</span>
                         </label>
@@ -275,26 +243,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
 
                     <div className="col-md-4">
                         <label className="form-label fw-bold">
-                            Estado <span className="text-danger">*</span>
-                        </label>
-                        <select
-                            className="form-select"
-                            name="estadoId"
-                            value={formData.estadoId}
-                            onChange={handleChange}
-                            required
-                        >
-                            {estados.map(estado => (
-                                <option key={estado.id} value={estado.id}>
-                                    {estado.nombre}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="col-md-3">
-                        <label className="form-label fw-bold">
-                            Fecha del Pedido <span className="text-danger">*</span>
+                            Fecha de Compra <span className="text-danger">*</span>
                         </label>
                         <input
                             type="date"
@@ -302,12 +251,8 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
                             name="fechaCompra"
                             value={formData.fechaCompra}
                             onChange={handleChange}
-                            min={new Date().toISOString().split('T')[0]}
                             required
                         />
-                        <small className="text-muted">
-                            Fecha de entrega esperada (hoy o futura)
-                        </small>
                     </div>
                 </div>
 
@@ -409,7 +354,7 @@ const NuevaCompra = ({ onClose, onSave, compra = null }) => {
                         className="btn btn-success px-4"
                         disabled={detalles.length === 0 || !formData.proveedorRefId || !formData.fechaCompra}
                     >
-                        Generar Pedido
+                        Registrar Compra
                     </button>
                     <button
                         type="button"

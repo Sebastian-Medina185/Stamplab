@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { FaEdit, FaEye, FaPlusCircle, FaTrash, FaSyncAlt } from "react-icons/fa";
+import { FaEdit, FaEye, FaPlusCircle, FaTrash } from "react-icons/fa";
 import { getCompras, createCompra, updateCompra, deleteCompra } from "../Services/api-compras/compras";
 import Swal from 'sweetalert2';
 import { Modal } from 'react-bootstrap';
 import NuevaCompra from "./formularios_dash/CompraForm";
 
-const Pedidos = () => {
+const Compras = () => {
     const [search, setSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
     const [selectedCompra, setSelectedCompra] = useState(null);
@@ -42,7 +42,8 @@ const Pedidos = () => {
         setShowForm(true);
     };
 
-    const handleEditar = (compra) => {
+    // función para editar (abre el formulario con la compra cargada)
+    const handleEdit = (compra) => {
         setSelectedCompra(compra);
         setShowForm(true);
     };
@@ -70,6 +71,8 @@ const Pedidos = () => {
                 if (response.estado) {
                     await cargarCompras();
                     Swal.fire('Eliminado', 'La compra ha sido eliminada', 'success');
+                } else {
+                    throw new Error(response.mensaje || 'No se pudo eliminar la compra');
                 }
             }
         } catch (error) {
@@ -78,91 +81,42 @@ const Pedidos = () => {
         }
     };
 
-    const handleCambiarEstado = async (compra) => {
-        try {
-            const estadoActual = compra.EstadoID;
-            
-            // Modal para seleccionar nuevo estado
-            const { value: nuevoEstado } = await Swal.fire({
-                title: 'Cambiar Estado',
-                html: `
-                    <p>Estado actual: <strong>${getEstadoNombre(estadoActual)}</strong></p>
-                    <p>Seleccione el nuevo estado:</p>
-                `,
-                input: 'select',
-                inputOptions: {
-                    'Pendiente': 'Pendiente',
-                    'Aprobada': 'Aprobada',
-                    'Rechazada': 'Rechazada'
-                },
-                inputValue: estadoActual,
-                showCancelButton: true,
-                confirmButtonText: 'Cambiar',
-                cancelButtonText: 'Cancelar',
-                inputValidator: (value) => {
-                    if (!value) {
-                        return 'Debe seleccionar un estado';
-                    }
-                }
-            });
-
-            if (nuevoEstado && nuevoEstado !== estadoActual) {
-                setLoading(true);
-                
-                const compraActualizada = {
-                    EstadoID: nuevoEstado
-                };
-                
-                const response = await updateCompra(compra.CompraID, compraActualizada);
-                
-                if (response.estado) {
-                    await cargarCompras();
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Estado actualizado!',
-                        text: `El estado cambió a: ${nuevoEstado}`,
-                        timer: 2000
-                    });
-                }
-            }
-        } catch (error) {
-            console.error("Error al cambiar estado:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.message || 'Error al cambiar el estado'
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // handleSave actualizado: crea o actualiza según selectedCompra
     const handleSave = async (compraData) => {
         try {
             setLoading(true);
-            
-            if (selectedCompra) {
-                // Actualizar compra existente
+
+            if (selectedCompra && selectedCompra.CompraID) {
+                // EDITAR compra existente
                 const response = await updateCompra(selectedCompra.CompraID, compraData);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Éxito!',
-                    text: response.mensaje || 'Compra actualizada correctamente'
-                });
-                setShowForm(false);
-                await cargarCompras();
+
+                if (response && response.estado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: response.mensaje || 'Compra actualizada correctamente'
+                    });
+                    setShowForm(false);
+                    setSelectedCompra(null);
+                    await cargarCompras();
+                } else {
+                    throw new Error(response?.mensaje || 'No se pudo actualizar la compra');
+                }
             } else {
-                // Crear nueva compra
+                // CREAR nueva compra
                 const response = await createCompra(compraData);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Éxito!',
-                    text: response.mensaje || 'Compra creada correctamente'
-                });
-                setShowForm(false);
-                await cargarCompras();
+
+                if (response && response.estado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: response.mensaje || 'Compra creada correctamente'
+                    });
+                    setShowForm(false);
+                    await cargarCompras();
+                } else {
+                    throw new Error(response?.mensaje || 'No se pudo crear la compra');
+                }
             }
         } catch (error) {
             console.error('Error:', error);
@@ -174,31 +128,6 @@ const Pedidos = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const getEstadoNombre = (estadoId) => {
-        // ✅ Manejar tanto strings como números
-        if (typeof estadoId === 'string') {
-            return estadoId; // Ya es un string como "Pendiente"
-        }
-        const estados = {
-            1: "Pendiente",
-            2: "Aprobada",
-            3: "Rechazada"
-        };
-        return estados[estadoId] || "Desconocido";
-    };
-
-    const getEstadoColor = (estadoId) => {
-        // ✅ Normalizar el estado a string
-        const estadoStr = typeof estadoId === 'string' ? estadoId : getEstadoNombre(estadoId);
-        
-        const colores = {
-            "Pendiente": "warning",
-            "Aprobada": "success",
-            "Rechazada": "danger"
-        };
-        return colores[estadoStr] || "secondary";
     };
 
     const formatearFecha = (fecha) => {
@@ -287,15 +216,14 @@ const Pedidos = () => {
                                 <th>Proveedor</th>
                                 <th>NIT</th>
                                 <th>Fecha</th>
-                                <th>Estado</th>
                                 <th># Insumos</th>
-                                <th style={{ width: 160 }}>Acciones</th>
+                                <th style={{ width: 120 }}>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4">
+                                    <td colSpan={6} className="text-center py-4">
                                         <div className="spinner-border text-primary" role="status">
                                             <span className="visually-hidden">Cargando...</span>
                                         </div>
@@ -303,7 +231,7 @@ const Pedidos = () => {
                                 </tr>
                             ) : error ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-danger">
+                                    <td colSpan={6} className="text-center py-4 text-danger">
                                         {error}
                                         <br />
                                         <button
@@ -316,7 +244,7 @@ const Pedidos = () => {
                                 </tr>
                             ) : comprasFiltradas.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-muted">
+                                    <td colSpan={6} className="text-center py-4 text-muted">
                                         {compras.length === 0
                                             ? "No hay compras registradas."
                                             : "No se encontraron compras con los filtros aplicados."
@@ -334,11 +262,6 @@ const Pedidos = () => {
                                         <td className="fw-medium">{compra.proveedor?.Nombre || 'N/A'}</td>
                                         <td>{compra.proveedor?.Nit || 'N/A'}</td>
                                         <td>{formatearFecha(compra.FechaCompra)}</td>
-                                        <td>
-                                            <span className={`badge text-${getEstadoColor(compra.EstadoID)} fw-bold fs-6 px-2 py-1 shadow-sm`}>
-                                                {getEstadoNombre(compra.EstadoID)}
-                                            </span>
-                                        </td>
                                         <td className="text-center">
                                             <span className="badge bg-info">
                                                 {compra.detalles?.length || 0}
@@ -356,20 +279,16 @@ const Pedidos = () => {
                                                 >
                                                     <FaEye size={14} />
                                                 </button>
+
+                                                {/* Botón de editar agregado */}
                                                 <button
                                                     className="btn btn-outline-warning btn-sm rounded-circle"
                                                     title="Editar"
-                                                    onClick={() => handleEditar(compra)}
+                                                    onClick={() => handleEdit(compra)}
                                                 >
                                                     <FaEdit size={14} />
                                                 </button>
-                                                <button
-                                                    className="btn btn-outline-secondary btn-sm rounded-circle"
-                                                    title="Cambiar estado"
-                                                    onClick={() => handleCambiarEstado(compra)}
-                                                >
-                                                    <FaSyncAlt size={14} />
-                                                </button>
+
                                                 <button
                                                     className="btn btn-outline-danger btn-sm rounded-circle"
                                                     title="Eliminar"
@@ -429,20 +348,10 @@ const Pedidos = () => {
                                             <h5 className="mb-0">{selectedCompra.proveedor?.Nit}</h5>
                                         </div>
                                     </div>
-                                    <div className="col-md-6">
+                                    <div className="col-md-12">
                                         <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
                                             <label className="text-muted mb-1 fs-6">Fecha</label>
                                             <p className="mb-0">{formatearFecha(selectedCompra.FechaCompra)}</p>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="p-3 rounded-3" style={{ backgroundColor: '#f8f9fa' }}>
-                                            <label className="text-muted mb-1 fs-6">Estado</label>
-                                            <div>
-                                                <span className={`badge bg-${getEstadoColor(selectedCompra.EstadoID)} px-3 py-2`}>
-                                                    {getEstadoNombre(selectedCompra.EstadoID)}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -487,4 +396,4 @@ const Pedidos = () => {
     );
 };
 
-export default Pedidos;
+export default Compras;
