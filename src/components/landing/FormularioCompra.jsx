@@ -171,22 +171,40 @@ const FormularioCompra = () => {
         setShowDesignPreview(true);
     };
 
-    // ===== CÁLCULO DE PRECIO =====
-    const calcularPrecioTotal = () => {
-        const talla = tallas.find(t => t.TallaID === parseInt(tallaID));
-        const tela = telas.find(t => t.InsumoID === parseInt(telaID));
 
-        // ✅ CONVERTIR A NÚMERO explícitamente
-        const precioTalla = parseFloat(talla?.Precio) || 0;
-        const precioTela = (!traePrenda && tela) ? (parseFloat(tela?.PrecioTela) || 0) : 0;
-        
-        // ✅ Sumar correctamente (números, no strings)
-        const precioBase = precioTalla + precioTela;
-        
+
+    // ===== CÁLCULO DE PRECIO CORREGIDO =====
+    const calcularPrecioTotal = () => {
+        // Si trae prenda, no calcular precios
+        if (traePrenda) {
+            return {
+                precioBase: 0,
+                precioTalla: 0,
+                precioTela: 0,
+                cantidadUnidades: parseInt(cantidad) || 1,
+                subtotal: 0
+            };
+        }
+
+        // Buscar talla seleccionada
+        const tallaObj = tallas.find(t => t.TallaID === parseInt(tallaID));
+        const precioTalla = parseFloat(tallaObj?.Precio) || 0;
+
+        // Buscar tela seleccionada
+        const telaObj = telas.find(t => t.InsumoID === parseInt(telaID));
+        const precioTela = parseFloat(telaObj?.PrecioTela) || 0;
+
+        // Precio base del producto
+        const precioBaseProducto = parseFloat(producto?.PrecioBase) || 0;
+
+        // Suma total (PrecioBase + Talla + Tela)
+        const precioBase = precioBaseProducto + precioTalla + precioTela;
+
         const cantidadUnidades = parseInt(cantidad) || 1;
         const subtotal = precioBase * cantidadUnidades;
 
         return {
+            precioBaseProducto,
             precioBase,
             precioTalla,
             precioTela,
@@ -194,6 +212,7 @@ const FormularioCompra = () => {
             subtotal
         };
     };
+
 
     // ===== ENVIAR COTIZACIÓN =====
     const handleSubmit = async (e) => {
@@ -311,6 +330,10 @@ const FormularioCompra = () => {
                                     <div className="card-body">
                                         {!traePrenda ? (
                                             <>
+                                                <div className="d-flex justify-content-between mb-2">
+                                                    <span>Precio base producto:</span>
+                                                    <strong>${(precios.precioBaseProducto || 0).toLocaleString()}</strong>
+                                                </div>
                                                 <div className="d-flex justify-content-between mb-2">
                                                     <span>Precio talla:</span>
                                                     <strong>${precios.precioTalla.toLocaleString()}</strong>
@@ -452,7 +475,7 @@ const FormularioCompra = () => {
                                 <div className="card-body">
                                     <div className="p-3 rounded mb-3" style={{ backgroundColor: '#f8f9fa', border: '2px dashed #dee2e6' }}>
                                         <h6 className="mb-3">{editandoIndex !== null ? "Editar" : "Nuevo"} Diseño</h6>
-                                        
+
                                         <Row className="g-3 mb-3">
                                             <Col md={6}>
                                                 <Form.Group>

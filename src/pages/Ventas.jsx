@@ -39,12 +39,15 @@ const Ventas = () => {
     }, []);
 
     // Cargar todas las ventas
+    // En Ventas.jsx - línea ~54
     const loadVentas = async () => {
         try {
             setLoading(true);
             setError(null);
             const data = await getVentas();
-            setVentas(data || []);
+            // FILTRAR: Excluir ventas pendientes (EstadoID = 8)
+            const noPendientes = (data || []).filter(v => v.EstadoID !== 8);
+            setVentas(noPendientes);
         } catch (error) {
             console.error("Error al cargar ventas:", error);
             setError("Error al cargar ventas");
