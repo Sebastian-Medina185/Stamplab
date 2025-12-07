@@ -1,4 +1,19 @@
-const API_BASE_URL = "http://localhost:3000/api"; // Ajusta según tu configuración
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:3000/api'; 
+
+
+// NUEVO ENDPOINT INTELIGENTE
+export const createCotizacionInteligente = async (cotizacionData) => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/cotizaciones/inteligente`, cotizacionData);
+        return response.data;
+    } catch (error) {
+        console.error('Error al crear cotización inteligente:', error);
+        throw error.response?.data || error;
+    }
+};
+
 
 // ==================== PRODUCTOS ====================
 export const getProductos = async () => {

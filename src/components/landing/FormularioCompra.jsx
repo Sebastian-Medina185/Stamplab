@@ -3,9 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Row, Col, Form, Button, Table, Modal, Alert } from "react-bootstrap";
 import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import Swal from "sweetalert2";
-import * as api from "../../Services/api-cotizacion-landing/cotizacion-landing.js";
+import * as api from "../../Services/api-cotizacion-landing/cotizacion-landing";
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
+import { getVariantesByProducto } from '../../Services/api-productos/variantes';
+
 
 const FormularioCompra = () => {
     const location = useLocation();
@@ -30,6 +32,36 @@ const FormularioCompra = () => {
     const [telas, setTelas] = useState([]);
     const [tecnicas, setTecnicas] = useState([]);
     const [partes, setPartes] = useState([]);
+
+    // Traer solo variantes del producto especifico
+    const [variantesProducto, setVariantesProducto] = useState([]);
+
+    const coloresDisponibles = colores.filter(c =>
+        variantesProducto.some(v => v.ColorID === c.ColorID)
+    );
+
+    const tallasDisponibles = tallas.filter(t =>
+        variantesProducto.some(v => v.TallaID === t.TallaID)
+    );
+
+    const telasDisponibles = telas.filter(t =>
+        variantesProducto.some(v => v.TelaID === t.InsumoID)
+    );
+
+    const getStockPorColor = (colorID) => {
+        const variante = variantesProducto.find(v => v.ColorID === colorID);
+        return variante?.Stock ?? 0;
+    };
+
+    const getStockPorTalla = (tallaID) => {
+        const variante = variantesProducto.find(v => v.TallaID === tallaID);
+        return variante?.Stock ?? 0;
+    };
+
+    const getStockPorTela = (telaID) => {
+        const variante = variantesProducto.find(v => v.TelaID === telaID);
+        return variante?.Stock ?? 0;
+    };
 
     // Diseños
     const [disenos, setDisenos] = useState([]);
@@ -72,6 +104,7 @@ const FormularioCompra = () => {
 
     const cargarCatalogos = async () => {
         try {
+            // 1. Traer catálogos completos (para tener nombres)
             const [colData, tallData, telData, tecData, partData] = await Promise.all([
                 api.getColores(),
                 api.getTallas(),
@@ -85,6 +118,12 @@ const FormularioCompra = () => {
             setTelas(telData || []);
             setTecnicas(tecData || []);
             setPartes(partData || []);
+
+            // 2. TRAER SOLO VARIANTES DEL PRODUCTO (MUY IMPORTANTE)
+            const variantesRes = await getVariantesByProducto(producto.ProductoID);
+            const variantes = variantesRes.datos || variantesRes;
+            setVariantesProducto(variantes);
+
         } catch (error) {
             console.error("Error al cargar catálogos:", error);
             Swal.fire("Error", "No se pudieron cargar los catálogos", "error");
@@ -171,8 +210,6 @@ const FormularioCompra = () => {
         setShowDesignPreview(true);
     };
 
-
-
     // ===== CÁLCULO DE PRECIO CORREGIDO =====
     const calcularPrecioTotal = () => {
         // Si trae prenda, no calcular precios
@@ -186,12 +223,16 @@ const FormularioCompra = () => {
             };
         }
 
-        // Buscar talla seleccionada
-        const tallaObj = tallas.find(t => t.TallaID === parseInt(tallaID));
+        // Buscar talla seleccionada (solo si hay tallas disponibles)
+        const tallaObj = tallasDisponibles.length > 0 && tallaID
+            ? tallas.find(t => t.TallaID === parseInt(tallaID))
+            : null;
         const precioTalla = parseFloat(tallaObj?.Precio) || 0;
 
-        // Buscar tela seleccionada
-        const telaObj = telas.find(t => t.InsumoID === parseInt(telaID));
+        // Buscar tela seleccionada (solo si hay telas disponibles)
+        const telaObj = telasDisponibles.length > 0 && telaID
+            ? telas.find(t => t.InsumoID === parseInt(telaID))
+            : null;
         const precioTela = parseFloat(telaObj?.PrecioTela) || 0;
 
         // Precio base del producto
@@ -213,7 +254,6 @@ const FormularioCompra = () => {
         };
     };
 
-
     // ===== ENVIAR COTIZACIÓN =====
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -223,9 +263,21 @@ const FormularioCompra = () => {
             return;
         }
 
-        if (!traePrenda && (!colorID || !tallaID || !telaID)) {
-            Swal.fire("Atención", "Completa todos los campos obligatorios", "warning");
-            return;
+        // Validación dinámica: solo validar los campos que realmente están disponibles
+        if (!traePrenda) {
+            // Validar solo los campos que tienen opciones disponibles
+            if (coloresDisponibles.length > 0 && !colorID) {
+                Swal.fire("Atención", "Debes seleccionar un color", "warning");
+                return;
+            }
+            if (tallasDisponibles.length > 0 && !tallaID) {
+                Swal.fire("Atención", "Debes seleccionar una talla", "warning");
+                return;
+            }
+            if (telasDisponibles.length > 0 && !telaID) {
+                Swal.fire("Atención", "Debes seleccionar una tela", "warning");
+                return;
+            }
         }
 
         if (traePrenda && !prendaDescripcion.trim()) {
@@ -241,18 +293,21 @@ const FormularioCompra = () => {
                 TraePrenda: traePrenda,
                 PrendaDescripcion: traePrenda ? prendaDescripcion : "",
 
-                tallas: !traePrenda && tallaID ? [{
+                // Solo incluir tallas si hay disponibles Y fue seleccionada
+                tallas: !traePrenda && tallasDisponibles.length > 0 && tallaID ? [{
                     TallaID: parseInt(tallaID),
                     Cantidad: parseInt(cantidad),
                     PrecioTalla: tallas.find(t => t.TallaID === parseInt(tallaID))?.Precio || 0
                 }] : [],
 
-                colores: !traePrenda && colorID ? [{
+                // Solo incluir colores si hay disponibles Y fue seleccionado
+                colores: !traePrenda && coloresDisponibles.length > 0 && colorID ? [{
                     ColorID: parseInt(colorID),
                     Cantidad: parseInt(cantidad)
                 }] : [],
 
-                insumos: !traePrenda && telaID ? [{
+                // Solo incluir telas si hay disponibles Y fue seleccionada
+                insumos: !traePrenda && telasDisponibles.length > 0 && telaID ? [{
                     InsumoID: parseInt(telaID),
                     CantidadRequerida: parseInt(cantidad)
                 }] : [],
@@ -269,24 +324,42 @@ const FormularioCompra = () => {
             const cotizacionData = {
                 DocumentoID: usuario.DocumentoID,
                 FechaCotizacion: new Date().toISOString(),
-                ValorTotal: 0,
-                EstadoID: 1,
                 detalles
             };
 
-            const response = await api.createCotizacionCompleta(cotizacionData);
+            // LLAMADA AL NUEVO ENDPOINT INTELIGENTE
+            const response = await api.createCotizacionInteligente(cotizacionData);
 
-            Swal.fire({
-                icon: "success",
-                title: "¡Cotización creada!",
-                text: `Número de cotización: #${response?.cotizacion?.CotizacionID || response?.CotizacionID}`,
-                confirmButtonText: "Ver mis cotizaciones"
-            }).then(() => {
-                navigate("/misCotizaciones");
-            });
+            // Manejar respuesta según el tipo
+            if (response.tipo === 'cotizacion') {
+                Swal.fire({
+                    icon: "success",
+                    title: "¡Cotización creada!",
+                    html: `
+                    <p><strong>Número de cotización:</strong> #${response.cotizacion?.CotizacionID}</p>
+                    <p class="text-muted mt-2">${response.mensaje}</p>
+                `,
+                    confirmButtonText: "Ver mis cotizaciones"
+                }).then(() => {
+                    navigate("/misCotizaciones");
+                });
+            } else if (response.tipo === 'venta') {
+                Swal.fire({
+                    icon: "success",
+                    title: "¡Pedido registrado!",
+                    html: `
+                    <p><strong>Número de pedido:</strong> #${response.venta?.VentaID}</p>
+                    <p class="text-muted mt-2">${response.mensaje}</p>
+                    <p class="mt-3"><strong>Total:</strong> $${(response.venta?.Total || 0).toLocaleString()}</p>
+                `,
+                    confirmButtonText: "Entendido"
+                }).then(() => {
+                    navigate("/productosLanding");
+                });
+            }
         } catch (error) {
-            console.error("Error al crear cotización:", error);
-            Swal.fire("Error", error?.message || "Error al crear la cotización", "error");
+            console.error("Error al crear solicitud:", error);
+            Swal.fire("Error", error?.message || "Error al procesar tu solicitud", "error");
         } finally {
             setCargando(false);
         }
@@ -334,14 +407,21 @@ const FormularioCompra = () => {
                                                     <span>Precio base producto:</span>
                                                     <strong>${(precios.precioBaseProducto || 0).toLocaleString()}</strong>
                                                 </div>
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Precio talla:</span>
-                                                    <strong>${precios.precioTalla.toLocaleString()}</strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Precio tela:</span>
-                                                    <strong>${precios.precioTela.toLocaleString()}</strong>
-                                                </div>
+
+                                                {tallasDisponibles.length > 0 && (
+                                                    <div className="d-flex justify-content-between mb-2">
+                                                        <span>Precio talla:</span>
+                                                        <strong>${precios.precioTalla.toLocaleString()}</strong>
+                                                    </div>
+                                                )}
+
+                                                {telasDisponibles.length > 0 && (
+                                                    <div className="d-flex justify-content-between mb-2">
+                                                        <span>Precio tela:</span>
+                                                        <strong>${precios.precioTela.toLocaleString()}</strong>
+                                                    </div>
+                                                )}
+
                                                 <hr />
                                                 <div className="d-flex justify-content-between mb-2">
                                                     <span>Precio unitario:</span>
@@ -418,50 +498,120 @@ const FormularioCompra = () => {
                                     </div>
                                     <div className="card-body">
                                         <Row className="g-3">
+                                            {coloresDisponibles.length > 0 && (
+                                                <Col md={4}>
+                                                    <Form.Group>
+                                                        <Form.Label className="fw-medium">
+                                                            Color <span className="text-danger">*</span>
+                                                        </Form.Label>
+                                                        <Form.Select
+                                                            value={colorID}
+                                                            onChange={(e) => setColorID(e.target.value)}
+                                                            required
+                                                        >
+                                                            <option value="">Seleccionar color...</option>
+                                                            {coloresDisponibles.map(c => {
+                                                                const stock = getStockPorColor(c.ColorID);
+                                                                return (
+                                                                    <option key={c.ColorID} value={c.ColorID} disabled={stock <= 0}>
+                                                                        {c.Nombre} {stock > 0 ? `(Stock: ${stock})` : `(Sin stock)`}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </Form.Select>
+                                                    </Form.Group>
+                                                </Col>
+                                            )}
+
+                                            {tallasDisponibles.length > 0 && (
+                                                <Col md={4}>
+                                                    <Form.Group>
+                                                        <Form.Label className="fw-medium">
+                                                            Talla <span className="text-danger">*</span>
+                                                        </Form.Label>
+                                                        <Form.Select
+                                                            value={tallaID}
+                                                            onChange={(e) => setTallaID(e.target.value)}
+                                                            required
+                                                        >
+                                                            <option value="">Seleccionar talla...</option>
+                                                            {tallasDisponibles.map(t => {
+                                                                const stock = getStockPorTalla(t.TallaID);
+                                                                return (
+                                                                    <option key={t.TallaID} value={t.TallaID} disabled={stock <= 0}>
+                                                                        {t.Nombre} - ${t.Precio?.toLocaleString()}
+                                                                        {stock > 0 ? ` (Stock: ${stock})` : ` (Sin stock)`}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </Form.Select>
+                                                    </Form.Group>
+                                                </Col>
+                                            )}
+
                                             <Col md={4}>
                                                 <Form.Group>
-                                                    <Form.Label className="fw-medium">Color <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Select value={colorID} onChange={(e) => setColorID(e.target.value)} required>
-                                                        <option value="">Seleccionar...</option>
-                                                        {colores.map(c => (
-                                                            <option key={c.ColorID} value={c.ColorID}>{c.Nombre}</option>
-                                                        ))}
-                                                    </Form.Select>
+                                                    <Form.Label className="fw-medium">
+                                                        Cantidad <span className="text-danger">*</span>
+                                                    </Form.Label>
+                                                    <Form.Control
+                                                        type="number"
+                                                        min="1"
+                                                        value={cantidad}
+                                                        onChange={(e) => setCantidad(e.target.value)}
+                                                        required
+                                                    />
                                                 </Form.Group>
                                             </Col>
-                                            <Col md={4}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Talla <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Select value={tallaID} onChange={(e) => setTallaID(e.target.value)} required>
-                                                        <option value="">Seleccionar...</option>
-                                                        {tallas.map(t => (
-                                                            <option key={t.TallaID} value={t.TallaID}>
-                                                                {t.Nombre} - ${t.Precio?.toLocaleString()}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={4}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Cantidad <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Control type="number" min="1" value={cantidad}
-                                                        onChange={(e) => setCantidad(e.target.value)} required />
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={12}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Tipo de Tela <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Select value={telaID} onChange={(e) => setTelaID(e.target.value)} required>
-                                                        <option value="">Seleccionar...</option>
-                                                        {telas.map(t => (
-                                                            <option key={t.InsumoID} value={t.InsumoID}>
-                                                                {t.Nombre} - +${t.PrecioTela?.toLocaleString()}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
+
+                                            {telasDisponibles.length > 0 && (
+                                                <Col md={12}>
+                                                    <Form.Group>
+                                                        <Form.Label className="fw-medium">
+                                                            Tipo de Tela <span className="text-danger">*</span>
+                                                        </Form.Label>
+                                                        <Form.Select
+                                                            value={telaID}
+                                                            onChange={(e) => setTelaID(e.target.value)}
+                                                            required
+                                                        >
+                                                            <option value="">Seleccionar tela...</option>
+                                                            {telasDisponibles.map(t => {
+                                                                const stock = getStockPorTela(t.InsumoID);
+                                                                return (
+                                                                    <option key={t.InsumoID} value={t.InsumoID} disabled={stock <= 0}>
+                                                                        {t.Nombre} - +${t.PrecioTela?.toLocaleString()}
+                                                                        {stock > 0 ? ` (Stock: ${stock})` : ` (Sin stock)`}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </Form.Select>
+                                                    </Form.Group>
+                                                </Col>
+                                            )}
+
+                                            {/* Alertas cuando no hay opciones disponibles */}
+                                            {coloresDisponibles.length === 0 && (
+                                                <Col md={12}>
+                                                    <Alert variant="info" className="mb-0">
+                                                        <small>Este producto no requiere selección de color.</small>
+                                                    </Alert>
+                                                </Col>
+                                            )}
+                                            {tallasDisponibles.length === 0 && (
+                                                <Col md={12}>
+                                                    <Alert variant="info" className="mb-0">
+                                                        <small>Este producto no requiere selección de talla.</small>
+                                                    </Alert>
+                                                </Col>
+                                            )}
+                                            {telasDisponibles.length === 0 && (
+                                                <Col md={12}>
+                                                    <Alert variant="info" className="mb-0">
+                                                        <small>Este producto no requiere selección de tela.</small>
+                                                    </Alert>
+                                                </Col>
+                                            )}
                                         </Row>
                                     </div>
                                 </div>

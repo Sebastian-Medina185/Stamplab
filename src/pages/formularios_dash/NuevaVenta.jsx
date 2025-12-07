@@ -6,7 +6,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import axios from "axios";
-import { createVenta, updateVenta, getVentaById } from "../../Services/api-ventas/ventas";
+import { crearVenta, updateVenta, getVentaById } from "../../Services/api-ventas/ventas";
 
 export default function NuevaVenta({ onClose, ventaEdit }) {
     const navigate = useNavigate();

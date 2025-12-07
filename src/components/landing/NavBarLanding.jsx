@@ -210,24 +210,19 @@ const NavbarComponent = () => {
                         <p className="text-muted small">{userData.Correo || "Sin correo"}</p>
 
                         {/* Botones del modal */}
-                        <div className="d-flex justify-content-center gap-2 mt-3">
-                            <Button variant="secondary" onClick={handleLogout}>
-                                Cerrar Sesión
-                            </Button>
-                            <Button as={Link} to="/editarperfil" variant="primary" onClick={handlePerfilClose}>
-                                Editar Información
-                            </Button>
-                        </div>
-
-                        <div className="mt-3">
+                        <div className="d-flex justify-content-center gap-2 mt-4">
                             <Button
                                 as={Link}
                                 to="/miscotizaciones"
                                 variant="info"
-                                className="w-100 text-white fw-bold"
+                                className="w-50 text-white fw-bold"
                                 onClick={handlePerfilClose}
                             >
                                 Mis Cotizaciones
+                            </Button>
+
+                            <Button className="w-50" as={Link} to="/editarperfil" variant="primary" onClick={handlePerfilClose}>
+                                Editar Información
                             </Button>
                         </div>
                     </Modal.Body>
