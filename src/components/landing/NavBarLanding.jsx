@@ -38,7 +38,7 @@ const NavbarComponent = () => {
 
     const handleLogout = () => {
         localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        localStorage.removeItem("usuario");
         setIsAuthenticated(false);
         setUserData(null);
         setShowPerfil(false);

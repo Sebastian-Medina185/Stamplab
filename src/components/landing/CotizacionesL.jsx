@@ -1,261 +1,547 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Container, Row, Col, Form, Button, Table, Modal, Alert } from "react-bootstrap";
-import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import Swal from "sweetalert2";
-import * as api from "../../Services/api-cotizacion-landing/cotizacion-landing.js";
-import { createCotizacionInteligente } from "../../Services/api-cotizaciones/cotizaciones.js";
-import NavbarComponent from "../landing/NavBarLanding";
-import FooterComponent from "../landing/footer";
+
+// APIs
+const API_BASE_URL = 'http://localhost:3000/api';
+
+const api = {
+    getProductos: async () => {
+        const res = await fetch(`${API_BASE_URL}/productos`);
+        const data = await res.json();
+        return data.datos || data;
+    },
+    getTecnicas: async () => {
+        const res = await fetch(`${API_BASE_URL}/tecnicas`);
+        const data = await res.json();
+        return data.datos || data;
+    },
+    getPartes: async () => {
+        const res = await fetch(`${API_BASE_URL}/partes`);
+        const data = await res.json();
+        return data.datos || data;
+    },
+    getColores: async () => {
+        const res = await fetch(`${API_BASE_URL}/colores`);
+        const data = await res.json();
+        return data.datos || data;
+    },
+    getTallas: async () => {
+        const res = await fetch(`${API_BASE_URL}/tallas`);
+        const data = await res.json();
+        return data.datos || data;
+    },
+    getTelas: async () => {
+        const res = await fetch(`${API_BASE_URL}/insumos`);
+        const data = await res.json();
+        const insumos = data.datos || data;
+        return insumos.filter(i => i.Tipo?.toLowerCase() === "tela");
+    },
+    getVariantesByProducto: async (productoID) => {
+        const res = await fetch(`${API_BASE_URL}/inventarioproducto/producto/${productoID}`);
+        if (!res.ok) {
+            throw new Error(`Error ${res.status}: No se pudieron cargar las variantes`);
+        }
+        const data = await res.json();
+        return data.datos || data;
+    },
+    createCotizacionInteligente: async (cotizacionData) => {
+        const response = await fetch(`${API_BASE_URL}/cotizaciones/inteligente`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cotizacionData)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw { response: { data } };
+        }
+        return data;
+    }
+};
 
 const CotizacionLanding = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const producto = location.state?.producto;
-
     // Usuario
     const [usuario, setUsuario] = useState(null);
+    const [mostrarLoginModal, setMostrarLoginModal] = useState(false);
 
     // Estados principales
-    const [colorID, setColorID] = useState("");
-    const [tallaID, setTallaID] = useState("");
-    const [cantidad, setCantidad] = useState(1);
-    const [telaID, setTelaID] = useState("");
     const [traePrenda, setTraePrenda] = useState(false);
-    const [prendaDescripcion, setPrendaDescripcion] = useState("");
 
-    // Catálogos
+    // Catálogos completos
+    const [productos, setProductos] = useState([]);
+    const [tecnicas, setTecnicas] = useState([]);
+    const [partes, setPartes] = useState([]);
     const [colores, setColores] = useState([]);
     const [tallas, setTallas] = useState([]);
     const [telas, setTelas] = useState([]);
-    const [tecnicas, setTecnicas] = useState([]);
-    const [partes, setPartes] = useState([]);
+    const [cargando, setCargando] = useState(true);
 
-    // Diseños
-    const [disenos, setDisenos] = useState([]);
-    const [tecnicaID, setTecnicaID] = useState("");
-    const [parteID, setParteID] = useState("");
-    const [subparteDescripcion, setSubparteDescripcion] = useState("");
-    const [archivoDiseno, setArchivoDiseno] = useState(null);
-    const [observacionDiseno, setObservacionDiseno] = useState("");
-    const [editandoIndex, setEditandoIndex] = useState(null);
+    // Producto seleccionado y sus variantes
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+    const [variantesProducto, setVariantesProducto] = useState([]);
 
-    // Modales
-    const [showProductPreview, setShowProductPreview] = useState(false);
-    const [showDesignPreview, setShowDesignPreview] = useState(false);
-    const [previewSrc, setPreviewSrc] = useState(null);
-    const [cargando, setCargando] = useState(false);
+    // Modal de selección de productos
+    const [mostrarModalProductos, setMostrarModalProductos] = useState(false);
 
+    // Formulario del producto actual
+    const [formProducto, setFormProducto] = useState({
+        ColorID: "",
+        TallaID: "",
+        TipoTela: "",
+        Cantidad: 1,
+        PrendaDescripcion: ""
+    });
+
+    // Diseño actual (formulario temporal)
+    const [disenoActual, setDisenoActual] = useState({
+        TecnicaID: "",
+        ParteID: "",
+        Subparte: "",
+        ImagenDiseno: null,
+        Observacion: ""
+    });
+
+    // Estado para editar diseño
+    const [disenoEditando, setDisenoEditando] = useState(null);
+
+    // Modal de visualización de diseño
+    const [mostrarModalVisualizacion, setMostrarModalVisualizacion] = useState(false);
+    const [disenoVisualizando, setDisenoVisualizando] = useState(null);
+
+    // Tablas separadas
+    const [disenosAgregados, setDisenosAgregados] = useState([]);
+    const [productosEnCotizacion, setProductosEnCotizacion] = useState([]);
+
+    // Mensajes de éxito
+    const [mostrarExito, setMostrarExito] = useState(false);
+    const [numeroCotizacion, setNumeroCotizacion] = useState(null);
+    const [tipoCotizacion, setTipoCotizacion] = useState("");
+    const [mensajeExito, setMensajeExito] = useState("");
+
+    // ==================== EFECTOS ====================
     useEffect(() => {
         verificarAutenticacion();
-        if (!producto) {
-            navigate("/productosLanding");
-            return;
-        }
-        cargarCatalogos();
-    }, [producto, navigate]);
+        cargarDatos();
+    }, []);
 
+    useEffect(() => {
+        if (productoSeleccionado && !traePrenda) {
+            cargarVariantesProducto(productoSeleccionado.ProductoID);
+        } else {
+            setVariantesProducto([]);
+            // Limpiar selecciones cuando no hay producto
+            if (!productoSeleccionado || traePrenda) {
+                setFormProducto(prev => ({
+                    ...prev,
+                    ColorID: "",
+                    TallaID: "",
+                    TipoTela: ""
+                }));
+            }
+        }
+    }, [productoSeleccionado, traePrenda]);
+
+    // ==================== FUNCIONES ====================
     const verificarAutenticacion = () => {
         const usuarioStorage = localStorage.getItem("usuario");
         if (!usuarioStorage) {
-            Swal.fire({
-                icon: "warning",
-                title: "Autenticación requerida",
-                text: "Debes iniciar sesión para cotizar productos",
-            }).then(() => {
-                navigate("/login");
-            });
+            setMostrarLoginModal(true);
             return;
         }
         setUsuario(JSON.parse(usuarioStorage));
     };
 
-    const cargarCatalogos = async () => {
+    const handleIniciarSesion = () => {
+        sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+        window.location.href = "/login";
+    };
+
+    const cargarDatos = async () => {
         try {
-            const [colData, tallData, telData, tecData, partData] = await Promise.all([
+            setCargando(true);
+            const [prodData, tecData, partData, colData, tallData, telData] = await Promise.all([
+                api.getProductos(),
+                api.getTecnicas(),
+                api.getPartes(),
                 api.getColores(),
                 api.getTallas(),
-                api.getTelas(),
-                api.getTecnicas(),
-                api.getPartes()
+                api.getTelas()
             ]);
 
+            setProductos(prodData || []);
+            setTecnicas(tecData || []);
+            setPartes(partData || []);
             setColores(colData || []);
             setTallas(tallData || []);
             setTelas(telData || []);
-            setTecnicas(tecData || []);
-            setPartes(partData || []);
         } catch (error) {
-            console.error("Error al cargar catálogos:", error);
-            Swal.fire("Error", "No se pudieron cargar los catálogos", "error");
+            Swal.fire("Error", error?.message || "Error cargando catálogos", "error");
+        } finally {
+            setCargando(false);
         }
     };
 
-    // ===== MANEJO DE DISEÑOS =====
-    const resetCamposDiseno = () => {
-        setTecnicaID("");
-        setParteID("");
-        setSubparteDescripcion("");
-        setArchivoDiseno(null);
-        setObservacionDiseno("");
-        setEditandoIndex(null);
+    const cargarVariantesProducto = async (productoID) => {
+        try {
+            const variantesRes = await api.getVariantesByProducto(productoID);
+            
+            // Validar que sea un array
+            if (!Array.isArray(variantesRes)) {
+                console.error("Las variantes no son un array:", variantesRes);
+                setVariantesProducto([]);
+                return;
+            }
+
+            const variantes = variantesRes.filter(v => v.Estado && v.Stock > 0);
+            setVariantesProducto(variantes);
+
+            // Si no hay variantes disponibles, mostrar advertencia
+            if (variantes.length === 0) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Sin variantes disponibles",
+                    text: "Este producto no tiene variantes en stock. Puedes continuar sin seleccionar producto específico.",
+                    confirmButtonText: "Entendido"
+                });
+            }
+        } catch (error) {
+            console.error("Error cargando variantes:", error);
+            setVariantesProducto([]);
+            Swal.fire({
+                icon: "error",
+                title: "Error al cargar variantes",
+                text: "No se pudieron cargar las opciones disponibles para este producto. Puedes continuar sin seleccionar producto específico.",
+                confirmButtonText: "Entendido"
+            });
+        }
     };
 
-    const handleAgregarOActualizarDiseno = () => {
-        if (!tecnicaID || !parteID) {
-            Swal.fire("Atención", "Selecciona una técnica y una parte", "warning");
+    // Opciones disponibles según variantes
+    const coloresDisponibles = productoSeleccionado && !traePrenda && variantesProducto.length > 0
+        ? colores.filter(c => variantesProducto.some(v => v.ColorID === c.ColorID))
+        : colores;
+
+    const tallasDisponibles = productoSeleccionado && !traePrenda && variantesProducto.length > 0
+        ? tallas.filter(t => variantesProducto.some(v => v.TallaID === t.TallaID))
+        : tallas;
+
+    const telasDisponibles = productoSeleccionado && !traePrenda && variantesProducto.length > 0
+        ? telas.filter(t => variantesProducto.some(v => v.TelaID === t.InsumoID))
+        : telas;
+
+    // Validar stock
+    const validarStockDisponible = () => {
+        if (traePrenda || !productoSeleccionado || variantesProducto.length === 0) {
+            return { valido: true };
+        }
+
+        const cantidadSolicitada = parseInt(formProducto.Cantidad) || 0;
+
+        const varianteSeleccionada = variantesProducto.find(v => {
+            const coincideColor = !formProducto.ColorID || v.ColorID === parseInt(formProducto.ColorID);
+            const coincideTalla = !formProducto.TallaID || v.TallaID === parseInt(formProducto.TallaID);
+            const coincideTela = !formProducto.TipoTela || v.TelaID === parseInt(formProducto.TipoTela);
+            return coincideColor && coincideTalla && coincideTela && v.Estado;
+        });
+
+        if (!varianteSeleccionada) {
+            return {
+                valido: false,
+                mensaje: "No existe esta combinación de producto. Por favor verifica tu selección."
+            };
+        }
+
+        const stockDisponible = varianteSeleccionada.Stock || 0;
+
+        if (stockDisponible < cantidadSolicitada) {
+            return {
+                valido: false,
+                mensaje: `Stock insuficiente. Solo hay ${stockDisponible} unidad(es) disponible(s).`,
+                stockDisponible
+            };
+        }
+
+        return { valido: true, stockDisponible };
+    };
+
+    // ==================== FUNCIONES DE DISEÑO ====================
+    const handleAgregarDiseno = () => {
+        if (!disenoActual.TecnicaID || !disenoActual.ParteID) {
+            Swal.fire("Atención", "Selecciona técnica y parte", "warning");
             return;
         }
 
-        const tecnica = tecnicas.find(t => t.TecnicaID === parseInt(tecnicaID));
-        const parte = partes.find(p => p.ParteID === parseInt(parteID));
+        const tecnica = tecnicas.find(t => t.TecnicaID === parseInt(disenoActual.TecnicaID));
+        const parte = partes.find(p => p.ParteID === parseInt(disenoActual.ParteID));
 
-        const nuevoDiseno = {
-            TecnicaID: parseInt(tecnicaID),
-            TecnicaNombre: tecnica?.Nombre,
-            ParteID: parseInt(parteID),
-            ParteNombre: parte?.Nombre,
-            SubparteDescripcion: subparteDescripcion,
-            Archivo: archivoDiseno,
-            ImagenNombre: archivoDiseno?.name || "Sin archivo",
-            Observaciones: observacionDiseno
+        const disenoCompleto = {
+            id: Date.now(),
+            TecnicaID: parseInt(disenoActual.TecnicaID),
+            ParteID: parseInt(disenoActual.ParteID),
+            tecnica,
+            parte,
+            Subparte: disenoActual.Subparte,
+            ImagenDiseno: disenoActual.ImagenDiseno,
+            ImagenNombre: disenoActual.ImagenDiseno?.name || "Sin archivo",
+            Observacion: disenoActual.Observacion
         };
 
-        if (editandoIndex !== null) {
-            setDisenos(prev => prev.map((d, i) => i === editandoIndex ? nuevoDiseno : d));
-        } else {
-            setDisenos(prev => [...prev, nuevoDiseno]);
-        }
+        setDisenosAgregados(prev => [...prev, disenoCompleto]);
+        
+        // Limpiar formulario de diseño
+        setDisenoActual({
+            TecnicaID: "",
+            ParteID: "",
+            Subparte: "",
+            ImagenDiseno: null,
+            Observacion: ""
+        });
 
-        resetCamposDiseno();
         Swal.fire({
             icon: "success",
-            title: editandoIndex !== null ? "Diseño actualizado" : "Diseño agregado",
+            title: "Diseño agregado",
+            text: "Puedes seguir agregando más diseños",
             timer: 1500,
             showConfirmButton: false
         });
     };
 
-    const handleEditarDiseno = (index) => {
-        const d = disenos[index];
-        setTecnicaID(d.TecnicaID.toString());
-        setParteID(d.ParteID.toString());
-        setSubparteDescripcion(d.SubparteDescripcion || "");
-        setArchivoDiseno(d.Archivo);
-        setObservacionDiseno(d.Observaciones || "");
-        setEditandoIndex(index);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+    const handleEditarDiseno = (diseno) => {
+        setDisenoEditando(diseno);
+        setDisenoActual({
+            TecnicaID: diseno.TecnicaID.toString(),
+            ParteID: diseno.ParteID.toString(),
+            Subparte: diseno.Subparte,
+            ImagenDiseno: null, // No podemos recuperar el archivo
+            Observacion: diseno.Observacion
+        });
     };
 
-    const handleEliminarDiseno = (index) => {
+    const handleGuardarEdicion = () => {
+        if (!disenoActual.TecnicaID || !disenoActual.ParteID) {
+            Swal.fire("Atención", "Selecciona técnica y parte", "warning");
+            return;
+        }
+
+        const tecnica = tecnicas.find(t => t.TecnicaID === parseInt(disenoActual.TecnicaID));
+        const parte = partes.find(p => p.ParteID === parseInt(disenoActual.ParteID));
+
+        setDisenosAgregados(prev => prev.map(d => {
+            if (d.id === disenoEditando.id) {
+                return {
+                    ...d,
+                    TecnicaID: parseInt(disenoActual.TecnicaID),
+                    ParteID: parseInt(disenoActual.ParteID),
+                    tecnica,
+                    parte,
+                    Subparte: disenoActual.Subparte,
+                    ImagenDiseno: disenoActual.ImagenDiseno || d.ImagenDiseno,
+                    ImagenNombre: disenoActual.ImagenDiseno?.name || d.ImagenNombre,
+                    Observacion: disenoActual.Observacion
+                };
+            }
+            return d;
+        }));
+
+        setDisenoEditando(null);
+        setDisenoActual({
+            TecnicaID: "",
+            ParteID: "",
+            Subparte: "",
+            ImagenDiseno: null,
+            Observacion: ""
+        });
+
         Swal.fire({
-            title: "¿Eliminar este diseño?",
+            icon: "success",
+            title: "Diseño actualizado",
+            timer: 1500,
+            showConfirmButton: false
+        });
+    };
+
+    const handleCancelarEdicion = () => {
+        setDisenoEditando(null);
+        setDisenoActual({
+            TecnicaID: "",
+            ParteID: "",
+            Subparte: "",
+            ImagenDiseno: null,
+            Observacion: ""
+        });
+    };
+
+    const handleVisualizarDiseno = (diseno) => {
+        setDisenoVisualizando(diseno);
+        setMostrarModalVisualizacion(true);
+    };
+
+    const handleEliminarDiseno = (id) => {
+        Swal.fire({
+            title: "¿Eliminar diseño?",
+            text: "Esta acción no se puede deshacer",
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar"
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#d33"
         }).then((result) => {
             if (result.isConfirmed) {
-                setDisenos(prev => prev.filter((_, i) => i !== index));
+                setDisenosAgregados(prev => prev.filter(d => d.id !== id));
+                Swal.fire({
+                    icon: "success",
+                    title: "Diseño eliminado",
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             }
         });
     };
 
-    const handlePreviewDiseno = (archivo) => {
-        if (!archivo) {
-            Swal.fire("Atención", "No hay archivo para previsualizar", "info");
-            return;
-        }
-        const url = URL.createObjectURL(archivo);
-        setPreviewSrc(url);
-        setShowDesignPreview(true);
-    };
-
-    // ===== CÁLCULO DE PRECIO =====
-    const calcularPrecioTotal = () => {
+    // ==================== AGREGAR PRODUCTO A COTIZACIÓN ====================
+    const handleAgregarACotizacion = () => {
         if (traePrenda) {
-            return {
-                precioBase: 0,
-                precioTalla: 0,
-                precioTela: 0,
-                cantidadUnidades: parseInt(cantidad) || 1,
-                subtotal: 0
-            };
+            if (!formProducto.PrendaDescripcion.trim()) {
+                Swal.fire("Atención", "Describe la prenda que traes", "warning");
+                return;
+            }
+        } else {
+            // Cuando NO trae prenda, validar campos básicos
+            if (coloresDisponibles.length > 0 && !formProducto.ColorID) {
+                Swal.fire("Atención", "Selecciona un color", "warning");
+                return;
+            }
+            if (tallasDisponibles.length > 0 && !formProducto.TallaID) {
+                Swal.fire("Atención", "Selecciona una talla", "warning");
+                return;
+            }
+            if (telasDisponibles.length > 0 && !formProducto.TipoTela) {
+                Swal.fire("Atención", "Selecciona un tipo de tela", "warning");
+                return;
+            }
+
+            // Validar stock solo si hay producto seleccionado
+            if (productoSeleccionado && variantesProducto.length > 0) {
+                const validacionStock = validarStockDisponible();
+                if (!validacionStock.valido) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Stock insuficiente",
+                        html: `
+                            <p>${validacionStock.mensaje}</p>
+                            ${validacionStock.stockDisponible !== undefined ?
+                                `<p class="mt-2"><strong>Stock disponible:</strong> ${validacionStock.stockDisponible} unidades</p>` :
+                                ''
+                            }
+                        `,
+                        confirmButtonColor: "#d33"
+                    });
+                    return;
+                }
+            }
         }
 
-        const tallaObj = tallas.find(t => t.TallaID === parseInt(tallaID));
-        const precioTalla = parseFloat(tallaObj?.Precio) || 0;
-
-        const telaObj = telas.find(t => t.InsumoID === parseInt(telaID));
-        const precioTela = parseFloat(telaObj?.PrecioTela) || 0;
-
-        const precioBaseProducto = parseFloat(producto?.PrecioBase) || 0;
-        const precioBase = precioBaseProducto + precioTalla + precioTela;
-
-        const cantidadUnidades = parseInt(cantidad) || 1;
-        const subtotal = precioBase * cantidadUnidades;
-
-        return {
-            precioBaseProducto,
-            precioBase,
-            precioTalla,
-            precioTela,
-            cantidadUnidades,
-            subtotal
+        const productoCompleto = {
+            id: Date.now(),
+            ProductoID: productoSeleccionado?.ProductoID || null,
+            producto: productoSeleccionado,
+            Cantidad: parseInt(formProducto.Cantidad),
+            TraePrenda: traePrenda,
+            PrendaDescripcion: traePrenda ? formProducto.PrendaDescripcion : "",
+            
+            ColorID: !traePrenda && formProducto.ColorID ? parseInt(formProducto.ColorID) : null,
+            TallaID: !traePrenda && formProducto.TallaID ? parseInt(formProducto.TallaID) : null,
+            TipoTela: !traePrenda && formProducto.TipoTela ? parseInt(formProducto.TipoTela) : null,
+            
+            color: !traePrenda && formProducto.ColorID ? colores.find(c => c.ColorID == formProducto.ColorID) : null,
+            talla: !traePrenda && formProducto.TallaID ? tallas.find(t => t.TallaID == formProducto.TallaID) : null,
+            tela: !traePrenda && formProducto.TipoTela ? telas.find(t => t.InsumoID == formProducto.TipoTela) : null,
+            
+            disenos: [...disenosAgregados]
         };
+
+        setProductosEnCotizacion(prev => [...prev, productoCompleto]);
+
+        // Limpiar todo
+        setProductoSeleccionado(null);
+        setFormProducto({
+            ColorID: "",
+            TallaID: "",
+            TipoTela: "",
+            Cantidad: 1,
+            PrendaDescripcion: ""
+        });
+        setDisenosAgregados([]);
+        setDisenoEditando(null);
+
+        Swal.fire({
+            icon: "success",
+            title: "¡Agregado a la cotización!",
+            text: `Producto agregado con ${productoCompleto.disenos.length} diseño(s)`,
+            timer: 2000,
+            showConfirmButton: false
+        });
     };
 
-    // ===== ENVIAR COTIZACIÓN INTELIGENTE =====
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleEliminarProductoDeCotizacion = (id) => {
+        Swal.fire({
+            title: "¿Eliminar producto?",
+            text: "Se eliminarán todos los diseños asociados",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#d33"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setProductosEnCotizacion(prev => prev.filter(p => p.id !== id));
+            }
+        });
+    };
 
+    // ==================== GENERAR COTIZACIÓN ====================
+    const handleGenerarCotizacion = async () => {
         if (!usuario) {
-            Swal.fire("Error", "No hay usuario autenticado", "error");
+            setMostrarLoginModal(true);
             return;
         }
 
-        if (!traePrenda && (!colorID || !tallaID || !telaID)) {
-            Swal.fire("Atención", "Completa todos los campos obligatorios", "warning");
+        if (productosEnCotizacion.length === 0) {
+            Swal.fire("Atención", "Debes agregar al menos un producto a la cotización", "warning");
             return;
         }
 
-        if (traePrenda && !prendaDescripcion.trim()) {
-            Swal.fire("Atención", "Describe la prenda que traerás", "warning");
-            return;
-        }
-
-        setCargando(true);
         try {
-            const detalles = [{
-                ProductoID: producto.ProductoID,
-                Cantidad: parseInt(cantidad),
-                TraePrenda: traePrenda,
-                PrendaDescripcion: traePrenda ? prendaDescripcion : "",
+            const detalles = productosEnCotizacion.map(prod => ({
+                // FIX CRÍTICO: Siempre enviar ProductoID, incluso si es null
+                ProductoID: prod.ProductoID || null,
+                Cantidad: prod.Cantidad,
+                TraePrenda: prod.TraePrenda,
+                PrendaDescripcion: prod.PrendaDescripcion || "",
 
-                tallas: !traePrenda && tallaID ? [{
-                    TallaID: parseInt(tallaID),
-                    Cantidad: parseInt(cantidad),
-                    PrecioTalla: tallas.find(t => t.TallaID === parseInt(tallaID))?.Precio || 0
+                tallas: !prod.TraePrenda && prod.TallaID ? [{
+                    TallaID: prod.TallaID,
+                    Cantidad: prod.Cantidad,
+                    PrecioTalla: prod.talla?.Precio || 0
                 }] : [],
 
-                colores: !traePrenda && colorID ? [{
-                    ColorID: parseInt(colorID),
-                    Cantidad: parseInt(cantidad)
+                colores: !prod.TraePrenda && prod.ColorID ? [{
+                    ColorID: prod.ColorID,
+                    Cantidad: prod.Cantidad
                 }] : [],
 
-                insumos: !traePrenda && telaID ? [{
-                    InsumoID: parseInt(telaID),
-                    CantidadRequerida: parseInt(cantidad)
+                insumos: !prod.TraePrenda && prod.TipoTela ? [{
+                    InsumoID: prod.TipoTela,
+                    CantidadRequerida: prod.Cantidad
                 }] : [],
 
-                tecnicas: disenos.map(dis => ({
+                tecnicas: prod.disenos.map(dis => ({
                     TecnicaID: dis.TecnicaID,
                     ParteID: dis.ParteID,
                     ImagenDiseño: dis.ImagenNombre,
-                    Observaciones: `${dis.SubparteDescripcion ? 'Subparte: ' + dis.SubparteDescripcion + ' - ' : ''}${dis.Observaciones}`,
+                    Observaciones: `${dis.Subparte ? 'Subparte: ' + dis.Subparte + ' - ' : ''}${dis.Observacion}`,
                     CostoTecnica: 0
                 }))
-            }];
+            }));
 
             const cotizacionData = {
                 DocumentoID: usuario.DocumentoID,
@@ -263,390 +549,792 @@ const CotizacionLanding = () => {
                 detalles
             };
 
-            // 🎯 LLAMADA AL ENDPOINT INTELIGENTE
-            const response = await createCotizacionInteligente(cotizacionData);
+            console.log("Enviando cotización:", JSON.stringify(cotizacionData, null, 2));
 
-            // Manejar respuesta según el tipo
-            if (response.tipo === 'cotizacion') {
+            const response = await api.createCotizacionInteligente(cotizacionData);
+
+            const esCotizacion = response.tipo === 'cotizacion';
+
+            setTipoCotizacion(esCotizacion ? 'cotización' : 'venta');
+            setNumeroCotizacion(
+                esCotizacion
+                    ? response?.cotizacion?.CotizacionID
+                    : response?.venta?.VentaID
+            );
+            setMensajeExito(response.mensaje || "");
+            setMostrarExito(true);
+
+            // Limpiar todo
+            setProductosEnCotizacion([]);
+            setDisenosAgregados([]);
+            setProductoSeleccionado(null);
+            setTraePrenda(false);
+            setDisenoEditando(null);
+            setFormProducto({
+                ColorID: "",
+                TallaID: "",
+                TipoTela: "",
+                Cantidad: 1,
+                PrendaDescripcion: ""
+            });
+
+        } catch (error) {
+            console.error("Error generando cotización:", error);
+
+            const errorMsg = error?.response?.data?.message || error?.message || "Error al procesar tu solicitud";
+
+            if (errorMsg.includes('Stock insuficiente') || errorMsg.includes('stock')) {
                 Swal.fire({
-                    icon: "success",
-                    title: "¡Cotización creada!",
-                    html: `
-                        <p><strong>Número de cotización:</strong> #${response.cotizacion?.CotizacionID}</p>
-                        <p class="text-muted mt-2">${response.mensaje}</p>
-                    `,
-                    confirmButtonText: "Entendido"
-                }).then(() => {
-                    navigate("/productosLanding");
+                    icon: "error",
+                    title: "Stock insuficiente",
+                    text: errorMsg,
+                    confirmButtonColor: "#d33"
                 });
-            } else if (response.tipo === 'venta') {
+            } else {
                 Swal.fire({
-                    icon: "success",
-                    title: "¡Pedido registrado!",
-                    html: `
-                        <p><strong>Número de pedido:</strong> #${response.venta?.VentaID}</p>
-                        <p class="text-muted mt-2">${response.mensaje}</p>
-                        <p class="mt-3"><strong>Total:</strong> $${(response.venta?.Total || 0).toLocaleString()}</p>
-                    `,
-                    confirmButtonText: "Entendido"
-                }).then(() => {
-                    navigate("/productosLanding");
+                    icon: "error",
+                    title: "Error",
+                    text: errorMsg,
+                    confirmButtonColor: "#d33"
                 });
             }
-        } catch (error) {
-            console.error("Error al crear solicitud:", error);
-            Swal.fire("Error", error?.message || "Error al procesar tu solicitud", "error");
-        } finally {
-            setCargando(false);
         }
     };
 
-    if (!producto) return null;
+    // ==================== RENDER ====================
+    if (cargando) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "100vh" }}>
+                <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }}>
+                    <span className="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        );
+    }
 
-    const precios = calcularPrecioTotal();
+    const validacionStock = validarStockDisponible();
 
     return (
-        <>
-            <NavbarComponent />
-
-            <Container className="py-4" style={{ maxWidth: '1200px' }}>
-                <h3 className="text-center mb-4 fw-bold" style={{ color: '#2c3e50' }}>
-                    Solicitar Cotización: {producto.Nombre}
-                </h3>
-
-                <Form onSubmit={handleSubmit}>
-                    <Row>
-                        {/* COLUMNA IZQUIERDA - RESUMEN */}
-                        <Col lg={4}>
-                            <div className="sticky-top" style={{ top: '20px' }}>
-                                {/* Imagen del producto */}
-                                <div className="text-center mb-3 p-3 rounded shadow-sm"
-                                    style={{ backgroundColor: '#fff', cursor: 'pointer' }}
-                                    onClick={() => {
-                                        setPreviewSrc(producto.ImagenProducto);
-                                        setShowProductPreview(true);
-                                    }}>
-                                    <img src={producto.ImagenProducto} alt={producto.Nombre}
-                                        style={{ maxWidth: '100%', maxHeight: '280px', borderRadius: '8px', objectFit: 'contain' }} />
-                                    <p className="text-muted mt-2 mb-0" style={{ fontSize: '0.85rem' }}>
-                                        Click para ampliar
-                                    </p>
-                                </div>
-
-                                {/* Resumen de cotización */}
-                                <div className="card shadow-sm">
-                                    <div className="card-header bg-primary text-white">
-                                        <h6 className="mb-0">Resumen de Cotización</h6>
-                                    </div>
-                                    <div className="card-body">
-                                        {!traePrenda ? (
-                                            <>
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Precio base producto:</span>
-                                                    <strong>${(precios.precioBaseProducto || 0).toLocaleString()}</strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Precio talla:</span>
-                                                    <strong>${precios.precioTalla.toLocaleString()}</strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Precio tela:</span>
-                                                    <strong>${precios.precioTela.toLocaleString()}</strong>
-                                                </div>
-                                                <hr />
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Precio unitario:</span>
-                                                    <strong>${precios.precioBase.toLocaleString()}</strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-2">
-                                                    <span>Cantidad:</span>
-                                                    <strong>x {precios.cantidadUnidades}</strong>
-                                                </div>
-                                                <hr />
-                                                <div className="d-flex justify-content-between">
-                                                    <span className="fw-bold">Subtotal estimado:</span>
-                                                    <strong className="text-success" style={{ fontSize: '1.2rem' }}>
-                                                        ${precios.subtotal.toLocaleString()}
-                                                    </strong>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <Alert variant="info" className="mb-0">
-                                                <small>Traes tu prenda. El precio se calculará según los diseños aplicados.</small>
-                                            </Alert>
-                                        )}
-
-                                        {disenos.length > 0 && (
-                                            <Alert variant="warning" className="mt-3 mb-0">
-                                                <small>+ Costo de {disenos.length} diseño(s)<br />(Se calculará según técnicas)</small>
-                                            </Alert>
-                                        )}
-                                    </div>
-                                </div>
+        <div className="container py-4">
+            {/* Modal de Login */}
+            {mostrarLoginModal && (
+                <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999 }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Autenticación Requerida</h5>
                             </div>
-                        </Col>
+                            <div className="modal-body text-center">
+                                <p className="mb-4">Debes iniciar sesión para cotizar productos</p>
+                                <button className="btn btn-primary" onClick={handleIniciarSesion}>
+                                    Iniciar Sesión
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                        {/* COLUMNA DERECHA - FORMULARIO */}
-                        <Col lg={8}>
-                            {/* Tipo de Prenda */}
-                            <div className="card shadow-sm mb-3">
-                                <div className="card-header bg-light">
-                                    <h6 className="mb-0">Tipo de Prenda</h6>
-                                </div>
-                                <div className="card-body">
-                                    <Form.Check type="switch" id="traePrenda" label="Traigo mi propia prenda"
-                                        checked={traePrenda} onChange={(e) => {
-                                            setTraePrenda(e.target.checked);
-                                            if (e.target.checked) {
-                                                setColorID(""); setTallaID(""); setTelaID("");
-                                            } else {
-                                                setPrendaDescripcion("");
-                                            }
-                                        }}
-                                        style={{ fontSize: '1.05rem', fontWeight: '500' }} />
+            {/* Modal de Éxito */}
+            {mostrarExito && (
+                <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999 }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header bg-success text-white">
+                                <h5 className="modal-title">
+                                    {tipoCotizacion === 'cotización' ? '¡Cotización Generada!' : '¡Venta Registrada!'}
+                                </h5>
+                            </div>
+                            <div className="modal-body text-center">
+                                <h3 className="text-success mb-3">¡Éxito!</h3>
+                                <p className="fs-5 mb-2">
+                                    <strong>
+                                        {tipoCotizacion === 'cotización'
+                                            ? 'Ya estamos cotizando tu producto'
+                                            : 'Tu pedido ha sido registrado'}
+                                    </strong>
+                                </p>
+                                <p className="mb-3">
+                                    Número de {tipoCotizacion}: <strong className="text-primary">#{numeroCotizacion}</strong>
+                                </p>
+                                <p className="text-muted small">{mensajeExito}</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-primary" onClick={() => setMostrarExito(false)}>
+                                    Entendido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                                    {traePrenda && (
-                                        <div className="mt-3">
-                                            <Form.Group>
-                                                <Form.Label className="fw-medium">
-                                                    Describe tu prenda <span className="text-danger">*</span>
-                                                </Form.Label>
-                                                <Form.Control as="textarea" rows={3} value={prendaDescripcion}
-                                                    onChange={(e) => setPrendaDescripcion(e.target.value)}
-                                                    placeholder="Ej: Camiseta blanca, talla M, manga corta, 100% algodón"
-                                                    required={traePrenda} />
-                                            </Form.Group>
+            {/* Modal de Visualización de Diseño */}
+            {mostrarModalVisualizacion && disenoVisualizando && (
+                <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999 }}>
+                    <div className="modal-dialog modal-lg modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header bg-info text-white">
+                                <h5 className="modal-title">Detalle del Diseño</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={() => setMostrarModalVisualizacion(false)}
+                                />
+                            </div>
+                            <div className="modal-body">
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <strong>Técnica:</strong>
+                                        <p className="mb-0">{disenoVisualizando.tecnica?.Nombre || "N/A"}</p>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <strong>Parte de la prenda:</strong>
+                                        <p className="mb-0">{disenoVisualizando.parte?.Nombre || "N/A"}</p>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <strong>Subparte:</strong>
+                                        <p className="mb-0">{disenoVisualizando.Subparte || "No especificada"}</p>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <strong>Archivo:</strong>
+                                        <p className="mb-0 text-success">{disenoVisualizando.ImagenNombre}</p>
+                                    </div>
+                                    <div className="col-12">
+                                        <strong>Observaciones:</strong>
+                                        <p className="mb-0">{disenoVisualizando.Observacion || "Sin observaciones"}</p>
+                                    </div>
+                                    {disenoVisualizando.ImagenDiseno && (
+                                        <div className="col-12">
+                                            <strong>Vista previa:</strong>
+                                            <div className="border rounded p-2 mt-2 text-center">
+                                                <img
+                                                    src={URL.createObjectURL(disenoVisualizando.ImagenDiseno)}
+                                                    alt="Diseño"
+                                                    style={{ maxWidth: "100%", maxHeight: "400px", objectFit: "contain" }}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
+                            <div className="modal-footer">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setMostrarModalVisualizacion(false)}
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                            {/* Características */}
-                            {!traePrenda && (
-                                <div className="card shadow-sm mb-3">
-                                    <div className="card-header bg-light">
-                                        <h6 className="mb-0">Características de la Prenda</h6>
-                                    </div>
-                                    <div className="card-body">
-                                        <Row className="g-3">
-                                            <Col md={4}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Color <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Select value={colorID} onChange={(e) => setColorID(e.target.value)} required>
-                                                        <option value="">Seleccionar...</option>
-                                                        {colores.map(c => (
-                                                            <option key={c.ColorID} value={c.ColorID}>{c.Nombre}</option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={4}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Talla <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Select value={tallaID} onChange={(e) => setTallaID(e.target.value)} required>
-                                                        <option value="">Seleccionar...</option>
-                                                        {tallas.map(t => (
-                                                            <option key={t.TallaID} value={t.TallaID}>
-                                                                {t.Nombre} - +${t.Precio?.toLocaleString()}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={4}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Cantidad <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Control type="number" min="1" value={cantidad}
-                                                        onChange={(e) => setCantidad(e.target.value)} required />
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={12}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Tipo de Tela <span className="text-danger">*</span></Form.Label>
-                                                    <Form.Select value={telaID} onChange={(e) => setTelaID(e.target.value)} required>
-                                                        <option value="">Seleccionar...</option>
-                                                        {telas.map(t => (
-                                                            <option key={t.InsumoID} value={t.InsumoID}>
-                                                                {t.Nombre} - +${t.PrecioTela?.toLocaleString()}
-                                                            </option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                        </Row>
-                                    </div>
+            {/* Modal de Selección de Productos */}
+            {mostrarModalProductos && (
+                <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999 }}>
+                    <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Selecciona un Producto</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setMostrarModalProductos(false)}
+                                />
+                            </div>
+                            <div className="modal-body">
+                                <div className="row g-3">
+                                    {productos.map(producto => (
+                                        <div key={producto.ProductoID} className="col-md-6">
+                                            <div
+                                                className="card h-100 shadow-sm"
+                                                style={{ cursor: "pointer", transition: "transform 0.2s" }}
+                                                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
+                                                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                                                onClick={() => {
+                                                    setProductoSeleccionado(producto);
+                                                    setMostrarModalProductos(false);
+                                                    Swal.fire({
+                                                        icon: "success",
+                                                        title: "Producto seleccionado",
+                                                        text: producto.Nombre,
+                                                        timer: 1500,
+                                                        showConfirmButton: false
+                                                    });
+                                                }}
+                                            >
+                                                <img
+                                                    src={producto.ImagenProducto || "https://via.placeholder.com/150"}
+                                                    className="card-img-top"
+                                                    alt={producto.Nombre}
+                                                    style={{ height: "200px", objectFit: "cover" }}
+                                                />
+                                                <div className="card-body">
+                                                    <h6 className="card-title fw-bold">{producto.Nombre}</h6>
+                                                    <p className="card-text text-muted small">{producto.Descripcion}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                            {/* Diseños */}
-                            <div className="card shadow-sm mb-3">
-                                <div className="card-header bg-light">
-                                    <h6 className="mb-0">Diseños Personalizados</h6>
+            {/* Título */}
+            <div className="text-center mb-4">
+                <h2 className="fw-bold" style={{ color: "#1976d2" }}>Formulario de Cotización</h2>
+                {usuario && <p className="text-muted">👤 Usuario: {usuario.Nombre}</p>}
+            </div>
+
+            {/* Formulario Principal */}
+            <div className="row g-4">
+                {/* COLUMNA IZQUIERDA: Formulario */}
+                <div className="col-lg-8">
+                    <div className="card shadow">
+                        <div className="card-header bg-primary text-white">
+                            <h5 className="mb-0">Configuración del Producto</h5>
+                        </div>
+                        <div className="card-body">
+                            {/* ¿Traes la prenda? */}
+                            <div className="mb-4">
+                                <div className="form-check form-switch">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="traePrenda"
+                                        checked={traePrenda}
+                                        onChange={(e) => {
+                                            setTraePrenda(e.target.checked);
+                                            setProductoSeleccionado(null);
+                                            setFormProducto({
+                                                ColorID: "",
+                                                TallaID: "",
+                                                TipoTela: "",
+                                                Cantidad: 1,
+                                                PrendaDescripcion: ""
+                                            });
+                                        }}
+                                    />
+                                    <label className="form-check-label fw-bold" htmlFor="traePrenda">
+                                        ¿Traes tu propia prenda?
+                                    </label>
                                 </div>
-                                <div className="card-body">
-                                    <div className="p-3 rounded mb-3" style={{ backgroundColor: '#f8f9fa', border: '2px dashed #dee2e6' }}>
-                                        <h6 className="mb-3">{editandoIndex !== null ? "Editar" : "Nuevo"} Diseño</h6>
+                            </div>
 
-                                        <Row className="g-3 mb-3">
-                                            <Col md={6}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Técnica</Form.Label>
-                                                    <Form.Select value={tecnicaID} onChange={(e) => setTecnicaID(e.target.value)}>
-                                                        <option value="">Seleccionar...</option>
-                                                        {tecnicas.map(t => (
-                                                            <option key={t.TecnicaID} value={t.TecnicaID}>{t.Nombre}</option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={6}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Parte de la prenda</Form.Label>
-                                                    <Form.Select value={parteID} onChange={(e) => setParteID(e.target.value)}>
-                                                        <option value="">Seleccionar...</option>
-                                                        {partes.map(p => (
-                                                            <option key={p.ParteID} value={p.ParteID}>{p.Nombre}</option>
-                                                        ))}
-                                                    </Form.Select>
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={6}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Subparte (opcional)</Form.Label>
-                                                    <Form.Control type="text" value={subparteDescripcion}
-                                                        onChange={(e) => setSubparteDescripcion(e.target.value)}
-                                                        placeholder="Ej: Superior izquierdo" />
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={6}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Archivo del diseño</Form.Label>
-                                                    <Form.Control type="file" accept="image/*"
-                                                        onChange={(e) => setArchivoDiseno(e.target.files[0])} />
-                                                    {archivoDiseno && (
-                                                        <small className="text-success d-block mt-1">✓ {archivoDiseno.name}</small>
-                                                    )}
-                                                </Form.Group>
-                                            </Col>
-                                            <Col md={12}>
-                                                <Form.Group>
-                                                    <Form.Label className="fw-medium">Observaciones</Form.Label>
-                                                    <Form.Control as="textarea" rows={2} value={observacionDiseno}
-                                                        onChange={(e) => setObservacionDiseno(e.target.value)}
-                                                        placeholder="Ej: Logo azul marino, tamaño 10cm x 10cm" />
-                                                </Form.Group>
-                                            </Col>
-                                        </Row>
+                            {/* Campos según trae prenda */}
+                            {traePrenda ? (
+                                <>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Descripción de la prenda <span className="text-danger">*</span></label>
+                                        <textarea
+                                            className="form-control"
+                                            rows="3"
+                                            placeholder="Describe la prenda que traes (tipo, material, color, etc.)..."
+                                            value={formProducto.PrendaDescripcion}
+                                            onChange={(e) => setFormProducto({
+                                                ...formProducto,
+                                                PrendaDescripcion: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Cantidad de prendas <span className="text-danger">*</span></label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            min="1"
+                                            value={formProducto.Cantidad}
+                                            onChange={(e) => setFormProducto({
+                                                ...formProducto,
+                                                Cantidad: parseInt(e.target.value) || 1
+                                            })}
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="mb-3">
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-primary w-100 py-3"
+                                            onClick={() => setMostrarModalProductos(true)}
+                                        >
+                                            {productoSeleccionado 
+                                                ? `✓ ${productoSeleccionado.Nombre} (Click para cambiar)` 
+                                                : "Seleccionar Producto del Catálogo (Opcional)"}
+                                        </button>
+                                        <small className="text-muted d-block mt-2">
+                                            * Opcional: Puedes cotizar solo con las características básicas
+                                        </small>
+                                    </div>
 
-                                        <div className="d-flex gap-2">
-                                            {editandoIndex !== null && (
-                                                <Button variant="secondary" size="sm" onClick={resetCamposDiseno}>Cancelar</Button>
+                                    <div className="row g-3">
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold">
+                                                Color <span className="text-danger">*</span>
+                                                {productoSeleccionado && variantesProducto.length === 0 && (
+                                                    <small className="text-warning ms-2">(Sin variantes)</small>
+                                                )}
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                value={formProducto.ColorID}
+                                                onChange={(e) => setFormProducto({
+                                                    ...formProducto,
+                                                    ColorID: e.target.value
+                                                })}
+                                            >
+                                                <option value="">Seleccione...</option>
+                                                {coloresDisponibles.map(c => (
+                                                    <option key={c.ColorID} value={c.ColorID}>
+                                                        {c.Nombre}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold">
+                                                Talla <span className="text-danger">*</span>
+                                                {productoSeleccionado && variantesProducto.length === 0 && (
+                                                    <small className="text-warning ms-2">(Sin variantes)</small>
+                                                )}
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                value={formProducto.TallaID}
+                                                onChange={(e) => setFormProducto({
+                                                    ...formProducto,
+                                                    TallaID: e.target.value
+                                                })}
+                                            >
+                                                <option value="">Seleccione...</option>
+                                                {tallasDisponibles.map(t => (
+                                                    <option key={t.TallaID} value={t.TallaID}>
+                                                        {t.Nombre} {t.Precio ? `(+${t.Precio})` : ""}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold">
+                                                Tipo de Tela <span className="text-danger">*</span>
+                                                {productoSeleccionado && variantesProducto.length === 0 && (
+                                                    <small className="text-warning ms-2">(Sin variantes)</small>
+                                                )}
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                value={formProducto.TipoTela}
+                                                onChange={(e) => setFormProducto({
+                                                    ...formProducto,
+                                                    TipoTela: e.target.value
+                                                })}
+                                            >
+                                                <option value="">Seleccione...</option>
+                                                {telasDisponibles.map(t => (
+                                                    <option key={t.InsumoID} value={t.InsumoID}>
+                                                        {t.Nombre} {t.PrecioTela ? `(+${t.PrecioTela})` : ""}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold">Cantidad <span className="text-danger">*</span></label>
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                min="1"
+                                                value={formProducto.Cantidad}
+                                                onChange={(e) => setFormProducto({
+                                                    ...formProducto,
+                                                    Cantidad: parseInt(e.target.value) || 1
+                                                })}
+                                            />
+                                            {validacionStock.stockDisponible !== undefined && (
+                                                <small className="text-muted">
+                                                    Stock disponible: {validacionStock.stockDisponible} unidades
+                                                </small>
                                             )}
-                                            <Button variant={editandoIndex !== null ? "warning" : "success"} size="sm"
-                                                onClick={handleAgregarOActualizarDiseno}>
-                                                <FaPlus className="me-1" />
-                                                {editandoIndex !== null ? "Actualizar" : "Agregar"} diseño
-                                            </Button>
                                         </div>
                                     </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
 
-                                    {disenos.length > 0 ? (
-                                        <Table striped bordered hover size="sm" responsive>
+                    {/* SECCIÓN DE DISEÑOS */}
+                    <div className="card shadow mt-3">
+                        <div className="card-header bg-info text-white">
+                            <h5 className="mb-0">
+                                Diseños Personalizados
+                                {disenoEditando && <span className="badge bg-warning text-dark ms-2">Editando</span>}
+                            </h5>
+                        </div>
+                        <div className="card-body">
+                            <div className="row g-3 mb-3">
+                                <div className="col-md-6">
+                                    <label className="form-label fw-bold">Técnica</label>
+                                    <select
+                                        className="form-select"
+                                        value={disenoActual.TecnicaID}
+                                        onChange={(e) => setDisenoActual({
+                                            ...disenoActual,
+                                            TecnicaID: e.target.value
+                                        })}
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        {tecnicas.map(t => (
+                                            <option key={t.TecnicaID} value={t.TecnicaID}>
+                                                {t.Nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label fw-bold">Parte de la prenda</label>
+                                    <select
+                                        className="form-select"
+                                        value={disenoActual.ParteID}
+                                        onChange={(e) => setDisenoActual({
+                                            ...disenoActual,
+                                            ParteID: e.target.value
+                                        })}
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        {partes.map(p => (
+                                            <option key={p.ParteID} value={p.ParteID}>
+                                                {p.Nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label fw-bold">Subparte (opcional)</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Ej: Superior izquierdo, centro, etc."
+                                        value={disenoActual.Subparte}
+                                        onChange={(e) => setDisenoActual({
+                                            ...disenoActual,
+                                            Subparte: e.target.value
+                                        })}
+                                    />
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label fw-bold">Subir diseño (imagen)</label>
+                                    <input
+                                        type="file"
+                                        className="form-control"
+                                        accept="image/*"
+                                        onChange={(e) => setDisenoActual({
+                                            ...disenoActual,
+                                            ImagenDiseno: e.target.files[0]
+                                        })}
+                                    />
+                                    {disenoActual.ImagenDiseno && (
+                                        <small className="text-success d-block mt-1">
+                                            ✓ {disenoActual.ImagenDiseno.name}
+                                        </small>
+                                    )}
+                                    {disenoEditando && !disenoActual.ImagenDiseno && (
+                                        <small className="text-info d-block mt-1">
+                                            Mantiene archivo: {disenoEditando.ImagenNombre}
+                                        </small>
+                                    )}
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label fw-bold">Observaciones</label>
+                                    <textarea
+                                        className="form-control"
+                                        rows="2"
+                                        placeholder="Detalles adicionales del diseño (colores, tamaño, posición exacta, etc.)"
+                                        value={disenoActual.Observacion}
+                                        onChange={(e) => setDisenoActual({
+                                            ...disenoActual,
+                                            Observacion: e.target.value
+                                        })}
+                                    />
+                                </div>
+                            </div>
+
+                            {disenoEditando ? (
+                                <div className="d-flex gap-2">
+                                    <button
+                                        type="button"
+                                        className="btn btn-success flex-grow-1"
+                                        onClick={handleGuardarEdicion}
+                                    >
+                                        Guardar Cambios
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={handleCancelarEdicion}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="btn btn-success w-100"
+                                    onClick={handleAgregarDiseno}
+                                >
+                                    Agregar Diseño
+                                </button>
+                            )}
+
+                            {/* TABLA DE DISEÑOS AGREGADOS */}
+                            {disenosAgregados.length > 0 && (
+                                <div className="mt-3">
+                                    <div className="alert alert-info">
+                                        <strong>Diseños agregados:</strong> {disenosAgregados.length}
+                                    </div>
+                                    <div className="table-responsive">
+                                        <table className="table table-sm table-bordered">
                                             <thead className="table-light">
                                                 <tr>
+                                                    <th>#</th>
                                                     <th>Técnica</th>
                                                     <th>Parte</th>
                                                     <th>Subparte</th>
-                                                    <th>Diseño</th>
-                                                    <th>Acciones</th>
+                                                    <th>Archivo</th>
+                                                    <th style={{ width: "150px" }}>Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {disenos.map((d, i) => (
-                                                    <tr key={i}>
-                                                        <td>{d.TecnicaNombre}</td>
-                                                        <td>{d.ParteNombre}</td>
-                                                        <td>{d.SubparteDescripcion || "—"}</td>
+                                                {disenosAgregados.map((dis, idx) => (
+                                                    <tr key={dis.id}>
+                                                        <td>{idx + 1}</td>
+                                                        <td>{dis.tecnica?.Nombre}</td>
+                                                        <td>{dis.parte?.Nombre}</td>
+                                                        <td>{dis.Subparte || "—"}</td>
                                                         <td>
-                                                            {d.Archivo ? (
-                                                                <span className="text-success">✓ {d.Archivo.name}</span>
-                                                            ) : (
-                                                                <span className="text-muted">Sin archivo</span>
-                                                            )}
+                                                            <small className="text-success">{dis.ImagenNombre}</small>
                                                         </td>
                                                         <td>
-                                                            <div className="d-flex gap-1">
-                                                                <Button variant="outline-primary" size="sm"
-                                                                    onClick={() => handlePreviewDiseno(d.Archivo)} disabled={!d.Archivo}>
-                                                                    <FaEye />
-                                                                </Button>
-                                                                <Button variant="outline-warning" size="sm"
-                                                                    onClick={() => handleEditarDiseno(i)}>
-                                                                    <FaEdit />
-                                                                </Button>
-                                                                <Button variant="outline-danger" size="sm"
-                                                                    onClick={() => handleEliminarDiseno(i)}>
-                                                                    <FaTrash />
-                                                                </Button>
+                                                            <div className="btn-group btn-group-sm" role="group">
+                                                                <button
+                                                                    className="btn btn-info"
+                                                                    title="Ver detalle"
+                                                                    onClick={() => handleVisualizarDiseno(dis)}
+                                                                >
+                                                                    👁️
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-warning"
+                                                                    title="Editar"
+                                                                    onClick={() => handleEditarDiseno(dis)}
+                                                                >
+                                                                    ✏️
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-danger"
+                                                                    title="Eliminar"
+                                                                    onClick={() => handleEliminarDiseno(dis.id)}
+                                                                >
+                                                                    🗑️
+                                                                </button>
                                                             </div>
                                                         </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
-                                        </Table>
-                                    ) : (
-                                        <Alert variant="info" className="mb-0">
-                                            <small>No hay diseños agregados. Puedes continuar sin diseño personalizado.</small>
-                                        </Alert>
-                                    )}
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* BOTÓN AGREGAR A COTIZACIÓN */}
+                    <div className="mt-3 d-grid">
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-lg"
+                            onClick={handleAgregarACotizacion}
+                        >
+                            Agregar a la Cotización
+                        </button>
+                        <small className="text-muted text-center mt-2">
+                            Este producto se agregará con todos los diseños configurados
+                        </small>
+                    </div>
+                </div>
+
+                {/* COLUMNA DERECHA: Resumen */}
+                <div className="col-lg-4">
+                    <div className="card shadow mb-3">
+                        <div className="card-header bg-success text-white">
+                            <h6 className="mb-0">Detalle de Productos</h6>
+                        </div>
+                        <div className="card-body">
+                            {productosEnCotizacion.length === 0 ? (
+                                <p className="text-muted text-center mb-0">
+                                    No hay productos agregados aún
+                                </p>
+                            ) : (
+                                <div className="list-group">
+                                    {productosEnCotizacion.map((prod, idx) => (
+                                        <div key={prod.id} className="list-group-item">
+                                            <div className="d-flex justify-content-between align-items-start mb-2">
+                                                <strong className="text-primary">Producto #{idx + 1}</strong>
+                                                <button
+                                                    className="btn btn-danger btn-sm"
+                                                    onClick={() => handleEliminarProductoDeCotizacion(prod.id)}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                            
+                                            {prod.TraePrenda ? (
+                                                <>
+                                                    <p className="mb-1 small">
+                                                        <strong>Prenda propia:</strong> {prod.PrendaDescripcion}
+                                                    </p>
+                                                    <p className="mb-1 small">
+                                                        <strong>Cantidad:</strong> {prod.Cantidad}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {prod.producto && (
+                                                        <p className="mb-1 small">
+                                                            <strong>Producto:</strong> {prod.producto.Nombre}
+                                                        </p>
+                                                    )}
+                                                    {prod.color && (
+                                                        <p className="mb-1 small">
+                                                            <strong>Color:</strong> {prod.color.Nombre}
+                                                        </p>
+                                                    )}
+                                                    {prod.talla && (
+                                                        <p className="mb-1 small">
+                                                            <strong>Talla:</strong> {prod.talla.Nombre}
+                                                        </p>
+                                                    )}
+                                                    {prod.tela && (
+                                                        <p className="mb-1 small">
+                                                            <strong>Tela:</strong> {prod.tela.Nombre}
+                                                        </p>
+                                                    )}
+                                                    <p className="mb-1 small">
+                                                        <strong>Cantidad:</strong> {prod.Cantidad}
+                                                    </p>
+                                                </>
+                                            )}
+                                            
+                                            <p className="mb-0 small">
+                                                <span className="badge bg-info">
+                                                    {prod.disenos.length} diseño(s)
+                                                </span>
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {disenosAgregados.length > 0 && (
+                        <div className="card shadow mb-3">
+                            <div className="card-header bg-warning">
+                                <h6 className="mb-0">Diseños del Producto Actual</h6>
+                            </div>
+                            <div className="card-body">
+                                <p className="small text-muted mb-2">
+                                    Estos diseños se agregarán al producto cuando presiones "Agregar a la Cotización"
+                                </p>
+                                <ul className="list-unstyled mb-0">
+                                    {disenosAgregados.map((dis, idx) => (
+                                        <li key={dis.id} className="mb-2 pb-2 border-bottom">
+                                            <small>
+                                                <strong>#{idx + 1}</strong> {dis.tecnica?.Nombre} en {dis.parte?.Nombre}
+                                                {dis.Subparte && ` (${dis.Subparte})`}
+                                            </small>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
+                    {productosEnCotizacion.length > 0 && (
+                        <div className="d-grid gap-2">
+                            <button
+                                type="button"
+                                className="btn btn-success btn-lg"
+                                onClick={handleGenerarCotizacion}
+                            >
+                                Generar Cotización
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary"
+                                onClick={() => {
+                                    Swal.fire({
+                                        title: "¿Limpiar toda la cotización?",
+                                        text: "Se eliminarán todos los productos agregados",
+                                        icon: "warning",
+                                        showCancelButton: true,
+                                        confirmButtonText: "Sí, limpiar",
+                                        cancelButtonText: "Cancelar"
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            setProductosEnCotizacion([]);
+                                            setDisenosAgregados([]);
+                                            setProductoSeleccionado(null);
+                                            setTraePrenda(false);
+                                            setDisenoEditando(null);
+                                            setFormProducto({
+                                                ColorID: "",
+                                                TallaID: "",
+                                                TipoTela: "",
+                                                Cantidad: 1,
+                                                PrendaDescripcion: ""
+                                            });
+                                        }
+                                    });
+                                }}
+                            >
+                                Limpiar Todo
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="card shadow mt-3">
+                        <div className="card-body text-center">
+                            <h5 className="mb-3">Resumen</h5>
+                            <div className="d-flex justify-content-around">
+                                <div>
+                                    <div className="display-6 text-primary">{productosEnCotizacion.length}</div>
+                                    <small className="text-muted">Productos</small>
+                                </div>
+                                <div>
+                                    <div className="display-6 text-info">
+                                        {productosEnCotizacion.reduce((sum, p) => sum + p.disenos.length, 0)}
+                                    </div>
+                                    <small className="text-muted">Diseños</small>
                                 </div>
                             </div>
-
-                            {/* Botones */}
-                            <div className="d-flex gap-3 justify-content-end">
-                                <Button variant="secondary" onClick={() => navigate("/productosLanding")} disabled={cargando}>
-                                    Cancelar
-                                </Button>
-                                <Button variant="success" type="submit" disabled={cargando}>
-                                    {cargando ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" />
-                                            Enviando...
-                                        </>
-                                    ) : (
-                                        "Enviar Cotización"
-                                    )}
-                                </Button>
-                            </div>
-                        </Col>
-                    </Row>
-                </Form>
-
-                {/* Modales */}
-                <Modal show={showProductPreview} onHide={() => setShowProductPreview(false)} centered size="lg">
-                    <Modal.Header closeButton>
-                        <Modal.Title>{producto?.Nombre}</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body className="text-center">
-                        {previewSrc && <img src={previewSrc} alt="Preview" style={{ maxWidth: '100%', maxHeight: '70vh' }} />}
-                    </Modal.Body>
-                </Modal>
-
-                <Modal show={showDesignPreview} onHide={() => {
-                    if (previewSrc) URL.revokeObjectURL(previewSrc);
-                    setShowDesignPreview(false);
-                }} centered size="lg">
-                    <Modal.Header closeButton>
-                        <Modal.Title>Vista Previa del Diseño</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body className="text-center">
-                        {previewSrc && <img src={previewSrc} alt="Preview diseño" style={{ maxWidth: '100%', maxHeight: '70vh' }} />}
-                    </Modal.Body>
-                </Modal>
-            </Container>
-
-            <FooterComponent />
-        </>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 

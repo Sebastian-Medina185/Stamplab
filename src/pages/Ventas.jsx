@@ -19,6 +19,135 @@ const Ventas = () => {
     const [estadoSeleccionado, setEstadoSeleccionado] = useState("");
     const [filtro, setFiltro] = useState("");
 
+
+
+    const generarVenta = async () => {
+        if (!clienteSeleccionado) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Cliente requerido',
+                text: 'Por favor selecciona un cliente'
+            });
+            return;
+        }
+
+        if (productosAgregados.length === 0) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Sin productos',
+                text: 'Debes agregar al menos un producto a la venta'
+            });
+            return;
+        }
+
+        const detalles = productosAgregados.map(p => ({
+            ProductoID: p.ProductoID,
+            Cantidad: p.Cantidad,
+            PrecioUnitario: parseFloat(p.PrecioUnitario),
+            ColorID: p.ColorID,
+            TallaID: p.TallaID,
+            TelaID: p.TelaID ?? null,
+            InventarioID: p.InventarioID
+        }));
+
+        const venta = {
+            DocumentoID: clienteSeleccionado,
+            Subtotal: parseFloat(subtotal.toFixed(2)),
+            Total: parseFloat(total.toFixed(2)),
+            EstadoID: modoEdicion ? ventaEdit.EstadoID : 8, // 8 = Pendiente
+            detalles
+        };
+
+        try {
+            const token = localStorage.getItem('token');
+
+            if (modoEdicion) {
+                // Actualizar venta existente
+                const response = await axios.put(
+                    `http://localhost:3000/api/ventas/${ventaEdit.VentaID}`,
+                    venta,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Venta actualizada!',
+                    html: `
+                    <p>La venta <strong>#${ventaEdit.VentaID}</strong> se ha actualizado correctamente</p>
+                    <p class="mt-2"><strong>Total:</strong> $${total.toLocaleString()}</p>
+                `,
+                    confirmButtonColor: '#28a745',
+                    confirmButtonText: 'Entendido'
+                });
+            } else {
+                // Crear nueva venta
+                const response = await axios.post(
+                    'http://localhost:3000/api/ventas',
+                    venta,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                const ventaCreada = response.data?.venta || response.data;
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Venta registrada exitosamente!',
+                    html: `
+                    <div style="text-align: left; padding: 10px;">
+                        <p><strong>Número de venta:</strong> #${ventaCreada.VentaID || 'N/A'}</p>
+                        <p><strong>Cliente:</strong> ${usuarios.find(u => u.DocumentoID === clienteSeleccionado)?.Nombre || 'N/A'}</p>
+                        <p><strong>Productos:</strong> ${productosAgregados.length} item(s)</p>
+                        <hr style="margin: 10px 0;">
+                        <p style="font-size: 1.2rem; color: #28a745;">
+                            <strong>Total:</strong> $${total.toLocaleString()}
+                        </p>
+                        <p class="text-muted" style="font-size: 0.9rem; margin-top: 10px;">
+                            El stock ha sido descontado automáticamente
+                        </p>
+                    </div>
+                `,
+                    confirmButtonColor: '#28a745',
+                    confirmButtonText: 'Ver ventas'
+                });
+            }
+
+            // Cerrar formulario y volver a la tabla
+            if (onClose) {
+                onClose();
+            } else {
+                navigate('/dashboard/ventas');
+            }
+        } catch (err) {
+            console.error('Error completo:', err.response?.data || err);
+
+            // ALERTAS DE ERROR ESPECÍFICAS
+            if (err.response?.data?.error?.includes('Stock insuficiente') ||
+                err.response?.data?.error?.includes('stock')) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Stock insuficiente',
+                    text: err.response.data.error,
+                    confirmButtonColor: '#d33'
+                });
+            } else if (err.response?.status === 404) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error de datos',
+                    text: 'Uno o más productos no fueron encontrados',
+                    confirmButtonColor: '#d33'
+                });
+            } else {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error al procesar la venta',
+                    text: err.response?.data?.error || err.message || 'Ocurrió un error inesperado',
+                    confirmButtonColor: '#d33'
+                });
+            }
+        }
+    };
+
+
     // Toast configuración
     const Toast = Swal.mixin({
         toast: true,
@@ -222,6 +351,7 @@ const Ventas = () => {
             <NuevaVenta
                 onClose={handleCloseForm}
                 ventaEdit={ventaEdit}
+                generarVenta={generarVenta}
             />
         );
     }

@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import axios from "axios";
 import { crearVenta, updateVenta, getVentaById } from "../../Services/api-ventas/ventas";
+import Swal from 'sweetalert2';
+
 
 export default function NuevaVenta({ onClose, ventaEdit }) {
     const navigate = useNavigate();
@@ -348,9 +350,77 @@ export default function NuevaVenta({ onClose, ventaEdit }) {
 
 
     // Generar o actualizar venta
+    // const handleGenerarVenta  = async () => {
+    //     if (!clienteSeleccionado) return alert('Seleccione un cliente');
+    //     if (productosAgregados.length === 0) return alert('Agregue al menos un producto');
+
+    //     const detalles = productosAgregados.map(p => ({
+    //         ProductoID: p.ProductoID,
+    //         Cantidad: p.Cantidad,
+    //         PrecioUnitario: parseFloat(p.PrecioUnitario),
+    //         ColorID: p.ColorID,
+    //         TallaID: p.TallaID,
+    //         TelaID: p.TelaID ?? null,
+    //         InventarioID: p.InventarioID
+    //     }));
+
+    //     const venta = {
+    //         DocumentoID: clienteSeleccionado,
+    //         Subtotal: parseFloat(subtotal.toFixed(2)),
+    //         Total: parseFloat(total.toFixed(2)),
+    //         EstadoID: modoEdicion ? ventaEdit.EstadoID : 8, // 8 = Pendiente
+    //         detalles
+    //     };
+
+    //     try {
+    //         const token = localStorage.getItem('token');
+
+    //         if (modoEdicion) {
+    //             // Actualizar venta existente
+    //             await axios.put(
+    //                 `http://localhost:3000/api/ventas/${ventaEdit.VentaID}`,
+    //                 venta,
+    //                 { headers: { Authorization: `Bearer ${token}` } }
+    //             );
+    //             alert('Venta actualizada con éxito!');
+    //         } else {
+    //             // Crear nueva venta
+    //             await axios.post('http://localhost:3000/api/ventas', venta, {
+    //                 headers: { Authorization: `Bearer ${token}` }
+    //             });
+    //             alert('Venta registrada con éxito!');
+    //         }
+
+    //         // Cerrar formulario y volver a la tabla
+    //         if (onClose) {
+    //             onClose();
+    //         } else {
+    //             navigate('/dashboard/ventas');
+    //         }
+    //     } catch (err) {
+    //         console.error('Error completo:', err.response?.data || err);
+    //         alert(`Error: ${err.response?.data?.error || 'Error al procesar la venta'}`);
+    //     }
+    // };
+
     const generarVenta = async () => {
-        if (!clienteSeleccionado) return alert('Seleccione un cliente');
-        if (productosAgregados.length === 0) return alert('Agregue al menos un producto');
+        if (!clienteSeleccionado) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Cliente requerido',
+                text: 'Por favor selecciona un cliente'
+            });
+            return;
+        }
+
+        if (productosAgregados.length === 0) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Sin productos',
+                text: 'Debes agregar al menos un producto a la venta'
+            });
+            return;
+        }
 
         const detalles = productosAgregados.map(p => ({
             ProductoID: p.ProductoID,
@@ -375,18 +445,36 @@ export default function NuevaVenta({ onClose, ventaEdit }) {
 
             if (modoEdicion) {
                 // Actualizar venta existente
-                await axios.put(
+                const response = await axios.put(
                     `http://localhost:3000/api/ventas/${ventaEdit.VentaID}`,
                     venta,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                alert('Venta actualizada con éxito!');
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Venta actualizada!',
+                    html: `
+                    <p>La venta <strong>#${ventaEdit.VentaID}</strong> se ha actualizado correctamente</p>
+                    <p class="mt-2"><strong>Total:</strong> $${total.toLocaleString()}</p>
+                `,
+                    confirmButtonColor: '#28a745',
+                    confirmButtonText: 'Entendido'
+                });
             } else {
                 // Crear nueva venta
-                await axios.post('http://localhost:3000/api/ventas', venta, {
-                    headers: { Authorization: `Bearer ${token}` }
+                const response = await axios.post(
+                    'http://localhost:3000/api/ventas',
+                    venta,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                const ventaCreada = response.data?.venta || response.data;
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Venta registrada exitosamente!'
                 });
-                alert('Venta registrada con éxito!');
             }
 
             // Cerrar formulario y volver a la tabla
@@ -396,8 +484,32 @@ export default function NuevaVenta({ onClose, ventaEdit }) {
                 navigate('/dashboard/ventas');
             }
         } catch (err) {
-            console.error('❌ Error completo:', err.response?.data || err);
-            alert(`Error: ${err.response?.data?.error || 'Error al procesar la venta'}`);
+            console.error('Error completo:', err.response?.data || err);
+
+            // ALERTAS DE ERROR ESPECÍFICAS
+            if (err.response?.data?.error?.includes('Stock insuficiente') ||
+                err.response?.data?.error?.includes('stock')) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Stock insuficiente',
+                    text: err.response.data.error,
+                    confirmButtonColor: '#d33'
+                });
+            } else if (err.response?.status === 404) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error de datos',
+                    text: 'Uno o más productos no fueron encontrados',
+                    confirmButtonColor: '#d33'
+                });
+            } else {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error al procesar la venta',
+                    text: err.response?.data?.error || err.message || 'Ocurrió un error inesperado',
+                    confirmButtonColor: '#d33'
+                });
+            }
         }
     };
 

@@ -33,10 +33,11 @@ const Colores = () => {
     }, []);
 
     const handleSave = async () => {
-        await fetchColores();
+        await fetchColores();  // refresca la lista después de que el form GUARDÓ
         setShowForm(false);
         setColorEdit(null);
     };
+
 
     const handleEdit = (c) => {
         setColorEdit(c);

@@ -34,13 +34,27 @@ const Cotizaciones = () => {
     }
   };
 
+  const mapeoEstados = {
+    1: "Pendiente",
+    2: "Aprobada",
+    3: "Rechazada",
+    14: "Procesada"
+  };
+
   const cotizacionesFiltradas = cotizaciones.filter(c => {
     const matchBusqueda =
       c.CotizacionID?.toString().includes(busqueda) ||
       c.usuario?.Nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
       c.usuario?.DocumentoID?.toString().includes(busqueda);
-    const estadoNombre = c.estado?.Nombre || "Pendiente";
+
+    const estadoNombre =
+      c.estado?.Nombre ||
+      mapeoEstados[c.EstadoID] ||
+      mapeoEstados[c.estado?.EstadoID] ||
+      "Pendiente";
+
     const matchEstado = filtroEstado === "Todos" || estadoNombre === filtroEstado;
+
     return matchBusqueda && matchEstado;
   });
 
@@ -77,19 +91,19 @@ const Cotizaciones = () => {
     }
   };
 
-  // 🆕 CONVERTIR COTIZACIÓN A VENTA
+  // CONVERTIR COTIZACIÓN A VENTA
   const handleConvertirAVenta = async (cotizacionID) => {
     const result = await Swal.fire({
       title: '¿Convertir cotización a venta?',
       html: `
-        <p>Esta acción:</p>
-        <ul style="text-align: left;">
-          <li>Creará una venta pendiente</li>
-          <li>Descontará el stock de los productos</li>
-          <li>Marcará la cotización como procesada</li>
-        </ul>
-        <p><strong>¿Deseas continuar?</strong></p>
-      `,
+            <p>Esta acción:</p>
+            <ul style="text-align: left;">
+                <li>Creará una venta pendiente</li>
+                <li>Descontará el stock de los productos</li>
+                <li>Marcará la cotización como <strong>Procesada</strong></li>
+            </ul>
+            <p><strong>¿Deseas continuar?</strong></p>
+        `,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, convertir',
@@ -100,26 +114,38 @@ const Cotizaciones = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await axios.post(`http://localhost:3000/api/cotizaciones/${cotizacionID}/convertir-a-venta`);
-        
-        Swal.fire({
+        const response = await axios.post(
+          `http://localhost:3000/api/cotizaciones/${cotizacionID}/convertir-a-venta`
+        );
+
+        await Swal.fire({
           icon: 'success',
           title: '¡Conversión exitosa!',
           html: `
-            <p>La cotización se ha convertido en venta</p>
-            <p><strong>Venta ID:</strong> ${response.data.venta.VentaID}</p>
-            <p class="text-muted">El stock ha sido descontado automáticamente</p>
-          `,
-          confirmButtonText: 'Entendido'
+                    <div style="text-align: left; padding: 10px;">
+                        <p>La cotización se ha convertido en venta</p>
+                        <hr style="margin: 10px 0;">
+                        <p><strong>Venta ID:</strong> #${response.data.venta.VentaID}</p>
+                        <p><strong>Estado:</strong> <span style="color: #17a2b8; font-weight: 600;">Procesada</span></p>
+                        <p><strong>Total:</strong> $${(response.data.venta.Total || 0).toLocaleString()}</p>
+                        <hr style="margin: 10px 0;">
+                        <p class="text-muted" style="font-size: 0.9rem;">
+                            El stock ha sido descontado automáticamente
+                        </p>
+                    </div>
+                `,
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#28a745'
         });
 
         cargarCotizaciones();
       } catch (error) {
         console.error('Error al convertir:', error);
-        Swal.fire({
+        await Swal.fire({
           icon: 'error',
           title: 'Error al convertir',
-          text: error.response?.data?.message || error.message || 'Error desconocido'
+          text: error.response?.data?.message || error.message || 'Error desconocido',
+          confirmButtonColor: '#d33'
         });
       }
     }
@@ -136,13 +162,28 @@ const Cotizaciones = () => {
   };
 
   const obtenerBadgeEstado = (estado) => {
-    const estadoNombre = estado?.Nombre || estado || "Pendiente";
+    const mapeoEstados = {
+      1: "Pendiente",
+      2: "Aprobada",
+      3: "Rechazada",
+      14: "Procesada"
+    };
+
+    const estadoNombre =
+      estado?.Nombre ||
+      mapeoEstados[estado?.EstadoID] ||
+      mapeoEstados[estado] ||
+      "Pendiente";
+
     const estilos = {
       Pendiente: { bg: "#ffc107", color: "#000" },
       Aprobada: { bg: "#28a745", color: "#fff" },
-      Rechazada: { bg: "#dc3545", color: "#fff" }
+      Rechazada: { bg: "#dc3545", color: "#fff" },
+      Procesada: { bg: "#17a2b8", color: "#fff" }
     };
+
     const estilo = estilos[estadoNombre] || { bg: "#6c757d", color: "#fff" };
+
     return (
       <span style={{
         backgroundColor: estilo.bg,
@@ -156,6 +197,7 @@ const Cotizaciones = () => {
       </span>
     );
   };
+
 
   const formatearFecha = (fecha) => {
     return new Date(fecha).toLocaleDateString('es-CO', {
@@ -211,9 +253,9 @@ const Cotizaciones = () => {
 
       <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #ffffff 0%, #fafcff 100%)", padding: "20px 30px" }}>
         {mostrarDetalle && cotizacionSeleccionada && (
-          <ModalDetalleCotizacion 
-            cotizacion={cotizacionSeleccionada} 
-            onClose={handleCerrarModales} 
+          <ModalDetalleCotizacion
+            cotizacion={cotizacionSeleccionada}
+            onClose={handleCerrarModales}
             onActualizar={cargarCotizaciones}
             onConvertirAVenta={handleConvertirAVenta}
           />
@@ -253,6 +295,7 @@ const Cotizaciones = () => {
             <option value="Pendiente">Pendiente</option>
             <option value="Aprobada">Aprobada</option>
             <option value="Rechazada">Rechazada</option>
+            <option value="Procesada">Procesada</option>
           </select>
 
           <div style={{ position: 'relative', maxWidth: '350px', flex: 1 }}>
@@ -291,7 +334,12 @@ const Cotizaciones = () => {
                 <tbody>
                   {cotizacionesFiltradas.map((cot) => {
                     const producto = obtenerPrimerProducto(cot.detalles);
-                    const estadoNombre = cot.estado?.Nombre || "Pendiente";
+                    const estadoNombre =
+                      cot.estado?.Nombre ||
+                      mapeoEstados[cot.EstadoID] ||
+                      mapeoEstados[cot.estado?.EstadoID] ||
+                      "Pendiente";
+
                     return (
                       <tr key={cot.CotizacionID} style={{ borderBottom: '1px solid #f0f0f0' }}>
                         <td style={{ padding: '15px', fontWeight: '600' }}>{cot.CotizacionID}</td>
@@ -333,6 +381,7 @@ const Cotizaciones = () => {
                             }}>
                               <FaEye /> Detalle
                             </button>
+
                             {estadoNombre === "Pendiente" && (
                               <>
                                 <button onClick={() => handleCambiarEstado(cot.CotizacionID, "Aprobada")} style={{
@@ -353,6 +402,7 @@ const Cotizaciones = () => {
                                 </button>
                               </>
                             )}
+
                             {estadoNombre === "Aprobada" && (
                               <button onClick={() => handleConvertirAVenta(cot.CotizacionID)} style={{
                                 padding: '6px 12px', backgroundColor: '#17a2b8', color: 'white',
@@ -362,6 +412,20 @@ const Cotizaciones = () => {
                               }}>
                                 <FaExchangeAlt /> Convertir
                               </button>
+                            )}
+
+                            {/* MOSTRAR INDICADOR CUANDO ESTÁ PROCESADA */}
+                            {estadoNombre === "Procesada" && (
+                              <span style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#e7f3f5',
+                                color: '#17a2b8',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem',
+                                fontWeight: '600'
+                              }}>
+                                Ya convertida a venta
+                              </span>
                             )}
                           </div>
                         </td>
@@ -380,6 +444,8 @@ const Cotizaciones = () => {
 
 // MODAL DETALLE (actualizado con botón convertir)
 const ModalDetalleCotizacion = ({ cotizacion, onClose, onActualizar, onConvertirAVenta }) => {
+
+
   const handleAsignarCostoTecnica = async (tecnicaID) => {
     const estadoNombre = cotizacion.estado?.Nombre || "Pendiente";
 
@@ -418,6 +484,7 @@ const ModalDetalleCotizacion = ({ cotizacion, onClose, onActualizar, onConvertir
   const estadoNombre = cotizacion.estado?.Nombre || "Pendiente";
   const puedeEditarCostos = estadoNombre !== "Rechazada";
   const esAprobada = estadoNombre === "Aprobada";
+  const esProcesada = estadoNombre === "Procesada";
 
   return (
     <div style={{
@@ -490,11 +557,17 @@ const ModalDetalleCotizacion = ({ cotizacion, onClose, onActualizar, onConvertir
           </div>
 
           {/* Resumen con botón convertir */}
+          {/* ✅ ACTUALIZAR RESUMEN PARA INCLUIR PROCESADA */}
           <div style={{
-            backgroundColor: estadoNombre === "Aprobada" ? '#d4edda' :
-              estadoNombre === "Rechazada" ? '#f8d7da' : '#fff3cd',
+            backgroundColor:
+              estadoNombre === "Aprobada" ? '#d4edda' :
+                estadoNombre === "Rechazada" ? '#f8d7da' :
+                  estadoNombre === "Procesada" ? '#d1ecf1' :
+                    '#fff3cd',
             border: `2px solid ${estadoNombre === "Aprobada" ? '#28a745' :
-              estadoNombre === "Rechazada" ? '#dc3545' : '#ffc107'}`,
+              estadoNombre === "Rechazada" ? '#dc3545' :
+                estadoNombre === "Procesada" ? '#17a2b8' :
+                  '#ffc107'}`,
             padding: '20px', borderRadius: '8px', marginBottom: '25px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
@@ -502,9 +575,13 @@ const ModalDetalleCotizacion = ({ cotizacion, onClose, onActualizar, onConvertir
               <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '500' }}>Estado</p>
               <p style={{
                 margin: '5px 0 0 0', fontSize: '1.3rem', fontWeight: 'bold',
-                color: estadoNombre === "Aprobada" ? '#155724' :
-                  estadoNombre === "Rechazada" ? '#721c24' : '#856404'
+                color:
+                  estadoNombre === "Aprobada" ? '#155724' :
+                    estadoNombre === "Rechazada" ? '#721c24' :
+                      estadoNombre === "Procesada" ? '#0c5460' :
+                        '#856404'
               }}>{estadoNombre}</p>
+
               {esAprobada && (
                 <button onClick={() => onConvertirAVenta(cotizacion.CotizacionID)} style={{
                   marginTop: '10px', padding: '8px 16px',
@@ -516,6 +593,21 @@ const ModalDetalleCotizacion = ({ cotizacion, onClose, onActualizar, onConvertir
                 }}>
                   <FaExchangeAlt /> Convertir a Venta
                 </button>
+              )}
+
+              {esProcesada && (
+                <p style={{
+                  marginTop: '10px',
+                  padding: '8px 12px',
+                  backgroundColor: '#e7f3f5',
+                  color: '#0c5460',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: '500',
+                  margin: '10px 0 0 0'
+                }}>
+                  ✓ Esta cotización ya fue convertida a venta
+                </p>
               )}
             </div>
             <div style={{ textAlign: 'right' }}>

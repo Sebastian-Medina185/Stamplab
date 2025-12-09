@@ -1,119 +1,133 @@
-import axios from 'axios';
+// Services/api-cotizaciones/cotizacion-landing.js
 
-const API_BASE_URL = 'http://localhost:3000/api'; 
+import axios from "axios";
+const API_URL = "http://localhost:3000/api/cotizaciones";
+const API_BASE = "http://localhost:3000/api";
 
+// ============================================
+// COTIZACIONES
+// ============================================
 
-// NUEVO ENDPOINT INTELIGENTE
-export const createCotizacionInteligente = async (cotizacionData) => {
+// Obtener todas las cotizaciones (admin)
+export const getCotizaciones = async () => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/cotizaciones/inteligente`, cotizacionData);
+        const response = await axios.get(API_URL);
         return response.data;
     } catch (error) {
-        console.error('Error al crear cotización inteligente:', error);
-        throw error.response?.data || error;
+        console.error("Error al obtener todas las cotizaciones:", error);
+        throw error;
     }
 };
 
-
-// ==================== PRODUCTOS ====================
-export const getProductos = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/productos`);
-    if (!res.ok) throw new Error("Error al cargar productos");
-    const data = await res.json();
-    return data.datos || data;
-  } catch (error) {
-    console.error("Error en getProductos:", error);
-    throw error;
-  }
+// Obtener detalle de cotización por ID
+export const getCotizacionById = async (cotizacionID) => {
+    try {
+        const response = await axios.get(`${API_URL}/${cotizacionID}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener cotización:", error);
+        throw error;
+    }
 };
 
-// ==================== TÉCNICAS ====================
-export const getTecnicas = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/tecnicas`);
-    if (!res.ok) throw new Error("Error al cargar técnicas");
-    const data = await res.json();
-    return data.datos || data;
-  } catch (error) {
-    console.error("Error en getTecnicas:", error);
-    throw error;
-  }
+// Actualizar cotización (cambiar estado, valor total, etc.)
+export const updateCotizacion = async (cotizacionID, data) => {
+    try {
+        const response = await axios.put(`${API_URL}/${cotizacionID}`, data);
+        return response.data;
+    } catch (error) {
+        console.error("Error al actualizar cotización:", error);
+        throw error;
+    }
 };
 
-// ==================== PARTES ====================
-export const getPartes = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/partes`);
-    if (!res.ok) throw new Error("Error al cargar partes");
-    const data = await res.json();
-    return data.datos || data;
-  } catch (error) {
-    console.error("Error en getPartes:", error);
-    throw error;
-  }
+// ============================================
+// CREAR COTIZACIÓN INTELIGENTE (desde Landing)
+// ============================================
+export const createCotizacionInteligente = async (data) => {
+    try {
+        const response = await axios.post(`${API_URL}/inteligente`, data);
+        return response.data;
+    } catch (error) {
+        console.error("Error al crear cotización inteligente:", error);
+        throw error;
+    }
 };
 
-// ==================== COLORES ====================
-export const getColores = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/colores`);
-    if (!res.ok) throw new Error("Error al cargar colores");
-    const data = await res.json();
-    return data.datos || data;
-  } catch (error) {
-    console.error("Error en getColores:", error);
-    throw error;
-  }
-};
-
-// ==================== TALLAS ====================
-export const getTallas = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/tallas`);
-    if (!res.ok) throw new Error("Error al cargar tallas");
-    const data = await res.json();
-    return data.datos || data;
-  } catch (error) {
-    console.error("Error en getTallas:", error);
-    throw error;
-  }
-};
-
-// ==================== TELAS (INSUMOS TIPO TELA) ====================
-export const getTelas = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/insumos`);
-    if (!res.ok) throw new Error("Error al cargar telas");
-    const data = await res.json();
-    const insumos = data.datos || data;
-    // Filtrar solo insumos de tipo "Tela"
-    return insumos.filter(i => i.Tipo?.toLowerCase() === "tela");
-  } catch (error) {
-    console.error("Error en getTelas:", error);
-    throw error;
-  }
-};
-
-// ==================== CREAR COTIZACIÓN COMPLETA ====================
+// ============================================
+// CREAR COTIZACIÓN COMPLETA (desde Dashboard)
+// ============================================
 export const createCotizacionCompleta = async (cotizacionData) => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/cotizaciones/completa`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(cotizacionData)
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || "Error al crear cotización");
+    try {
+        const response = await axios.post(`${API_URL}/completa`, cotizacionData);
+        return response.data;
+    } catch (error) {
+        console.error("Error al crear cotización completa:", error);
+        throw error;
     }
+};
 
-    return await res.json();
-  } catch (error) {
-    console.error("Error en createCotizacionCompleta:", error);
-    throw error;
-  }
+// ============================================
+// CATÁLOGOS (para usar en formularios)
+// ============================================
+
+export const getColores = async () => {
+    try {
+        const response = await axios.get(`${API_BASE}/colores`);
+        return response.data.datos || response.data;
+    } catch (error) {
+        console.error("Error al obtener colores:", error);
+        throw error;
+    }
+};
+
+export const getTallas = async () => {
+    try {
+        const response = await axios.get(`${API_BASE}/tallas`);
+        return response.data.datos || response.data;
+    } catch (error) {
+        console.error("Error al obtener tallas:", error);
+        throw error;
+    }
+};
+
+export const getTelas = async () => {
+    try {
+        const response = await axios.get(`${API_BASE}/insumos`);
+        const insumos = response.data.datos || response.data;
+        return insumos.filter(i => i.Tipo && i.Tipo.toLowerCase() === 'tela');
+    } catch (error) {
+        console.error("Error al obtener telas:", error);
+        throw error;
+    }
+};
+
+export const getTecnicas = async () => {
+    try {
+        const response = await axios.get(`${API_BASE}/tecnicas`);
+        return response.data.datos || response.data;
+    } catch (error) {
+        console.error("Error al obtener técnicas:", error);
+        throw error;
+    }
+};
+
+export const getPartes = async () => {
+    try {
+        const response = await axios.get(`${API_BASE}/partes`);
+        return response.data.datos || response.data;
+    } catch (error) {
+        console.error("Error al obtener partes:", error);
+        throw error;
+    }
+};
+
+export const getProductos = async () => {
+    try {
+        const response = await axios.get(`${API_BASE}/productos`);
+        return response.data.datos || response.data;
+    } catch (error) {
+        console.error("Error al obtener productos:", error);
+        throw error;
+    }
 };

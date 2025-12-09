@@ -64,7 +64,7 @@ const menuItems = [
         key: "procesocompras",
         icon: <FaWarehouse className="me-2" />,
         items: [
-            { to: "/dashboard/pedidos", label: "Pedidos", icon: <FaClipboardList className="me-2" /> },
+            { to: "/dashboard/pedidos", label: "Compras", icon: <FaClipboardList className="me-2" /> },
             { to: "/dashboard/proveedores", label: "Proveedores", icon: <FaWarehouse className="me-2" /> }
         ]
     },

@@ -6,6 +6,7 @@ import * as jose from 'jose';
 import fondo from "../../assets/images/imagenfondo.png";
 import NavbarComponent from "../landing/NavBarLanding";
 import FooterComponent from "../landing/footer";
+import Swal from "sweetalert2";
 
 const LoginLanding = () => {
     const [correo, setCorreo] = useState("");
@@ -18,10 +19,8 @@ const LoginLanding = () => {
         setLoading(true);
 
         try {
-            // admin hardcodeado
+            // Admin hardcodeado
             if (correo === "admin@gmail.com" && contraseña === "admin123") {
-
-                // Generar token JWT válido usando jose
                 const secret = new TextEncoder().encode('clave_secreta');
                 const tokenAdmin = await new jose.SignJWT({ id: 'admin', rol: 1 })
                     .setProtectedHeader({ alg: 'HS256' })
@@ -29,7 +28,6 @@ const LoginLanding = () => {
                     .setExpirationTime('2h')
                     .sign(secret);
 
-                // Guardar token válido
                 localStorage.setItem("token", tokenAdmin);
                 localStorage.setItem("usuario", JSON.stringify({
                     Nombre: "Administrador",
@@ -37,18 +35,25 @@ const LoginLanding = () => {
                     rol: 1
                 }));
 
-                alert("Bienvenido Administrador");
+                // Alerta de éxito con SweetAlert2
+                await Swal.fire({
+                    icon: "success",
+                    title: "¡Bienvenido Administrador!",
+                    text: "Has iniciado sesión exitosamente",
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
                 navigate("/dashboard");
                 return;
             }
 
-            // Login normal con la API para otros usuarios
+            // Login normal con la API
             const res = await loginUsuario({
                 Correo: correo,
                 Contraseña: contraseña
             });
 
-            // CORRECCIÓN: Guardar con claves en MAYÚSCULA para consistencia
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("usuario", JSON.stringify({
                 Nombre: res.data.nombre,
@@ -57,21 +62,63 @@ const LoginLanding = () => {
                 rol: res.data.rol
             }));
 
+            // Alerta de éxito con SweetAlert2
             if (res.data.rol === 1 || res.data.rol === "1") {
-                alert(`Bienvenido Administrador ${res.data.nombre}`);
+                await Swal.fire({
+                    icon: "success",
+                    title: `¡Bienvenido Administrador!`,
+                    text: `${res.data.nombre}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 navigate("/dashboard");
             } else {
-                alert(`Bienvenido/a ${res.data.nombre}`);
+                await Swal.fire({
+                    icon: "success",
+                    title: "¡Bienvenido!",
+                    text: `${res.data.nombre}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 navigate("/landing");
             }
 
         } catch (err) {
             console.error("Error en login:", err);
 
-            if (err.response?.data?.mensaje) {
-                alert(err.response.data.mensaje);
+            // Alertas de error específicas con SweetAlert2
+            if (err.response?.status === 401 || err.response?.status === 400) {
+                // Credenciales incorrectas
+                Swal.fire({
+                    icon: "error",
+                    title: "Credenciales incorrectas",
+                    text: "El correo o la contraseña son incorrectos. Por favor verifica tus datos.",
+                    confirmButtonColor: "#d33"
+                });
+            } else if (err.response?.status === 404) {
+                // Usuario no encontrado
+                Swal.fire({
+                    icon: "error",
+                    title: "Usuario no encontrado",
+                    text: "No existe una cuenta con este correo electrónico.",
+                    confirmButtonColor: "#d33"
+                });
+            } else if (err.response?.data?.mensaje) {
+                // Mensaje personalizado del servidor
+                Swal.fire({
+                    icon: "error",
+                    title: "Error al iniciar sesión",
+                    text: err.response.data.mensaje,
+                    confirmButtonColor: "#d33"
+                });
             } else {
-                alert("Error al iniciar sesión. Verifica tus credenciales.");
+                // Error genérico
+                Swal.fire({
+                    icon: "error",
+                    title: "Error de conexión",
+                    text: "No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.",
+                    confirmButtonColor: "#d33"
+                });
             }
         } finally {
             setLoading(false);

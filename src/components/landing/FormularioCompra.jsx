@@ -130,6 +130,50 @@ const FormularioCompra = () => {
         }
     };
 
+
+    // VALIDAR STOCK DISPONIBLE
+    const validarStockDisponible = () => {
+        // Si trae prenda, no validar stock
+        if (traePrenda) {
+            return { valido: true };
+        }
+
+        const cantidadSolicitada = parseInt(cantidad) || 0;
+
+        // Buscar la variante exacta según las selecciones del usuario
+        const varianteSeleccionada = variantesProducto.find(v => {
+            // Validar solo los campos que están seleccionados
+            const coincideColor = !colorID || v.ColorID === parseInt(colorID);
+            const coincideTalla = !tallaID || v.TallaID === parseInt(tallaID);
+            const coincideTela = !telaID || v.TelaID === parseInt(telaID);
+
+            return coincideColor && coincideTalla && coincideTela && v.Estado;
+        });
+
+        if (!varianteSeleccionada) {
+            return {
+                valido: false,
+                mensaje: "No existe esta combinación de producto. Por favor verifica tu selección."
+            };
+        }
+
+        const stockDisponible = varianteSeleccionada.Stock || 0;
+
+        if (stockDisponible < cantidadSolicitada) {
+            return {
+                valido: false,
+                mensaje: `Stock insuficiente. Solo hay ${stockDisponible} unidad(es) disponible(s) de esta variante y solicitaste ${cantidadSolicitada}.`,
+                stockDisponible
+            };
+        }
+
+        return {
+            valido: true,
+            stockDisponible
+        };
+    };
+
+
     // ===== MANEJO DE DISEÑOS =====
     const resetCamposDiseno = () => {
         setTecnicaID("");
@@ -265,7 +309,6 @@ const FormularioCompra = () => {
 
         // Validación dinámica: solo validar los campos que realmente están disponibles
         if (!traePrenda) {
-            // Validar solo los campos que tienen opciones disponibles
             if (coloresDisponibles.length > 0 && !colorID) {
                 Swal.fire("Atención", "Debes seleccionar un color", "warning");
                 return;
@@ -276,6 +319,24 @@ const FormularioCompra = () => {
             }
             if (telasDisponibles.length > 0 && !telaID) {
                 Swal.fire("Atención", "Debes seleccionar una tela", "warning");
+                return;
+            }
+
+            // VALIDACIÓN DE STOCK ANTES DE ENVIAR
+            const validacionStock = validarStockDisponible();
+            if (!validacionStock.valido) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Stock insuficiente",
+                    html: `
+                    <p>${validacionStock.mensaje}</p>
+                    ${validacionStock.stockDisponible !== undefined ?
+                            `<p class="mt-2"><strong>Stock disponible:</strong> ${validacionStock.stockDisponible} unidades</p>` :
+                            ''
+                        }
+                `,
+                    confirmButtonColor: "#d33"
+                });
                 return;
             }
         }
@@ -293,20 +354,17 @@ const FormularioCompra = () => {
                 TraePrenda: traePrenda,
                 PrendaDescripcion: traePrenda ? prendaDescripcion : "",
 
-                // Solo incluir tallas si hay disponibles Y fue seleccionada
                 tallas: !traePrenda && tallasDisponibles.length > 0 && tallaID ? [{
                     TallaID: parseInt(tallaID),
                     Cantidad: parseInt(cantidad),
                     PrecioTalla: tallas.find(t => t.TallaID === parseInt(tallaID))?.Precio || 0
                 }] : [],
 
-                // Solo incluir colores si hay disponibles Y fue seleccionado
                 colores: !traePrenda && coloresDisponibles.length > 0 && colorID ? [{
                     ColorID: parseInt(colorID),
                     Cantidad: parseInt(cantidad)
                 }] : [],
 
-                // Solo incluir telas si hay disponibles Y fue seleccionada
                 insumos: !traePrenda && telasDisponibles.length > 0 && telaID ? [{
                     InsumoID: parseInt(telaID),
                     CantidadRequerida: parseInt(cantidad)
@@ -327,10 +385,8 @@ const FormularioCompra = () => {
                 detalles
             };
 
-            // LLAMADA AL NUEVO ENDPOINT INTELIGENTE
             const response = await api.createCotizacionInteligente(cotizacionData);
 
-            // Manejar respuesta según el tipo
             if (response.tipo === 'cotizacion') {
                 Swal.fire({
                     icon: "success",
@@ -359,11 +415,29 @@ const FormularioCompra = () => {
             }
         } catch (error) {
             console.error("Error al crear solicitud:", error);
-            Swal.fire("Error", error?.message || "Error al procesar tu solicitud", "error");
+
+            // MEJORAR MANEJO DE ERRORES DE STOCK DEL BACKEND
+            if (error?.response?.data?.message?.includes('Stock insuficiente') ||
+                error?.response?.data?.message?.includes('stock')) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Stock insuficiente",
+                    text: error.response.data.message,
+                    confirmButtonColor: "#d33"
+                });
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: error?.response?.data?.message || error?.message || "Error al procesar tu solicitud",
+                    confirmButtonColor: "#d33"
+                });
+            }
         } finally {
             setCargando(false);
         }
     };
+
 
     if (!producto) return null;
 
@@ -561,6 +635,18 @@ const FormularioCompra = () => {
                                                         onChange={(e) => setCantidad(e.target.value)}
                                                         required
                                                     />
+                                                    {/* ✅ INDICADOR DE STOCK */}
+                                                    {!traePrenda && (
+                                                        <Form.Text className="text-muted">
+                                                            {(() => {
+                                                                const validacion = validarStockDisponible();
+                                                                if (validacion.valido && validacion.stockDisponible !== undefined) {
+                                                                    return `Stock disponible: ${validacion.stockDisponible} unidades`;
+                                                                }
+                                                                return null;
+                                                            })()}
+                                                        </Form.Text>
+                                                    )}
                                                 </Form.Group>
                                             </Col>
 

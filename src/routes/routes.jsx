@@ -26,7 +26,7 @@ import NuevaCotizacion from "../pages/formularios_dash/NuevaCotizacion";
 import Ventas from "../pages/Ventas";
 import { ProtectedRoute } from "./ProtectedRoute";
 import VentasPendientes from "../pages/VentasPendientes";
-import Compras from "../pages/Pedidos";
+import Compras from "../pages/Compras";
 
 const AppRoutes = () => {
 

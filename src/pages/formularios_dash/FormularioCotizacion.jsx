@@ -1,16 +1,21 @@
+// ============================================
+// ACTUALIZAR FormularioCotizacion.jsx
+// ============================================
+
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
-import { 
-    createCotizacionCompleta,  // ← Mantén esto por ahora
-    getColores, 
-    getTallas, 
-    getTelas, 
-    getTecnicas, 
-    getPartes 
+import {
+    createCotizacionCompleta,
+    getColores,
+    getTallas,
+    getTelas,
+    getTecnicas,
+    getPartes
 } from "../../Services/api-cotizacion-landing/cotizacion-landing";
 import { getUsuarios } from "../../Services/api-usuarios/usuarios";
 import { getProductos } from "../../Services/api-productos/productos";
+import { getVariantesByProducto } from "../../Services/api-productos/variantes"; // 🆕 IMPORTAR
 
 const FormularioCotizacion = ({ onClose, onActualizar }) => {
     // Estados de catálogos
@@ -21,6 +26,12 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
     const [telas, setTelas] = useState([]);
     const [tecnicas, setTecnicas] = useState([]);
     const [partes, setPartes] = useState([]);
+
+    // 🆕 Estados para VARIANTES FILTRADAS
+    const [variantesDisponibles, setVariantesDisponibles] = useState([]);
+    const [coloresFiltrados, setColoresFiltrados] = useState([]);
+    const [tallasFiltradas, setTallasFiltradas] = useState([]);
+    const [telasFiltradas, setTelasFiltradas] = useState([]);
 
     // Estados del formulario
     const [documentoID, setDocumentoID] = useState("");
@@ -43,7 +54,7 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
     const [cargando, setCargando] = useState(false);
 
     // ============================================
-    // ✅ CARGAR CATÁLOGOS AL MONTAR
+    // CARGAR CATÁLOGOS AL MONTAR
     // ============================================
     useEffect(() => {
         cargarCatalogos();
@@ -75,7 +86,85 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
     };
 
     // ============================================
-    // ✅ CALCULAR PRECIOS CORREGIDO (PUNTOS 1 Y 2)
+    // 🆕 FUNCIÓN: FILTRAR OPCIONES POR VARIANTES
+    // ============================================
+    const filtrarOpcionesPorVariantes = (variantes) => {
+        if (!variantes || variantes.length === 0) {
+            setColoresFiltrados([]);
+            setTallasFiltradas([]);
+            setTelasFiltradas([]);
+            return;
+        }
+
+        // Extraer IDs únicos de las variantes disponibles
+        const coloresUnicos = [...new Set(variantes.map(v => v.ColorID))];
+        const tallasUnicas = [...new Set(variantes.map(v => v.TallaID))];
+        const telasUnicas = [...new Set(variantes.map(v => v.TelaID).filter(Boolean))];
+
+        // Filtrar catálogos completos
+        const coloresFilt = colores.filter(c => coloresUnicos.includes(c.ColorID));
+        const tallasFilt = tallas.filter(t => tallasUnicas.includes(t.TallaID));
+        const telasFilt = telas.filter(t => telasUnicas.includes(t.InsumoID));
+
+        setColoresFiltrados(coloresFilt);
+        setTallasFiltradas(tallasFilt);
+        setTelasFiltradas(telasFilt);
+
+        console.log('🔍 Variantes filtradas:');
+        console.log('   Colores disponibles:', coloresFilt.map(c => c.Nombre));
+        console.log('   Tallas disponibles:', tallasFilt.map(t => t.Nombre));
+        console.log('   Telas disponibles:', telasFilt.map(t => t.Nombre));
+    };
+
+    // ============================================
+    // 🆕 FUNCIÓN ACTUALIZADA: Seleccionar producto
+    // ============================================
+    const handleSeleccionarProducto = async (productoID) => {
+        const producto = productos.find(p => p.ProductoID === parseInt(productoID));
+        setProductoSeleccionado(producto);
+
+        // Resetear campos
+        setCantidad(1);
+        setColorID("");
+        setTallaID("");
+        setTelaID("");
+        setTraePrenda(false);
+        setPrendaDescripcion("");
+        setDisenos([]);
+
+        // 🆕 Cargar variantes del producto
+        if (producto) {
+            setCargando(true);
+            try {
+                const response = await getVariantesByProducto(producto.ProductoID);
+                const variantes = response.datos || response || [];
+                
+                setVariantesDisponibles(variantes);
+                filtrarOpcionesPorVariantes(variantes);
+
+                if (variantes.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sin variantes',
+                        text: 'Este producto no tiene variantes registradas en inventario. Crea variantes antes de cotizar.',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            } catch (error) {
+                console.error("Error al cargar variantes:", error);
+                Swal.fire("Error", "No se pudieron cargar las variantes del producto", "error");
+                setVariantesDisponibles([]);
+                setColoresFiltrados([]);
+                setTallasFiltradas([]);
+                setTelasFiltradas([]);
+            } finally {
+                setCargando(false);
+            }
+        }
+    };
+
+    // ============================================
+    // CALCULAR PRECIOS (sin cambios)
     // ============================================
     const calcularPrecios = () => {
         if (!productoSeleccionado) {
@@ -91,7 +180,6 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
 
         const cantidadNum = parseInt(cantidad) || 1;
 
-        // Si trae prenda, solo precio base
         if (traePrenda) {
             const precioBase = parseFloat(productoSeleccionado.PrecioBase) || 0;
             return {
@@ -104,7 +192,6 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
             };
         }
 
-        // Si NO trae prenda, calcular todo
         const precioBase = parseFloat(productoSeleccionado.PrecioBase) || 0;
         const talla = tallas.find(t => t.TallaID === parseInt(tallaID));
         const tela = telas.find(t => t.InsumoID === parseInt(telaID));
@@ -112,7 +199,6 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
         const precioTalla = talla ? (parseFloat(talla.Precio) || 0) : 0;
         const precioTela = tela ? (parseFloat(tela.PrecioTela) || 0) : 0;
 
-        // PRECIO UNITARIO = Precio base + Precio talla + Precio tela
         const precioUnitario = precioBase + precioTalla + precioTela;
         const subtotal = precioUnitario * cantidadNum;
 
@@ -128,19 +214,9 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
 
     const precios = calcularPrecios();
 
-    const handleSeleccionarProducto = (productoID) => {
-        const producto = productos.find(p => p.ProductoID === parseInt(productoID));
-        setProductoSeleccionado(producto);
-
-        setCantidad(1);
-        setColorID("");
-        setTallaID("");
-        setTelaID("");
-        setTraePrenda(false);
-        setPrendaDescripcion("");
-        setDisenos([]);
-    };
-
+    // ============================================
+    // RESTO DE FUNCIONES (sin cambios)
+    // ============================================
     const handleAgregarDiseno = () => {
         if (!tecnicaID || !parteID) {
             Swal.fire("Atención", "Selecciona técnica y parte", "warning");
@@ -186,15 +262,38 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
             return;
         }
 
-        if (!traePrenda && (!colorID || !tallaID || !telaID)) {
-            Swal.fire("Atención", "Completa todos los campos obligatorios", "warning");
+        // 🆕 Validar que el producto tenga variantes
+        if (variantesDisponibles.length === 0 && !traePrenda) {
+            Swal.fire("Atención", "Este producto no tiene variantes disponibles", "warning");
             return;
+        }
+
+        if (!traePrenda) {
+            if (!colorID) {
+                Swal.fire("Atención", "Debes seleccionar un color", "warning");
+                return;
+            }
+            if (!tallaID) {
+                Swal.fire("Atención", "Debes seleccionar una talla", "warning");
+                return;
+            }
+            if (!telaID) {
+                Swal.fire("Atención", "Debes seleccionar un tipo de tela", "warning");
+                return;
+            }
         }
 
         if (traePrenda && !prendaDescripcion.trim()) {
             Swal.fire("Atención", "Describe la prenda que traerá el cliente", "warning");
             return;
         }
+
+        console.log('📋 DATOS ANTES DE ENVIAR:');
+        console.log('ProductoID:', productoSeleccionado.ProductoID);
+        console.log('ColorID:', colorID);
+        console.log('TallaID:', tallaID);
+        console.log('TelaID:', telaID);
+        console.log('Trae prenda:', traePrenda);
 
         setCargando(true);
         try {
@@ -204,18 +303,18 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                 TraePrenda: traePrenda,
                 PrendaDescripcion: traePrenda ? prendaDescripcion : "",
 
-                tallas: !traePrenda && tallaID ? [{
+                tallas: !traePrenda ? [{
                     TallaID: parseInt(tallaID),
                     Cantidad: parseInt(cantidad),
                     PrecioTalla: tallas.find(t => t.TallaID === parseInt(tallaID))?.Precio || 0
                 }] : [],
 
-                colores: !traePrenda && colorID ? [{
+                colores: !traePrenda ? [{
                     ColorID: parseInt(colorID),
                     Cantidad: parseInt(cantidad)
                 }] : [],
 
-                insumos: !traePrenda && telaID ? [{
+                insumos: !traePrenda ? [{
                     InsumoID: parseInt(telaID),
                     CantidadRequerida: parseInt(cantidad)
                 }] : [],
@@ -229,15 +328,16 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                 }))
             }];
 
+            console.log('📤 PAYLOAD FINAL:', JSON.stringify(detalles, null, 2));
+
             const cotizacionData = {
                 DocumentoID: parseInt(documentoID),
                 FechaCotizacion: new Date().toISOString(),
-                ValorTotal: precios.subtotal, // ← Punto 1 y 2 corregido
+                ValorTotal: precios.subtotal,
                 EstadoID: 1,
                 detalles
             };
 
-            // Por ahora usa la función existente
             await createCotizacionCompleta(cotizacionData);
 
             Swal.fire({
@@ -252,13 +352,23 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
             onClose();
 
         } catch (error) {
-            console.error("Error al crear cotización:", error);
-            Swal.fire("Error", error?.message || "Error al crear la cotización", "error");
+            console.error("ERROR AL CREAR COTIZACIÓN:", error);
+            console.error("Respuesta del servidor:", error.response?.data);
+
+            Swal.fire({
+                icon: "error",
+                title: "Error al crear cotización",
+                text: error.response?.data?.message || error.message || "Error desconocido",
+                footer: error.response?.data?.error || ""
+            });
         } finally {
             setCargando(false);
         }
     };
 
+    // ============================================
+    // RENDER (ACTUALIZADO - usar arrays filtrados)
+    // ============================================
     return (
         <div style={{
             position: "fixed",
@@ -303,7 +413,7 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
 
                 <div style={{ padding: '30px' }}>
                     <div className="row">
-                        {/* COLUMNA IZQUIERDA - Resumen CORREGIDO */}
+                        {/* COLUMNA IZQUIERDA - Resumen */}
                         <div className="col-lg-4">
                             <div className="sticky-top" style={{ top: '20px' }}>
                                 {productoSeleccionado && (
@@ -317,7 +427,6 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                                     </div>
                                 )}
 
-                                {/* ✅ RESUMEN CORREGIDO CON PRECIO BASE */}
                                 <div className="card shadow-sm">
                                     <div className="card-header bg-primary text-white">
                                         <h6 className="mb-0">Resumen de Cotización</h6>
@@ -325,7 +434,6 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                                     <div className="card-body">
                                         {productoSeleccionado ? (
                                             <>
-                                                {/* ✅ NUEVO: Precio Base del Producto */}
                                                 <div className="d-flex justify-content-between mb-2 pb-2 border-bottom">
                                                     <span className="fw-medium">Precio base producto:</span>
                                                     <strong className="text-info">${precios.precioBase.toLocaleString()}</strong>
@@ -469,6 +577,7 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                                         </div>
                                     </div>
 
+                                    {/* 🆕 USAR ARRAYS FILTRADOS */}
                                     {!traePrenda && (
                                         <div className="card shadow-sm mb-3">
                                             <div className="card-header bg-light">
@@ -480,15 +589,21 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                                                         <label>Color *</label>
                                                         <select className="form-select" value={colorID} onChange={(e) => setColorID(e.target.value)} required>
                                                             <option value="">Seleccionar...</option>
-                                                            {colores.map(c => <option key={c.ColorID} value={c.ColorID}>{c.Nombre}</option>)}
+                                                            {coloresFiltrados.map(c => <option key={c.ColorID} value={c.ColorID}>{c.Nombre}</option>)}
                                                         </select>
+                                                        {coloresFiltrados.length === 0 && (
+                                                            <small className="text-danger">Sin colores disponibles</small>
+                                                        )}
                                                     </div>
                                                     <div className="col-md-4">
                                                         <label>Talla *</label>
                                                         <select className="form-select" value={tallaID} onChange={(e) => setTallaID(e.target.value)} required>
                                                             <option value="">Seleccionar...</option>
-                                                            {tallas.map(t => <option key={t.TallaID} value={t.TallaID}>{t.Nombre} - ${t.Precio?.toLocaleString()}</option>)}
+                                                            {tallasFiltradas.map(t => <option key={t.TallaID} value={t.TallaID}>{t.Nombre} - ${t.Precio?.toLocaleString()}</option>)}
                                                         </select>
+                                                        {tallasFiltradas.length === 0 && (
+                                                            <small className="text-danger">Sin tallas disponibles</small>
+                                                        )}
                                                     </div>
                                                     <div className="col-md-4">
                                                         <label>Cantidad *</label>
@@ -498,15 +613,18 @@ const FormularioCotizacion = ({ onClose, onActualizar }) => {
                                                         <label>Tipo de Tela *</label>
                                                         <select className="form-select" value={telaID} onChange={(e) => setTelaID(e.target.value)} required>
                                                             <option value="">Seleccionar...</option>
-                                                            {telas.map(t => <option key={t.InsumoID} value={t.InsumoID}>{t.Nombre} - +${t.PrecioTela?.toLocaleString()}</option>)}
+                                                            {telasFiltradas.map(t => <option key={t.InsumoID} value={t.InsumoID}>{t.Nombre} - +${t.PrecioTela?.toLocaleString()}</option>)}
                                                         </select>
+                                                        {telasFiltradas.length === 0 && (
+                                                            <small className="text-danger">Sin telas disponibles</small>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Sección de diseños (sin cambios) */}
+                                    {/* Sección de diseños */}
                                     <div className="card shadow-sm mb-3">
                                         <div className="card-header bg-light">
                                             <h6 className="mb-0">Diseños Personalizados</h6>
